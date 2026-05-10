@@ -58,14 +58,15 @@
         import { getFirestore, doc, setDoc, onSnapshot, collection, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // REPLACE WITH YOUR FIREBASE CONFIG
-        const firebaseConfig = { 
-            apiKey: "YOUR_API_KEY", 
-            authDomain: "YOUR_PROJECT.firebaseapp.com", 
-            projectId: "YOUR_PROJECT_ID", 
-            storageBucket: "YOUR_PROJECT.appspot.com", 
-            messagingSenderId: "YOUR_ID", 
-            appId: "YOUR_APP_ID" 
-        };
+        const firebaseConfig = {
+  apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
+  authDomain: "isulantrike.firebaseapp.com",
+  projectId: "isulantrike",
+  storageBucket: "isulantrike.firebasestorage.app",
+  messagingSenderId: "262164007490",
+  appId: "1:262164007490:web:2ba9c91b468bbd09ff3bdb",
+  measurementId: "G-3K2TEVV4X5"
+};
         
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
