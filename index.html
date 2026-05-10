@@ -3,107 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IsulanTrike Pro - 2026</title>
+    <title>IsulanTrike Pro - Hybrid Auth</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <style>
-        #map { height: 40vh; width: 100%; border-bottom: 2px solid #eee; }
+        #map { height: 40vh; width: 100%; }
         .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        .btn-primary { @apply bg-green-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all w-full; }
-        .input-field { @apply w-full p-4 bg-gray-100 rounded-2xl mb-3 font-bold outline-none border-2 border-transparent focus:border-green-500; }
+        .btn-primary { @apply bg-green-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all w-full mb-2; }
+        .input-field { @apply w-full p-4 bg-gray-100 rounded-2xl mb-3 font-bold outline-none border-2 border-transparent focus:border-green-500 text-gray-800; }
+        .badge { @apply px-2 py-1 rounded text-[10px] font-bold uppercase; }
     </style>
 </head>
 <body class="bg-gray-50 flex flex-col h-screen overflow-hidden">
 
-    <!-- 1. REGISTRATION PANEL -->
+    <!-- 1. MULTI-AUTH SCREEN -->
     <div id="auth-screen" class="fixed inset-0 z-[5000] bg-green-600 flex flex-col items-center justify-center p-6 text-white overflow-y-auto">
         <i class="fa-solid fa-motorcycle text-6xl mb-4"></i>
-        <h1 class="text-4xl font-black mb-6 italic tracking-tighter">IsulanTrike Registration</h1>
+        <h1 class="text-3xl font-black mb-6 tracking-tighter italic">IsulanTrike Login</h1>
         
         <div class="w-full max-w-sm bg-white p-6 rounded-[2rem] text-gray-800 shadow-2xl">
-            <div id="phone-section">
-                <p class="text-xs font-bold text-gray-400 uppercase mb-4 text-center">Step 1: Phone Verification</p>
-                <input id="reg-phone" type="tel" placeholder="+63 912 345 6789" class="input-field">
-                <div id="recaptcha-container"></div>
-                <button onclick="handlePhoneVerify()" class="btn-primary mt-2">Send OTP</button>
+            <!-- Email Login -->
+            <div id="email-section">
+                <input id="auth-email" type="email" placeholder="Email" class="input-field">
+                <input id="auth-pass" type="password" placeholder="Password" class="input-field">
+                <div class="flex gap-2">
+                    <button onclick="handleEmailAuth('login')" class="btn-primary text-sm">Login</button>
+                    <button onclick="handleEmailAuth('register')" class="btn-primary text-sm bg-gray-800">Register</button>
+                </div>
             </div>
 
-            <div id="otp-section" class="hidden">
-                <input id="reg-otp" type="number" placeholder="Enter 6-digit Code" class="input-field">
-                <button onclick="handleCodeVerify()" class="btn-primary">Verify Code</button>
+            <div class="relative my-4 flex items-center">
+                <div class="flex-grow border-t border-gray-200"></div>
+                <span class="px-3 text-xs font-bold text-gray-400">OR</span>
+                <div class="flex-grow border-t border-gray-200"></div>
             </div>
 
-            <div id="profile-section" class="hidden">
-                <p class="text-xs font-bold text-gray-400 uppercase mb-4 text-center">Step 2: Complete Profile</p>
-                <input id="reg-name" type="text" placeholder="Full Name" class="input-field">
-                <select id="reg-role" class="input-field" onchange="togglePlateInput()">
-                    <option value="passenger">I am a Passenger</option>
-                    <option value="driver">I am a Driver</option>
-                </select>
-                <input id="reg-plate" type="text" placeholder="Plate Number (e.g. ABC-123)" class="input-field hidden">
-                <button onclick="saveProfile()" class="btn-primary">Finish Registration</button>
-            </div>
+            <!-- Anonymous Option -->
+            <button onclick="handleAnonymousAuth()" class="w-full py-3 rounded-xl border-2 border-gray-100 font-bold text-gray-500 hover:bg-gray-50">
+                <i class="fa-solid fa-user-secret mr-2"></i> Continue as Guest
+            </button>
+            <p class="text-[10px] text-center mt-3 text-gray-400 font-medium">Guest users cannot save trip records or earnings.</p>
         </div>
     </div>
 
-    <!-- 2. LANDING PAGE (History & Profile) -->
-    <div id="landing-page" class="hidden fixed inset-0 z-[4500] bg-white flex flex-col p-6">
-        <div class="flex justify-between items-center mb-8">
+    <!-- 2. REGISTRATION DETAILS (For Email/Phone/New Users) -->
+    <div id="profile-setup" class="hidden fixed inset-0 z-[5100] bg-white flex flex-col items-center justify-center p-8">
+        <h2 class="text-2xl font-black mb-6">Complete your Profile</h2>
+        <input id="reg-name" type="text" placeholder="Full Name" class="input-field">
+        <select id="reg-role" class="input-field" onchange="togglePlateInput()">
+            <option value="passenger">Passenger</option>
+            <option value="driver">Driver</option>
+        </select>
+        <input id="reg-plate" type="text" placeholder="Plate Number" class="input-field hidden">
+        <button onclick="saveProfile()" class="btn-primary">Start Using IsulanTrike</button>
+    </div>
+
+    <!-- 3. DASHBOARD / RECORDS PANEL -->
+    <div id="landing-page" class="hidden fixed inset-0 z-[4500] bg-white flex flex-col p-6 overflow-hidden">
+        <div class="flex justify-between items-start mb-6">
             <div>
-                <h2 class="text-3xl font-black text-gray-800">Hello, <span id="land-name" class="text-green-600">User</span>!</h2>
-                <p id="land-role-label" class="text-xs font-bold text-gray-400 uppercase">Passenger Profile</p>
+                <h2 class="text-2xl font-black">Hi, <span id="land-name" class="text-green-600">User</span></h2>
+                <span id="account-badge" class="badge bg-gray-200">Guest</span>
             </div>
-            <button onclick="goToApp()" class="bg-green-100 text-green-700 p-4 rounded-full shadow-inner"><i class="fa-solid fa-map-location-dot text-2xl"></i></button>
+            <button onclick="goToApp()" class="bg-green-600 text-white px-6 py-3 rounded-2xl font-black shadow-lg">Open Map</button>
         </div>
 
-        <div class="flex-1 overflow-y-auto">
-            <h3 class="font-black text-gray-800 mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-clock-rotate-left text-green-600"></i> Trip History
-            </h3>
-            <div id="history-list" class="space-y-4">
-                <p class="text-center text-gray-400 py-10 italic">No trips recorded yet.</p>
+        <div id="records-container" class="flex-1 overflow-y-auto">
+            <!-- Driver Specific: Earnings -->
+            <div id="driver-earnings" class="hidden grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-green-50 p-4 rounded-2xl border-2 border-green-100">
+                    <p class="text-[10px] font-bold text-green-600 uppercase">Today's Earning</p>
+                    <p class="text-2xl font-black text-gray-800">₱<span id="total-earnings">0</span></p>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-2xl border-2 border-blue-100">
+                    <p class="text-[10px] font-bold text-blue-600 uppercase">Trips Done</p>
+                    <p class="text-2xl font-black text-gray-800" id="trip-count">0</p>
+                </div>
+            </div>
+
+            <h3 class="font-black text-gray-800 mb-4 italic">Recent Activity</h3>
+            <div id="history-list" class="space-y-3">
+                <!-- Anonymous Block -->
+                <div id="anon-blocker" class="hidden bg-gray-100 p-10 rounded-[2rem] text-center">
+                    <i class="fa-solid fa-lock text-3xl text-gray-300 mb-4"></i>
+                    <p class="text-sm font-bold text-gray-500">History is locked for Guests.<br>Register an account to see records.</p>
+                </div>
             </div>
         </div>
-        
-        <button onclick="auth.signOut().then(()=>location.reload())" class="text-red-500 font-bold text-sm mt-4 italic underline text-center">Logout & Switch Account</button>
+        <button onclick="auth.signOut().then(()=>location.reload())" class="text-red-500 font-bold text-xs mt-4">Sign Out</button>
     </div>
 
-    <!-- 3. MAIN APP PANEL -->
+    <!-- Map UI and Logic follows standard structure... -->
     <div id="app-ui" class="hidden flex-col h-full">
         <div id="map"></div>
-        <div class="flex-1 overflow-y-auto bg-white rounded-t-[2.5rem] -mt-10 z-[1001] shadow-2xl p-6">
-            <button onclick="showLanding()" class="mb-4 text-xs font-bold text-green-600 border border-green-600 px-4 py-1 rounded-full">← Back to Profile</button>
-            
-            <div id="passenger-panel" class="hidden">
-                <input id="destination-input" type="text" placeholder="Destination in Isulan" class="input-field">
-                <div id="driver-list" class="space-y-3"></div>
-            </div>
-
-            <div id="driver-panel" class="hidden flex flex-col items-center">
-                <div id="trip-card" class="hidden w-full p-6 bg-green-50 border-2 border-green-200 rounded-3xl mb-4">
-                    <p id="passenger-info" class="text-xl font-black text-gray-800 mb-4"></p>
-                    <button onclick="completeTrip()" class="btn-primary">COMPLETE TASK</button>
-                </div>
-                <button id="duty-btn" onclick="toggleDuty()" class="w-full bg-gray-200 text-white font-black py-6 rounded-3xl text-2xl">GO ONLINE</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Rating Modal, Booking Alerts same as v7... -->
-    <div id="booking-alert" class="hidden fixed top-4 inset-x-4 z-[6000] bg-green-700 text-white p-6 rounded-3xl shadow-2xl">
-        <h3 id="alert-p-name" class="text-2xl font-black"></h3>
-        <p id="alert-dest" class="bg-black/20 p-3 rounded-xl my-3 font-bold"></p>
-        <div class="flex gap-2">
-            <button onclick="acceptRide()" class="flex-1 bg-yellow-400 text-green-900 py-4 rounded-xl font-black">ACCEPT</button>
+        <div class="flex-1 p-6 bg-white rounded-t-[2.5rem] -mt-10 z-[1001] shadow-2xl">
+            <button onclick="showLanding()" class="text-xs font-bold text-green-600 mb-4">← Back to Records</button>
+            <div id="role-panel-content"></div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, onSnapshot, serverTimestamp, arrayUnion, deleteField, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
   authDomain: "isulantrike.firebaseapp.com",
@@ -115,126 +119,129 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const COLL = "isulan_pro_v1";
+        const COLL = "isulan_pro_v2";
 
-        let confirmationResult, userUid, userData, myPos = {lat: 6.6294, lng: 124.605};
-        let map, userMarker, peerMarkers = {};
+        let userUid, userData;
 
-        // --- AUTH LOGIC ---
-        window.handlePhoneVerify = () => {
-            const phone = document.getElementById('reg-phone').value;
-            const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
-            signInWithPhoneNumber(auth, phone, verifier).then(res => {
-                confirmationResult = res;
-                document.getElementById('phone-section').classList.add('hidden');
-                document.getElementById('otp-section').classList.remove('hidden');
-            });
+        // --- AUTH HANDLERS ---
+        window.handleEmailAuth = (type) => {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-pass').value;
+            if(!email || !pass) return alert("Fill all fields");
+
+            const action = type === 'login' ? signInWithEmailAndPassword : createUserWithEmailAndPassword;
+            action(auth, email, pass).catch(err => alert(err.message));
         };
 
-        window.handleCodeVerify = () => {
-            const code = document.getElementById('reg-otp').value;
-            confirmationResult.confirm(code).then(result => {
-                userUid = result.user.uid;
-                checkExistingUser();
-            });
+        window.handleAnonymousAuth = () => {
+            signInAnonymously(auth);
         };
 
-        async function checkExistingUser() {
-            const snap = await getDoc(doc(db, COLL, userUid));
-            if(snap.exists()) {
-                userData = snap.data();
-                showLanding();
-            } else {
-                document.getElementById('otp-section').classList.add('hidden');
-                document.getElementById('profile-section').classList.remove('hidden');
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userUid = user.uid;
+                const snap = await getDoc(doc(db, COLL, userUid));
+                if(snap.exists()) {
+                    userData = snap.data();
+                    showLanding();
+                } else {
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    document.getElementById('profile-setup').classList.remove('hidden');
+                }
             }
-        }
+        });
 
         window.saveProfile = async () => {
             userData = {
                 uid: userUid,
-                name: document.getElementById('reg-name').value,
+                name: document.getElementById('reg-name').value || "Guest",
                 role: document.getElementById('reg-role').value,
                 plate: document.getElementById('reg-plate').value || 'N/A',
-                isOnline: false,
-                history: []
+                isAnonymous: auth.currentUser.isAnonymous,
+                history: [],
+                earnings: 0,
+                tripCount: 0
             };
             await setDoc(doc(db, COLL, userUid), userData);
+            document.getElementById('profile-setup').classList.add('hidden');
             showLanding();
         };
 
-        // --- NAVIGATION LOGIC ---
-        window.showLanding = async () => {
+        // --- RECORDS DISPLAY LOGIC ---
+        window.showLanding = () => {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-ui').classList.add('hidden');
             document.getElementById('landing-page').classList.remove('hidden');
             
             document.getElementById('land-name').innerText = userData.name;
-            document.getElementById('land-role-label').innerText = userData.role.toUpperCase() + (userData.plate !== 'N/A' ? ` (${userData.plate})` : '');
+            const badge = document.getElementById('account-badge');
             
-            // Render History
-            const histList = document.getElementById('history-list');
-            histList.innerHTML = '';
-            userData.history.reverse().forEach(trip => {
+            if(userData.isAnonymous) {
+                badge.innerText = "Guest Account";
+                document.getElementById('history-list').innerHTML = '';
+                document.getElementById('anon-blocker').classList.remove('hidden');
+                document.getElementById('driver-earnings').classList.add('hidden');
+            } else {
+                badge.innerText = "Verified Account";
+                badge.className = "badge bg-green-100 text-green-700";
+                document.getElementById('anon-blocker').classList.add('hidden');
+                renderHistory();
+                
+                if(userData.role === 'driver') {
+                    document.getElementById('driver-earnings').classList.remove('hidden');
+                    document.getElementById('total-earnings').innerText = userData.earnings || 0;
+                    document.getElementById('trip-count').innerText = userData.tripCount || 0;
+                }
+            }
+        };
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            (userData.history || []).reverse().forEach(trip => {
                 const item = document.createElement('div');
-                item.className = "p-4 bg-gray-50 rounded-2xl border-l-4 border-green-500 shadow-sm";
-                item.innerHTML = `<p class="font-black text-sm text-gray-800">${trip.dest}</p>
-                                  <p class="text-[10px] text-gray-400 font-bold">${trip.time} • ${trip.partner}</p>`;
-                histList.appendChild(item);
-            });
-        };
-
-        window.goToApp = () => {
-            document.getElementById('landing-page').classList.add('hidden');
-            document.getElementById('app-ui').classList.remove('hidden');
-            initMap();
-            listenForPeers();
-            if(userData.role === 'driver') listenForIncoming();
-        };
-
-        // --- MAP & CORE APP LOGIC ---
-        function initMap() {
-            if(map) return;
-            map = L.map('map', { zoomControl: false }).setView([myPos.lat, myPos.lng], 15);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            userMarker = L.circleMarker([myPos.lat, myPos.lng], { radius: 8, fillColor: '#2563eb', color: '#fff', weight: 2, fillOpacity: 1 }).addTo(map);
-            
-            navigator.geolocation.watchPosition(p => {
-                myPos = { lat: p.coords.latitude, lng: p.coords.longitude };
-                userMarker.setLatLng([myPos.lat, myPos.lng]);
-                updateDoc(doc(db, COLL, userUid), { lat: myPos.lat, lng: myPos.lng });
+                item.className = "p-4 bg-gray-50 rounded-2xl border-l-4 border-green-500 shadow-sm mb-2";
+                item.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <p class="font-black text-sm">${trip.dest}</p>
+                        <span class="text-[9px] font-bold text-green-600">₱21.00</span>
+                    </div>
+                    <p class="text-[10px] text-gray-400 mt-1">Pick: ${trip.pickup} • End: ${trip.time}</p>
+                `;
+                list.appendChild(item);
             });
         }
 
+        // --- TRIP COMPLETION (Driver Side) ---
         window.completeTrip = async () => {
-            const snap = await getDoc(doc(db, COLL, userUid));
-            const req = snap.data().incomingRequest;
-            
-            const tripRecord = {
+            const req = userData.incomingRequest;
+            const record = {
                 dest: req.dest,
-                time: new Date().toLocaleString(),
-                partner: req.pName
+                pickup: req.pickupName || "Current Location",
+                time: new Date().toLocaleTimeString(),
+                partner: req.pName,
+                fare: 21
             };
 
-            // Update History for both
-            await updateDoc(doc(db, COLL, userUid), { 
-                "incomingRequest.status": 'completed',
-                history: arrayUnion(tripRecord) 
-            });
-            
-            // Note: Passenger side adds to history during rating submit in a real app
-            document.getElementById('trip-card').classList.add('hidden');
-            alert("Trip recorded in history!");
+            const driverRef = doc(db, COLL, userUid);
+            if(!userData.isAnonymous) {
+                await updateDoc(driverRef, {
+                    history: arrayUnion(record),
+                    earnings: increment(21),
+                    tripCount: increment(1),
+                    "incomingRequest.status": 'completed'
+                });
+            } else {
+                await updateDoc(driverRef, { "incomingRequest.status": 'completed' });
+            }
+            alert("Trip Complete!");
         };
 
-        // UI Helpers
         window.togglePlateInput = () => {
-            const role = document.getElementById('reg-role').value;
-            document.getElementById('reg-plate').classList.toggle('hidden', role !== 'driver');
+            document.getElementById('reg-plate').classList.toggle('hidden', document.getElementById('reg-role').value !== 'driver');
         };
-        
-        // (Include v7 methods: listenForPeers, listenForIncoming, acceptRide, toggleDuty, etc.)
-        // Ensure they use the "userData" and "COLL" variables defined here.
+
+        window.goToApp = () => { /* Load Leaflet Map & GPS tracking */ };
     </script>
 </body>
 </html>
