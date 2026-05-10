@@ -27,7 +27,7 @@
             <h1 class="text-5xl font-black tracking-tighter">IsulanTrike</h1>
             <p class="opacity-80 font-medium">Premium Real-time Transport</p>
         </div>
-        <div class="space-y-4 w-full max-w-sm mx-auto">
+        <div class="space-y-4 w-full max-w-sm mx-auto" id="auth-inputs">
             <input id="auth-email" type="email" placeholder="Email" class="w-full p-5 bg-white/10 border border-white/20 rounded-2xl outline-none font-bold placeholder:text-white/50">
             <input id="auth-pass" type="password" placeholder="Password" class="w-full p-5 bg-white/10 border border-white/20 rounded-2xl outline-none font-bold placeholder:text-white/50">
             <button onclick="handleAuth('login')" class="w-full py-5 bg-white text-emerald-700 rounded-2xl font-black shadow-xl">Sign In</button>
@@ -77,10 +77,10 @@
                     <p class="text-xs font-black text-emerald-600 uppercase mb-2">Current Passenger</p>
                     <h2 id="current-p-name" class="text-2xl font-black mb-1">...</h2>
                     <p id="current-p-dest" class="text-sm font-bold text-gray-500 italic mb-6">...</p>
-                    <button onclick="completeTrip()" class="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black shadow-lg">MARK AS ARRIVED</button>
+                    <button id="complete-trip-btn" onclick="completeTrip()" class="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black shadow-lg">MARK AS ARRIVED</button>
                 </div>
                 <div id="driver-offline-ui">
-                    <button id="duty-btn" onclick="toggleDuty()" class="w-full py-8 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl">GO ONLINE</button>
+                    <button id="duty-btn" onclick="toggleDuty()" class="w-full py-8 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl transition-all">GO ONLINE</button>
                 </div>
             </div>
         </div>
@@ -126,7 +126,6 @@
         import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // CONFIG: Ensure these are replaced with your actual keys
         const firebaseConfig = {
             apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
   authDomain: "isulantrike.firebaseapp.com",
@@ -164,15 +163,37 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 userUid = user.uid;
-                const snap = await getDoc(doc(db, COLL_PATH, userUid));
-                if(snap.exists()) { 
-                    userData = snap.data(); 
-                    launchApp(); 
+                const userDocRef = doc(db, COLL_PATH, userUid);
+                const snap = await getDoc(userDocRef);
+                
+                if (snap.exists()) {
+                    userData = snap.data();
+                    launchApp();
                 } else {
-                    alert("Account not initialized in DB.");
+                    // NEW USER INITIALIZATION (Passenger or Driver)
+                    const role = confirm("Log in as a Driver? (Cancel for Passenger)") ? "driver" : "passenger";
+                    const name = prompt("Enter your Full Name:") || "User " + userUid.slice(0,4);
+                    
+                    userData = {
+                        name: name,
+                        role: role,
+                        isOnline: false,
+                        tripCount: 0,
+                        totalRating: 0,
+                        lat: 6.6294,
+                        lng: 124.605
+                    };
+
+                    if (role === "driver") {
+                        userData.plate = prompt("Enter your Trike Plate Number:") || "ABC-123";
+                    }
+
+                    await setDoc(userDocRef, userData);
+                    launchApp();
                 }
-            } else { 
-                document.getElementById('auth-screen').classList.remove('hidden'); 
+            } else {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('app-ui').classList.add('hidden');
             }
         });
 
@@ -181,10 +202,15 @@
             document.getElementById('app-ui').classList.replace('hidden', 'flex');
             document.getElementById('user-display').innerText = userData.name;
             document.getElementById('role-display').innerText = userData.role;
+            
+            document.getElementById('passenger-panel').classList.add('hidden');
+            document.getElementById('driver-panel').classList.add('hidden');
             document.getElementById(userData.role + '-panel').classList.remove('hidden');
             
-            map = L.map('map', { zoomControl: false, attributionControl: false }).setView([6.6294, 124.605], 15);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+            if (!map) {
+                map = L.map('map', { zoomControl: false, attributionControl: false }).setView([6.6294, 124.605], 15);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+            }
 
             if (navigator.geolocation) {
                 navigator.geolocation.watchPosition(pos => {
@@ -214,17 +240,15 @@
                         return;
                     }
 
-                    // Render Online Drivers for Passengers
                     if(userData.role === 'passenger' && data.role === 'driver' && data.isOnline) {
                         renderDriverCard(dId, data);
                     }
 
-                    // FIX: Reliable "Arrived" detection
+                    // PASSENGER RATING TRIGGER: Detect if our specific driver finished the trip
                     if(userData.role === 'passenger' && currentBookingDriverId === dId) {
                         if(data.lastFinishedTrip?.pId === userUid) {
                             document.getElementById('rating-modal').classList.remove('hidden');
                             document.getElementById('p-status-box').classList.add('hidden');
-                            // currentBookingDriverId remains set until rating is submitted
                         }
                     }
                 });
@@ -232,7 +256,6 @@
         }
 
         function handleInternalLogic(data) {
-            // Driver-side UI logic
             if(userData.role === 'driver') {
                 if(data.request) {
                     document.getElementById('driver-offline-ui').classList.add('hidden');
@@ -246,12 +269,12 @@
             }
         }
 
-        // PASSENGER FUNCTIONS
+        // PASSENGER ACTIONS
         window.bookDriver = async (dId) => {
             const dest = document.getElementById('dest-input').value;
             if(!dest) return alert("Enter destination");
             
-            currentBookingDriverId = dId; // Store who we are booking
+            currentBookingDriverId = dId;
             await updateDoc(doc(db, COLL_PATH, dId), { 
                 request: { pId: userUid, pName: userData.name, dest, status: 'pending' } 
             });
@@ -260,7 +283,6 @@
             document.getElementById('p-status-text').innerText = "Waiting for Driver...";
         };
 
-        // FIX: Missing Cancel Logic
         window.cancelBooking = async () => {
             if(!currentBookingDriverId) return;
             try {
@@ -271,7 +293,7 @@
             } catch (err) { console.error(err); }
         };
 
-        // RATING LOGIC
+        // RATING SYSTEM
         window.setRating = (val) => {
             currentRating = val;
             const stars = document.querySelectorAll('.star-rating i');
@@ -288,15 +310,16 @@
             }
             document.getElementById('rating-modal').classList.add('hidden');
             currentBookingDriverId = null;
-            location.reload(); // Refresh to clean state
+            location.reload(); 
         };
 
-        // DRIVER FUNCTIONS
+        // DRIVER ACTIONS
         window.completeTrip = async () => {
             const req = userData.request;
             await updateDoc(doc(db, COLL_PATH, userUid), {
                 lastFinishedTrip: { ...req, time: Date.now() },
-                request: deleteField()
+                request: deleteField(),
+                tripCount: increment(1)
             });
         };
 
