@@ -16,6 +16,7 @@
         .animate-pop { animation: pop 0.3s ease-out; }
         @keyframes pop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .star-rating i.active { color: #facc15; }
+        .custom-div-icon { background: none; border: none; }
     </style>
 </head>
 <body class="bg-gray-50 flex flex-col h-screen">
@@ -110,12 +111,11 @@
         const COLL_PATH = `artifacts/isulan-trike-2026/public/data/users`;
 
         let userUid, userData, map, unsubscribe, currentRating = 0, lastDriverId = null, lastUpdate = 0;
-        let markers = {}; // Global marker registry to prevent "ghosting"
+        let markers = {}; 
 
-        const trikeIcon = L.divIcon({ html: '<i class="fa-solid fa-motorcycle text-emerald-600 text-2xl"></i>', className: 'custom-div-icon', iconSize: [30, 30], iconAnchor: [15, 15] });
-        const userIcon = L.divIcon({ html: '<i class="fa-solid fa-person-pin text-blue-600 text-2xl"></i>', className: 'custom-div-icon', iconSize: [30, 30], iconAnchor: [15, 15] });
+        const trikeIcon = L.divIcon({ html: '<i class="fa-solid fa-motorcycle text-emerald-600 text-3xl drop-shadow-md"></i>', className: 'custom-div-icon', iconSize: [30, 30], iconAnchor: [15, 15] });
+        const userIcon = L.divIcon({ html: '<i class="fa-solid fa-person-pin text-blue-600 text-3xl drop-shadow-md"></i>', className: 'custom-div-icon', iconSize: [30, 30], iconAnchor: [15, 15] });
 
-        // AUTH
         window.handleAuth = async (type) => {
             const e = document.getElementById('auth-email').value;
             const p = document.getElementById('auth-pass').value;
@@ -166,7 +166,7 @@
 
         async function updatePos(lat, lng) {
             const now = Date.now();
-            if(now - lastUpdate < 4000) return; // Throttling for responsiveness
+            if(now - lastUpdate < 5000) return; 
             lastUpdate = now;
             await updateDoc(doc(db, COLL_PATH, userUid), { lat, lng });
         }
@@ -177,6 +177,8 @@
                 const list = document.getElementById('driver-list');
                 if(userData.role === 'passenger') list.innerHTML = '';
 
+                let activeParticipants = [];
+
                 snap.forEach(dDoc => {
                     const data = dDoc.data();
                     const id = dDoc.id;
@@ -184,41 +186,48 @@
                     if(id === userUid) {
                         userData = data;
                         syncUI(data);
+                        activeParticipants.push([data.lat, data.lng]);
                     } else {
-                        updateMarkers(id, data);
-                        if(userData.role === 'passenger' && data.role === 'driver' && data.isOnline && !data.request) {
-                            renderDriverCard(id, data);
+                        // Logic to show markers
+                        const isRelevantDriver = userData.role === 'passenger' && data.role === 'driver' && data.isOnline;
+                        const isMyPassenger = userData.role === 'driver' && userData.request?.pId === id;
+                        const isMyDriver = userData.role === 'passenger' && userData.request?.dId === id;
+
+                        if((isRelevantDriver || isMyPassenger || isMyDriver) && data.lat) {
+                            const icon = data.role === 'driver' ? trikeIcon : userIcon;
+                            if(!markers[id]) markers[id] = L.marker([data.lat, data.lng], { icon }).addTo(map);
+                            else markers[id].setLatLng([data.lat, data.lng]);
+                            
+                            // If it's the person I'm on a trip with, track them for the camera focus
+                            if(isMyPassenger || isMyDriver) activeParticipants.push([data.lat, data.lng]);
+                        } else if(markers[id]) {
+                            map.removeLayer(markers[id]);
+                            delete markers[id];
                         }
-                        // Detect arrival
+
+                        if(isRelevantDriver && !data.request) renderDriverCard(id, data);
+                        
                         if(userData.role === 'passenger' && data.lastFinishedTrip?.pId === userUid) {
                             lastDriverId = id;
                             document.getElementById('rating-modal').classList.remove('hidden');
                         }
                     }
                 });
+
+                // AUTO FOCUS MAP: If on a trip, zoom to show both people
+                if(activeParticipants.length > 1 && userData.request?.status === 'accepted') {
+                    map.fitBounds(L.latLngBounds(activeParticipants), { padding: [50, 50] });
+                }
             });
-        }
-
-        function updateMarkers(id, data) {
-            // Logic to show passenger on driver map OR show all drivers on passenger map
-            const shouldShow = (userData.role === 'driver' && userData.request?.pId === id) || 
-                               (userData.role === 'passenger' && data.role === 'driver' && data.isOnline);
-
-            if(shouldShow && data.lat) {
-                const icon = data.role === 'driver' ? trikeIcon : userIcon;
-                if(!markers[id]) markers[id] = L.marker([data.lat, data.lng], { icon }).addTo(map);
-                else markers[id].setLatLng([data.lat, data.lng]);
-            } else if(markers[id]) {
-                map.removeLayer(markers[id]);
-                delete markers[id];
-            }
         }
 
         function syncUI(data) {
             if(userData.role === 'driver') {
                 const box = document.getElementById('d-active-box');
+                const duty = document.getElementById('duty-btn');
                 if(data.request) {
-                    if(data.request.status === 'pending' && confirm("New Trip Request?")) {
+                    duty.classList.add('hidden');
+                    if(data.request.status === 'pending' && confirm(`New booking from ${data.request.pName} to ${data.request.dest}?`)) {
                         updateDoc(doc(db, COLL_PATH, userUid), { "request.status": "accepted" });
                     }
                     if(data.request.status === 'accepted') {
@@ -226,12 +235,15 @@
                         document.getElementById('current-p-name').innerText = data.request.pName;
                         document.getElementById('current-p-dest').innerText = data.request.dest;
                     }
-                } else box.classList.add('hidden');
+                } else {
+                    box.classList.add('hidden');
+                    duty.classList.remove('hidden');
+                }
             } else {
                 const sBox = document.getElementById('p-status-box');
                 if(data.request) {
                     sBox.classList.remove('hidden');
-                    document.getElementById('p-status-text').innerText = data.request.status === 'accepted' ? "Driver is coming!" : "Waiting for driver...";
+                    document.getElementById('p-status-text').innerText = data.request.status === 'accepted' ? "Driver is on the way!" : "Waiting for driver...";
                 } else sBox.classList.add('hidden');
             }
         }
@@ -240,13 +252,13 @@
             const s = !userData.isOnline;
             const b = document.getElementById('duty-btn');
             b.innerText = s ? "GO OFFLINE" : "GO ONLINE";
-            b.className = s ? "w-full py-12 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl" : "w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl";
+            b.className = s ? "w-full py-12 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl shadow-lg" : "w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl";
             await updateDoc(doc(db, COLL_PATH, userUid), { isOnline: s });
         };
 
         window.bookDriver = async (dId) => {
             const dest = document.getElementById('dest-input').value;
-            if(!dest) return alert("Where to?");
+            if(!dest) return alert("Enter destination");
             await updateDoc(doc(db, COLL_PATH, dId), { request: { pId: userUid, pName: userData.name, dest, status: 'pending' } });
             await updateDoc(doc(db, COLL_PATH, userUid), { request: { dId, status: 'pending' } });
         };
@@ -262,20 +274,22 @@
         };
 
         window.submitRating = async () => {
+            if(currentRating === 0) return alert("Select rating");
             await updateDoc(doc(db, COLL_PATH, lastDriverId), { totalRating: increment(currentRating), tripCount: increment(1), lastFinishedTrip: deleteField() });
             await updateDoc(doc(db, COLL_PATH, userUid), { request: deleteField() });
             document.getElementById('rating-modal').classList.add('hidden');
+            currentRating = 0;
         };
 
         function renderDriverCard(id, data) {
             const avg = data.tripCount > 0 ? (data.totalRating / data.tripCount).toFixed(1) : "5.0";
             document.getElementById('driver-list').innerHTML += `
-                <div class="p-4 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm">
+                <div class="p-4 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm animate-pop">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fa-solid fa-motorcycle"></i></div>
                         <div><p class="font-black text-gray-800 text-sm">${data.name} <span class="text-amber-400 ml-1"><i class="fa-solid fa-star"></i> ${avg}</span></p></div>
                     </div>
-                    <button onclick="bookDriver('${id}')" class="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black">BOOK</button>
+                    <button onclick="bookDriver('${id}')" class="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black active:scale-95 transition">BOOK</button>
                 </div>`;
         }
     </script>
