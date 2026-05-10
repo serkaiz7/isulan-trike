@@ -1,0 +1,12 @@
+{
+  "name": "isulan-trike",
+  "version": "1.0.0",
+  "description": "Mobile server for Isulan Sultan Kudarat Trike App",
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "scripts": {
+    "start": "node server.js"
+  }
+}
