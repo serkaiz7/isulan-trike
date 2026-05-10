@@ -12,11 +12,7 @@
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; }
         #map { height: 40vh; width: 100%; z-index: 1; transition: height 0.3s ease; }
-        #map.hidden-map { height: 0vh; }
         .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        .marker-label { background: white; border-radius: 6px; padding: 2px 6px; font-size: 10px; font-weight: 800; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #eee; white-space: nowrap; }
-        .star-btn { font-size: 32px; color: #d1d5db; cursor: pointer; transition: color 0.2s; }
-        .star-btn.active { color: #facc15; }
         .animate-pop { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes pop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .custom-scroll::-webkit-scrollbar { width: 4px; }
@@ -69,49 +65,71 @@
                     <p id="role-display" class="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Passenger</p>
                 </div>
             </div>
-            <div class="flex gap-2">
-                <button id="toggle-map-btn" onclick="toggleMap()" class="p-3 text-emerald-600 bg-emerald-50 rounded-xl"><i class="fa-solid fa-map"></i></button>
-                <button onclick="location.reload()" class="p-3 text-red-500 bg-red-50 rounded-xl"><i class="fa-solid fa-power-off"></i></button>
-            </div>
+            <button onclick="location.reload()" class="p-3 text-red-500 bg-red-50 rounded-xl"><i class="fa-solid fa-power-off"></i></button>
         </div>
 
         <div id="content-panel" class="flex-1 bg-white rounded-t-[2.5rem] -mt-8 z-[1001] shadow-[0_-15px_40px_rgba(0,0,0,0.08)] p-6 overflow-y-auto custom-scroll">
             <div class="w-12 h-1 bg-gray-100 rounded-full mx-auto mb-6"></div>
 
+            <!-- Passenger View -->
             <div id="passenger-panel" class="hidden">
-                <div id="active-ride-status" class="hidden mb-6 bg-blue-600 text-white p-5 rounded-3xl animate-pop">
-                    <p class="text-[10px] font-black uppercase opacity-70 tracking-widest">Ongoing Trip</p>
-                    <p id="status-driver-text" class="text-lg font-black italic">Waiting for response...</p>
+                <div id="p-status-box" class="hidden mb-6 p-5 rounded-3xl animate-pop bg-blue-600 text-white">
+                    <div class="flex justify-between items-start mb-2">
+                        <p class="text-[10px] font-black uppercase opacity-70">Ride Status</p>
+                        <button onclick="cancelBooking()" class="text-[10px] bg-white/20 px-2 py-1 rounded-lg">Cancel</button>
+                    </div>
+                    <p id="p-status-text" class="text-lg font-black italic">Requesting...</p>
                 </div>
+
                 <div class="mb-6 relative">
                     <i class="fa-solid fa-location-dot absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500"></i>
                     <input id="dest-input" type="text" placeholder="Where are you going?" class="w-full p-5 pl-12 bg-gray-50 rounded-2xl outline-none font-bold border-2 border-transparent focus:border-emerald-500 transition-all">
                 </div>
+                
+                <h3 class="font-black text-gray-800 mb-4 text-sm uppercase tracking-widest">Available Near You</h3>
                 <div id="driver-list" class="space-y-3 mb-8"></div>
             </div>
 
+            <!-- Driver View -->
             <div id="driver-panel" class="hidden">
-                <div id="driver-active-trip" class="hidden w-full p-6 bg-emerald-50 border-2 border-emerald-200 rounded-[2.5rem] mb-6 text-center animate-pop">
+                <div id="d-active-box" class="hidden w-full p-6 bg-emerald-50 border-2 border-emerald-200 rounded-[2.5rem] mb-6 text-center animate-pop">
+                    <p class="text-xs font-black text-emerald-600 uppercase mb-2">Current Passenger</p>
                     <h2 id="current-p-name" class="text-2xl font-black mb-1">...</h2>
-                    <p id="current-p-dest" class="text-sm font-bold text-gray-500 mb-6">Loading destination...</p>
-                    <button onclick="completeTrip()" class="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black shadow-lg">FINISH RIDE</button>
+                    <p id="current-p-dest" class="text-sm font-bold text-gray-500 mb-6 italic">...</p>
+                    <button onclick="completeTrip()" class="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black shadow-lg">COMPLETE TRIP</button>
                 </div>
-                <div id="driver-offline-ui" class="mb-8">
+                <div id="driver-offline-ui">
                     <button id="duty-btn" onclick="toggleDuty()" class="w-full py-8 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl">GO ONLINE</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- FIREBASE MODULE -->
+    <!-- Incoming Request Modal (For Driver) -->
+    <div id="request-modal" class="hidden fixed inset-0 z-[6000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[3rem] p-8 shadow-2xl animate-pop text-center">
+            <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fa-solid fa-bell animate-bounce"></i>
+            </div>
+            <h3 class="text-2xl font-black italic mb-1">New Booking!</h3>
+            <p id="modal-p-name" class="font-bold text-gray-800">Passenger Name</p>
+            <div class="my-6 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Destination</p>
+                <p id="modal-p-dest" class="font-bold text-emerald-600 italic">...</p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="rejectBooking()" class="flex-1 py-4 font-bold text-gray-400">Decline</button>
+                <button onclick="acceptBooking()" class="flex-[2] py-4 bg-emerald-600 text-white rounded-2xl font-black">ACCEPT</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField, increment, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ==========================================
-        // 1. PASTE YOUR FIREBASE CONFIG HERE
-        // ==========================================
+        // CONFIGURATION
         const firebaseConfig = {
             apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
   authDomain: "isulantrike.firebaseapp.com",
@@ -125,12 +143,11 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = "isulan-trike-2026";
-        const COLL_PATH = `artifacts/${appId}/public/data/users`;
+        const COLL_PATH = `artifacts/isulan-trike-2026/public/data/users`;
 
-        let userUid, userData, map, userMarker, peerMarkers = {}, currentRating = 0, activeDriverId = null;
+        let userUid, userData, activeTargetId;
 
-        // AUTH HANDLERS
+        // AUTH & SETUP
         window.handleAuth = async (type) => {
             const e = document.getElementById('auth-email').value;
             const p = document.getElementById('auth-pass').value;
@@ -145,21 +162,17 @@
             if (user) {
                 userUid = user.uid;
                 const snap = await getDoc(doc(db, COLL_PATH, userUid));
-                if(snap.exists()) {
-                    userData = snap.data();
-                    launchApp();
-                } else {
-                    document.getElementById('auth-screen').classList.add('hidden');
-                    document.getElementById('setup-screen').classList.remove('hidden');
-                }
+                if(snap.exists()) { userData = snap.data(); launchApp(); }
+                else { document.getElementById('auth-screen').classList.add('hidden'); document.getElementById('setup-screen').classList.remove('hidden'); }
             }
         });
 
         window.saveInitialProfile = async () => {
             const name = document.getElementById('setup-name').value;
             const role = document.getElementById('setup-role').value;
-            if(!name) return alert("Enter your name");
-            userData = { uid: userUid, name, role, rating: 5, totalRates: 0, earnings: 0, isOnline: false, history: [] };
+            const plate = document.getElementById('setup-plate').value;
+            if(!name) return alert("Name required");
+            userData = { uid: userUid, name, role, plate: plate || 'N/A', isOnline: false };
             await setDoc(doc(db, COLL_PATH, userUid), userData);
             launchApp();
         };
@@ -171,33 +184,81 @@
             document.getElementById('user-display').innerText = userData.name;
             document.getElementById('role-display').innerText = userData.role;
             document.getElementById(userData.role + '-panel').classList.remove('hidden');
-            initMap();
-            listenForPeers();
-        }
-
-        function initMap() {
-            map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 15);
+            
+            // Map Setup
+            const map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 15);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-            userMarker = L.circleMarker([6.6294, 124.605], { radius: 10, color: '#fff', fillColor: '#10b981', fillOpacity: 1, weight: 4 }).addTo(map);
-        }
 
-        function listenForPeers() {
+            // Real-time listener for Peers & Requests
             onSnapshot(collection(db, COLL_PATH), snap => {
                 if(userData.role === 'passenger') document.getElementById('driver-list').innerHTML = '';
+                
                 snap.forEach(dDoc => {
                     const data = dDoc.data();
-                    if(dDoc.id === userUid) return;
+                    if(dDoc.id === userUid) {
+                        // Check if Driver has an incoming request
+                        if(userData.role === 'driver' && data.request?.status === 'pending') {
+                            showRequestModal(data.request);
+                        }
+                        // Check if Driver is now on a trip
+                        if(userData.role === 'driver' && data.request?.status === 'accepted') {
+                            showDriverTrip(data.request);
+                        }
+                        return;
+                    }
+
+                    // For Passengers: Show Online Drivers
                     if(userData.role === 'passenger' && data.role === 'driver' && data.isOnline) {
-                        document.getElementById('driver-list').innerHTML += `
-                            <div class="p-5 bg-white border rounded-2xl flex justify-between items-center">
-                                <p class="font-black">${data.name}</p>
-                                <button class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold">BOOK</button>
-                            </div>`;
+                        renderDriverCard(dDoc.id, data);
+                    }
+
+                    // For Passengers: Watch if their request is accepted
+                    if(userData.role === 'passenger' && data.request?.pId === userUid) {
+                        updatePassengerStatus(data.name, data.request.status);
                     }
                 });
             });
         }
 
+        // PASSENGER ACTIONS
+        window.bookDriver = async (dId) => {
+            const dest = document.getElementById('dest-input').value;
+            if(!dest) return alert("Please enter destination first!");
+            activeTargetId = dId;
+            await updateDoc(doc(db, COLL_PATH, dId), {
+                request: { pId: userUid, pName: userData.name, dest: dest, status: 'pending' }
+            });
+            document.getElementById('p-status-box').classList.remove('hidden');
+            document.getElementById('p-status-text').innerText = "Waiting for driver...";
+        };
+
+        window.cancelBooking = async () => {
+            if(activeTargetId) await updateDoc(doc(db, COLL_PATH, activeTargetId), { request: deleteField() });
+            document.getElementById('p-status-box').classList.add('hidden');
+        };
+
+        function renderDriverCard(id, data) {
+            document.getElementById('driver-list').innerHTML += `
+                <div class="p-4 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fa-solid fa-motorcycle"></i></div>
+                        <div><p class="font-black text-gray-800 text-sm">${data.name}</p><p class="text-[10px] text-gray-400 font-bold">${data.plate}</p></div>
+                    </div>
+                    <button onclick="bookDriver('${id}')" class="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black">BOOK</button>
+                </div>`;
+        }
+
+        function updatePassengerStatus(dName, status) {
+            const box = document.getElementById('p-status-box');
+            const text = document.getElementById('p-status-text');
+            box.classList.remove('hidden');
+            if(status === 'accepted') {
+                box.classList.replace('bg-blue-600', 'bg-emerald-600');
+                text.innerText = `${dName} is on the way!`;
+            }
+        }
+
+        // DRIVER ACTIONS
         window.toggleDuty = async () => {
             userData.isOnline = !userData.isOnline;
             const btn = document.getElementById('duty-btn');
@@ -205,6 +266,36 @@
             btn.className = userData.isOnline ? "w-full py-8 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl" : "w-full py-8 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl";
             await updateDoc(doc(db, COLL_PATH, userUid), { isOnline: userData.isOnline });
         };
+
+        function showRequestModal(req) {
+            document.getElementById('modal-p-name').innerText = req.pName;
+            document.getElementById('modal-p-dest').innerText = req.dest;
+            document.getElementById('request-modal').classList.remove('hidden');
+        }
+
+        window.acceptBooking = async () => {
+            await updateDoc(doc(db, COLL_PATH, userUid), { "request.status": 'accepted' });
+            document.getElementById('request-modal').classList.add('hidden');
+        };
+
+        window.rejectBooking = async () => {
+            await updateDoc(doc(db, COLL_PATH, userUid), { request: deleteField() });
+            document.getElementById('request-modal').classList.add('hidden');
+        };
+
+        function showDriverTrip(req) {
+            document.getElementById('driver-offline-ui').classList.add('hidden');
+            document.getElementById('d-active-box').classList.remove('hidden');
+            document.getElementById('current-p-name').innerText = req.pName;
+            document.getElementById('current-p-dest').innerText = "To: " + req.dest;
+        }
+
+        window.completeTrip = async () => {
+            await updateDoc(doc(db, COLL_PATH, userUid), { request: deleteField() });
+            location.reload();
+        };
+
+        window.togglePlateField = () => document.getElementById('setup-plate').classList.toggle('hidden', document.getElementById('setup-role').value !== 'driver');
     </script>
 </body>
 </html>
