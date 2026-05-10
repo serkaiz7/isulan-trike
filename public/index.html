@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IsulanTrike - Realtime</title>
+    <title>IsulanTrike - Realtime GPS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -12,43 +12,66 @@
         #map { height: 100vh; width: 100%; z-index: 1; }
         .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
         .marker-label {
-            background: white; border: 1px solid #ddd; border-radius: 4px;
-            padding: 2px 6px; font-size: 11px; font-weight: bold;
-            position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); white-space: nowrap;
+            background: white; border: 1px solid #ddd; border-radius: 6px;
+            padding: 2px 8px; font-size: 12px; font-weight: 800;
+            position: absolute; top: -38px; left: 50%; transform: translateX(-50%);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); white-space: nowrap; color: #1f2937;
         }
-        .trike-icon { color: #16a34a; font-size: 28px; }
-        .user-icon { color: #2563eb; font-size: 24px; }
+        .trike-icon { color: #16a34a; font-size: 32px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+        .user-icon { color: #2563eb; font-size: 28px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
     </style>
 </head>
 <body class="bg-gray-100 overflow-hidden">
 
+    <!-- Auth Screen -->
     <div id="auth-screen" class="fixed inset-0 z-[2000] bg-green-600 flex flex-col items-center justify-center p-6 text-white text-center">
-        <i class="fa-solid fa-motorcycle text-6xl mb-4"></i>
-        <h1 class="text-4xl font-black mb-2">IsulanTrike</h1>
-        <p class="mb-8 opacity-80">Isulan, Sultan Kudarat - Real-time GPS</p>
-        <input id="username" type="text" placeholder="Enter Full Name" class="w-full max-w-xs p-4 rounded-xl text-gray-900 mb-4 outline-none">
-        <div class="flex gap-4">
-            <button onclick="startApp('passenger')" class="bg-white text-green-700 font-bold px-6 py-3 rounded-xl shadow-lg">Passenger</button>
-            <button onclick="startApp('driver')" class="bg-yellow-400 text-green-900 font-bold px-6 py-3 rounded-xl shadow-lg">Driver</button>
+        <div class="bg-white p-5 rounded-full mb-6 shadow-2xl">
+            <i class="fa-solid fa-motorcycle text-green-600 text-6xl"></i>
+        </div>
+        <h1 class="text-5xl font-black mb-2 tracking-tighter">IsulanTrike</h1>
+        <p class="mb-10 opacity-90 font-medium italic">"Ang Probinsya-Style Grab ng Isulan"</p>
+        
+        <div class="w-full max-w-xs space-y-4">
+            <input id="username" type="text" placeholder="Full Name (e.g. Juan Dela Cruz)" 
+                   class="w-full p-4 rounded-2xl text-gray-900 shadow-lg outline-none font-bold">
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="startApp('passenger')" class="bg-white text-green-700 font-black py-4 rounded-2xl shadow-xl active:scale-95 transition">PASSENGER</button>
+                <button onclick="startApp('driver')" class="bg-yellow-400 text-green-900 font-black py-4 rounded-2xl shadow-xl active:scale-95 transition">DRIVER</button>
+            </div>
         </div>
     </div>
 
+    <!-- App UI -->
     <div id="app-ui" class="hidden relative h-screen">
         <div id="map"></div>
-        <div class="absolute top-4 left-4 right-4 z-[1000] glass p-3 rounded-2xl flex justify-between items-center shadow-lg">
-            <div class="flex items-center gap-2">
-                <div id="role-indicator" class="w-3 h-3 rounded-full bg-gray-400"></div>
-                <span id="user-display" class="font-bold text-gray-800">User</span>
+        
+        <!-- Header -->
+        <div class="absolute top-4 left-4 right-4 z-[1000] glass p-3 rounded-2xl flex justify-between items-center shadow-xl border border-white/50">
+            <div class="flex items-center gap-3">
+                <div id="role-indicator" class="w-4 h-4 rounded-full bg-gray-400 border-2 border-white shadow-sm"></div>
+                <div>
+                    <span id="user-display" class="font-black text-gray-800 block leading-none">User</span>
+                    <span id="role-text" class="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Role</span>
+                </div>
             </div>
-            <button onclick="location.reload()" class="text-red-500 font-bold text-xs">LOGOUT</button>
+            <button onclick="location.reload()" class="bg-red-50 text-red-500 font-black px-4 py-2 rounded-xl text-xs">LOGOUT</button>
         </div>
 
-        <div id="driver-panel" class="hidden absolute bottom-8 left-4 right-4 z-[1000] glass p-6 rounded-3xl shadow-2xl">
+        <!-- Driver Only Panel -->
+        <div id="driver-panel" class="hidden absolute bottom-10 left-4 right-4 z-[1000] glass p-6 rounded-[2rem] shadow-2xl border border-white/50">
             <div class="flex justify-between items-center">
-                <span class="font-black text-xl text-gray-500" id="duty-text">OFFLINE</span>
-                <button id="duty-btn" onclick="toggleDuty()" class="bg-gray-300 px-6 py-2 rounded-full font-bold text-white transition-all">GO ONLINE</button>
+                <div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Duty Status</p>
+                    <h3 id="duty-status-label" class="text-2xl font-black text-gray-300 italic">OFFLINE</h3>
+                </div>
+                <button id="duty-btn" onclick="toggleDuty()" class="bg-gray-300 px-8 py-3 rounded-2xl font-black text-white shadow-lg transition-all active:scale-95">GO ONLINE</button>
             </div>
+        </div>
+
+        <!-- Passenger Only Panel -->
+        <div id="passenger-panel" class="hidden absolute bottom-10 left-4 right-4 z-[1000] glass p-6 rounded-[2rem] shadow-2xl border border-white/50">
+            <input type="text" id="dest" placeholder="Saan tayo sa Isulan?" class="w-full p-4 bg-gray-50 rounded-xl mb-4 border border-gray-100 outline-none font-bold">
+            <button onclick="alert('Searching for nearby drivers...')" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-lg">FIND A TRIKE</button>
         </div>
     </div>
 
@@ -57,94 +80,118 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // REPLACE WITH YOUR FIREBASE CONFIG
+        // === PASTE YOUR FIREBASE KEYS HERE ===
         const firebaseConfig = {
-  apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
+            apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
   authDomain: "isulantrike.firebaseapp.com",
   projectId: "isulantrike",
   storageBucket: "isulantrike.firebasestorage.app",
   messagingSenderId: "262164007490",
   appId: "1:262164007490:web:2ba9c91b468bbd09ff3bdb",
   measurementId: "G-3K2TEVV4X5"
-};
+        };
         
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const appId = "isulan-trike-v1";
+        const COLL_PATH = "isulan_trike_users"; 
 
-        let map, userMarker, userUid, currentRole;
+        let map, userMarker, userUid, currentRole, userName;
         let peerMarkers = {};
 
         window.startApp = async (role) => {
-            const name = document.getElementById('username').value;
-            if(!name) return alert("Enter your name");
+            userName = document.getElementById('username').value;
+            if(!userName) return alert("Please enter your name!");
             
             currentRole = role;
-            const cred = await signInAnonymously(auth);
-            userUid = cred.user.uid;
+            try {
+                const cred = await signInAnonymously(auth);
+                userUid = cred.user.uid;
+                
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app-ui').classList.remove('hidden');
+                document.getElementById('user-display').innerText = userName;
+                document.getElementById('role-text').innerText = role;
 
-            document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('app-ui').classList.remove('hidden');
-            document.getElementById('user-display').innerText = name;
-            
-            if(role === 'driver') document.getElementById('driver-panel').classList.remove('hidden');
+                if(role === 'driver') document.getElementById('driver-panel').classList.remove('hidden');
+                else document.getElementById('passenger-panel').classList.remove('hidden');
 
-            initMap();
-            setupCloudSync(name);
+                initMap();
+                setupCloudSync();
+            } catch(e) { alert("Firebase Error: Make sure Anonymous Auth is enabled!"); }
         };
 
         function initMap() {
+            // Centered on Isulan Capitol
             map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 15);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            userMarker = L.circleMarker([6.6294, 124.605], { radius: 8, fillColor: '#2563eb', color: '#fff', weight: 2, fillOpacity: 1 }).addTo(map);
+            
+            userMarker = L.circleMarker([6.6294, 124.605], { 
+                radius: 10, fillColor: '#2563eb', color: '#fff', weight: 3, fillOpacity: 1 
+            }).addTo(map).bindPopup("You are here");
+
+            // Add local Isulan markers
+            L.marker([6.6322, 124.6052]).addTo(map).bindPopup("Isulan Public Market");
         }
 
-        async function setupCloudSync(name) {
-            const userRef = doc(db, 'users', userUid);
-            await setDoc(userRef, { name, role: currentRole, lat: 6.6294, lng: 124.605, isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
+        async function setupCloudSync() {
+            const userRef = doc(db, COLL_PATH, userUid);
+            await setDoc(userRef, { 
+                name: userName, role: currentRole, lat: 6.6294, lng: 124.605, 
+                isOnline: false, lastSeen: serverTimestamp() 
+            }, { merge: true });
 
             navigator.geolocation.watchPosition(async (pos) => {
                 const { latitude, longitude } = pos.coords;
                 userMarker.setLatLng([latitude, longitude]);
                 await updateDoc(userRef, { lat: latitude, lng: longitude, lastSeen: serverTimestamp() });
-            }, (err) => console.error(err), { enableHighAccuracy: true });
+            }, null, { enableHighAccuracy: true });
 
-            onSnapshot(collection(db, 'users'), (snap) => {
+            onSnapshot(collection(db, COLL_PATH), (snap) => {
                 snap.docChanges().forEach(change => {
                     const data = change.doc.data();
-                    if(change.doc.id === userUid) return;
+                    const id = change.doc.id;
+                    if(id === userUid) return;
+
                     if(!data.isOnline) {
-                        if(peerMarkers[change.doc.id]) { map.removeLayer(peerMarkers[change.doc.id]); delete peerMarkers[change.doc.id]; }
-                        return;
+                        if(peerMarkers[id]) { map.removeLayer(peerMarkers[id]); delete peerMarkers[id]; }
+                    } else {
+                        updatePeerMarker(id, data);
                     }
-                    updateMarker(change.doc.id, data);
                 });
             });
         }
 
-        function updateMarker(id, data) {
-            const html = `<div class="relative"><div class="marker-label">${data.name}</div><i class="fa-solid ${data.role === 'driver' ? 'fa-motorcycle trike-icon' : 'fa-person-walking user-icon'}"></i></div>`;
-            const icon = L.divIcon({ className: 'custom-icon', html, iconSize: [30,30], iconAnchor: [15,15] });
-            if(peerMarkers[id]) peerMarkers[id].setLatLng([data.lat, data.lng]).setIcon(icon);
-            else peerMarkers[id] = L.marker([data.lat, data.lng], { icon }).addTo(map);
+        function updatePeerMarker(id, data) {
+            const iconHtml = `
+                <div class="relative">
+                    <div class="marker-label">${data.name}</div>
+                    <i class="fa-solid ${data.role === 'driver' ? 'fa-motorcycle trike-icon' : 'fa-person-walking user-icon'}"></i>
+                </div>`;
+            const icon = L.divIcon({ className: 'custom-div', html: iconHtml, iconSize: [30,30], iconAnchor: [15,15] });
+            
+            if(peerMarkers[id]) {
+                peerMarkers[id].setLatLng([data.lat, data.lng]).setIcon(icon);
+            } else {
+                peerMarkers[id] = L.marker([data.lat, data.lng], { icon }).addTo(map);
+            }
         }
 
         window.toggleDuty = async () => {
-            const userRef = doc(db, 'users', userUid);
+            const userRef = doc(db, COLL_PATH, userUid);
             const btn = document.getElementById('duty-btn');
-            const txt = document.getElementById('duty-text');
+            const lbl = document.getElementById('duty-status-label');
             const dot = document.getElementById('role-indicator');
 
             if(btn.innerText === "GO ONLINE") {
                 await updateDoc(userRef, { isOnline: true });
                 btn.innerText = "GO OFFLINE"; btn.classList.replace('bg-gray-300', 'bg-red-500');
-                txt.innerText = "ONLINE"; txt.classList.replace('text-gray-500', 'text-green-600');
+                lbl.innerText = "ONLINE"; lbl.classList.replace('text-gray-300', 'text-green-600');
                 dot.classList.replace('bg-gray-400', 'bg-green-500');
             } else {
                 await updateDoc(userRef, { isOnline: false });
                 btn.innerText = "GO ONLINE"; btn.classList.replace('bg-red-500', 'bg-gray-300');
-                txt.innerText = "OFFLINE"; txt.classList.replace('text-green-600', 'text-gray-500');
+                lbl.innerText = "OFFLINE"; lbl.classList.replace('text-green-600', 'text-gray-300');
                 dot.classList.replace('bg-green-500', 'bg-gray-400');
             }
         };
