@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; touch-action: manipulation; }
         #map { height: 35vh; width: 100%; z-index: 1; transition: 0.3s; }
         .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
         .animate-pop { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
@@ -21,7 +21,6 @@
 </head>
 <body class="bg-gray-50 flex flex-col h-screen">
 
-    <!-- 1. AUTH & SETUP (Same as before but hidden after login) -->
     <div id="auth-screen" class="fixed inset-0 z-[5000] bg-emerald-600 flex flex-col p-8 justify-between text-white">
         <div class="mt-12 text-center">
             <i class="fa-solid fa-motorcycle text-7xl mb-4"></i>
@@ -29,25 +28,23 @@
             <p class="opacity-80 font-medium">Premium Real-time Transport</p>
         </div>
         <div class="space-y-4 w-full max-w-sm mx-auto">
-            <input id="auth-email" type="email" placeholder="Email" class="w-full p-5 bg-white/10 border border-white/20 rounded-2xl outline-none font-bold">
-            <input id="auth-pass" type="password" placeholder="Password" class="w-full p-5 bg-white/10 border border-white/20 rounded-2xl outline-none font-bold">
+            <input id="auth-email" type="email" placeholder="Email" class="w-full p-5 bg-white/10 border border-white/20 rounded-2xl outline-none font-bold placeholder:text-white/50">
+            <input id="auth-pass" type="password" placeholder="Password" class="w-full p-5 bg-white/10 border border-white/20 rounded-2xl outline-none font-bold placeholder:text-white/50">
             <button onclick="handleAuth('login')" class="w-full py-5 bg-white text-emerald-700 rounded-2xl font-black shadow-xl">Sign In</button>
             <button onclick="handleAuth('register')" class="w-full py-5 bg-emerald-700 text-white border-2 border-emerald-500 rounded-2xl font-black">Register</button>
         </div>
     </div>
 
-    <!-- 2. MAIN APP UI -->
     <div id="app-ui" class="hidden flex-col h-full relative">
         <div id="map"></div>
 
-        <!-- Header Panel -->
         <div class="absolute top-4 left-4 right-4 z-[1000] glass p-3 rounded-2xl flex justify-between items-center shadow-lg border border-white/50">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
                     <i class="fa-solid fa-user"></i>
                 </div>
                 <div>
-                    <p id="user-display" class="font-black text-sm text-gray-800">User</p>
+                    <p id="user-display" class="font-black text-sm text-gray-800 italic">User</p>
                     <p id="role-display" class="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Role</p>
                 </div>
             </div>
@@ -60,12 +57,11 @@
         <div id="content-panel" class="flex-1 bg-white rounded-t-[2.5rem] -mt-8 z-[1001] shadow-[0_-15px_40px_rgba(0,0,0,0.08)] p-6 overflow-y-auto">
             <div class="w-12 h-1 bg-gray-100 rounded-full mx-auto mb-6"></div>
 
-            <!-- Passenger Dashboard -->
             <div id="passenger-panel" class="hidden">
                 <div id="p-status-box" class="hidden mb-6 p-5 rounded-3xl animate-pop bg-blue-600 text-white shadow-lg">
                     <div class="flex justify-between items-center mb-2">
-                        <p class="text-[10px] font-black uppercase opacity-70">On Trip</p>
-                        <button onclick="cancelBooking()" class="text-[10px] bg-white/20 px-2 py-1 rounded-lg">Cancel</button>
+                        <p class="text-[10px] font-black uppercase opacity-70">Booking Status</p>
+                        <button onclick="cancelBooking()" class="text-[10px] bg-white/20 px-2 py-1 rounded-lg font-bold">CANCEL</button>
                     </div>
                     <p id="p-status-text" class="text-lg font-black italic">Connecting...</p>
                 </div>
@@ -76,7 +72,6 @@
                 <div id="driver-list" class="space-y-3"></div>
             </div>
 
-            <!-- Driver Dashboard -->
             <div id="driver-panel" class="hidden">
                 <div id="d-active-box" class="hidden w-full p-6 bg-emerald-50 border-2 border-emerald-200 rounded-[2.5rem] mb-6 text-center animate-pop">
                     <p class="text-xs font-black text-emerald-600 uppercase mb-2">Current Passenger</p>
@@ -91,7 +86,6 @@
         </div>
     </div>
 
-    <!-- 3. RATING MODAL -->
     <div id="rating-modal" class="hidden fixed inset-0 z-[7000] bg-black/80 backdrop-blur-md flex items-center justify-center p-6">
         <div class="bg-white w-full max-w-sm rounded-[3rem] p-8 text-center animate-pop">
             <h3 class="text-2xl font-black italic mb-2">You've Arrived!</h3>
@@ -107,7 +101,6 @@
         </div>
     </div>
 
-    <!-- 4. STATS DASHBOARD OVERLAY -->
     <div id="dashboard-overlay" class="hidden fixed inset-0 z-[6500] bg-white p-8 overflow-y-auto">
         <div class="flex justify-between items-center mb-8">
             <h2 class="text-3xl font-black italic">Dashboard</h2>
@@ -133,6 +126,7 @@
         import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // CONFIG: Ensure these are replaced with your actual keys
         const firebaseConfig = {
             apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
   authDomain: "isulantrike.firebaseapp.com",
@@ -148,12 +142,13 @@
         const db = getFirestore(app);
         const COLL_PATH = `artifacts/isulan-trike-2026/public/data/users`;
 
-        let userUid, userData, map, userMarker, currentRating = 0, lastDriverId = null;
+        let userUid, userData, map, userMarker, currentRating = 0, currentBookingDriverId = null;
 
-        // AUTH
+        // AUTH HANDLERS
         window.handleAuth = async (type) => {
             const e = document.getElementById('auth-email').value;
             const p = document.getElementById('auth-pass').value;
+            if(!e || !p) return alert("Please fill all fields");
             try {
                 if(type === 'login') await signInWithEmailAndPassword(auth, e, p);
                 else await createUserWithEmailAndPassword(auth, e, p);
@@ -161,7 +156,7 @@
         };
 
         window.logout = async () => {
-            if(userData.role === 'driver') await updateDoc(doc(db, COLL_PATH, userUid), { isOnline: false });
+            if(userData?.role === 'driver') await updateDoc(doc(db, COLL_PATH, userUid), { isOnline: false });
             await signOut(auth);
             location.reload();
         };
@@ -170,8 +165,15 @@
             if (user) {
                 userUid = user.uid;
                 const snap = await getDoc(doc(db, COLL_PATH, userUid));
-                if(snap.exists()) { userData = snap.data(); launchApp(); }
-            } else { document.getElementById('auth-screen').classList.remove('hidden'); }
+                if(snap.exists()) { 
+                    userData = snap.data(); 
+                    launchApp(); 
+                } else {
+                    alert("Account not initialized in DB.");
+                }
+            } else { 
+                document.getElementById('auth-screen').classList.remove('hidden'); 
+            }
         });
 
         function launchApp() {
@@ -181,16 +183,14 @@
             document.getElementById('role-display').innerText = userData.role;
             document.getElementById(userData.role + '-panel').classList.remove('hidden');
             
-            map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 15);
+            map = L.map('map', { zoomControl: false, attributionControl: false }).setView([6.6294, 124.605], 15);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
 
             if (navigator.geolocation) {
                 navigator.geolocation.watchPosition(pos => {
-                    const { latitude, longitude } = pos.coords;
-                    updateMyPosition(latitude, longitude);
+                    updateMyPosition(pos.coords.latitude, pos.coords.longitude);
                 }, null, { enableHighAccuracy: true });
             }
-
             listenForUpdates();
         }
 
@@ -203,33 +203,75 @@
         function listenForUpdates() {
             onSnapshot(collection(db, COLL_PATH), snap => {
                 if(userData.role === 'passenger') document.getElementById('driver-list').innerHTML = '';
+                
                 snap.forEach(dDoc => {
                     const data = dDoc.data();
-                    if(dDoc.id === userUid) {
+                    const dId = dDoc.id;
+
+                    if(dId === userUid) {
                         userData = data; 
                         handleInternalLogic(data);
                         return;
                     }
-                    if(userData.role === 'passenger' && data.role === 'driver' && data.isOnline) renderDriverCard(dDoc.id, data);
-                    // If Passenger: Detect if Driver marked "Arrived"
-                    if(userData.role === 'passenger' && data.lastFinishedTrip?.pId === userUid) {
-                        lastDriverId = dDoc.id;
-                        document.getElementById('rating-modal').classList.remove('hidden');
+
+                    // Render Online Drivers for Passengers
+                    if(userData.role === 'passenger' && data.role === 'driver' && data.isOnline) {
+                        renderDriverCard(dId, data);
+                    }
+
+                    // FIX: Reliable "Arrived" detection
+                    if(userData.role === 'passenger' && currentBookingDriverId === dId) {
+                        if(data.lastFinishedTrip?.pId === userUid) {
+                            document.getElementById('rating-modal').classList.remove('hidden');
+                            document.getElementById('p-status-box').classList.add('hidden');
+                            // currentBookingDriverId remains set until rating is submitted
+                        }
                     }
                 });
             });
         }
 
         function handleInternalLogic(data) {
-            if(userData.role === 'driver' && data.request?.status === 'accepted') {
-                document.getElementById('driver-offline-ui').classList.add('hidden');
-                document.getElementById('d-active-box').classList.remove('hidden');
-                document.getElementById('current-p-name').innerText = data.request.pName;
-                document.getElementById('current-p-dest').innerText = data.request.dest;
+            // Driver-side UI logic
+            if(userData.role === 'driver') {
+                if(data.request) {
+                    document.getElementById('driver-offline-ui').classList.add('hidden');
+                    document.getElementById('d-active-box').classList.remove('hidden');
+                    document.getElementById('current-p-name').innerText = data.request.pName;
+                    document.getElementById('current-p-dest').innerText = data.request.dest;
+                } else {
+                    document.getElementById('d-active-box').classList.add('hidden');
+                    document.getElementById('driver-offline-ui').classList.remove('hidden');
+                }
             }
         }
 
-        // RATING SYSTEM
+        // PASSENGER FUNCTIONS
+        window.bookDriver = async (dId) => {
+            const dest = document.getElementById('dest-input').value;
+            if(!dest) return alert("Enter destination");
+            
+            currentBookingDriverId = dId; // Store who we are booking
+            await updateDoc(doc(db, COLL_PATH, dId), { 
+                request: { pId: userUid, pName: userData.name, dest, status: 'pending' } 
+            });
+            
+            document.getElementById('p-status-box').classList.remove('hidden');
+            document.getElementById('p-status-text').innerText = "Waiting for Driver...";
+        };
+
+        // FIX: Missing Cancel Logic
+        window.cancelBooking = async () => {
+            if(!currentBookingDriverId) return;
+            try {
+                await updateDoc(doc(db, COLL_PATH, currentBookingDriverId), { request: deleteField() });
+                currentBookingDriverId = null;
+                document.getElementById('p-status-box').classList.add('hidden');
+                alert("Booking cancelled.");
+            } catch (err) { console.error(err); }
+        };
+
+        // RATING LOGIC
         window.setRating = (val) => {
             currentRating = val;
             const stars = document.querySelectorAll('.star-rating i');
@@ -238,64 +280,56 @@
 
         window.submitRating = async () => {
             if(currentRating === 0) return alert("Select stars!");
-            await updateDoc(doc(db, COLL_PATH, lastDriverId), {
-                totalRating: increment(currentRating),
-                tripCount: increment(1)
-            });
+            if(currentBookingDriverId) {
+                await updateDoc(doc(db, COLL_PATH, currentBookingDriverId), {
+                    totalRating: increment(currentRating),
+                    tripCount: increment(1)
+                });
+            }
             document.getElementById('rating-modal').classList.add('hidden');
-            location.reload();
+            currentBookingDriverId = null;
+            location.reload(); // Refresh to clean state
         };
 
+        // DRIVER FUNCTIONS
         window.completeTrip = async () => {
             const req = userData.request;
             await updateDoc(doc(db, COLL_PATH, userUid), {
                 lastFinishedTrip: { ...req, time: Date.now() },
-                request: deleteField(),
-                tripCount: increment(1)
+                request: deleteField()
             });
-            document.getElementById('d-active-box').classList.add('hidden');
-            document.getElementById('driver-offline-ui').classList.remove('hidden');
         };
-
-        // UI HELPERS
-        window.showDashboard = () => {
-            document.getElementById('stat-trips').innerText = userData.tripCount || 0;
-            const avg = userData.totalRating ? (userData.totalRating / userData.tripCount).toFixed(1) : "5.0";
-            document.getElementById('stat-rating').innerText = avg;
-            document.getElementById('dashboard-overlay').classList.remove('hidden');
-        };
-        window.closeDashboard = () => document.getElementById('dashboard-overlay').classList.add('hidden');
 
         window.toggleDuty = async () => {
-            userData.isOnline = !userData.isOnline;
+            const newState = !userData.isOnline;
             const btn = document.getElementById('duty-btn');
-            btn.innerText = userData.isOnline ? "GO OFFLINE" : "GO ONLINE";
-            btn.className = userData.isOnline ? "w-full py-8 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl shadow-lg" : "w-full py-8 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl";
-            await updateDoc(doc(db, COLL_PATH, userUid), { isOnline: userData.isOnline });
+            btn.innerText = newState ? "GO OFFLINE" : "GO ONLINE";
+            btn.className = newState ? "w-full py-8 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl shadow-lg" : "w-full py-8 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl";
+            await updateDoc(doc(db, COLL_PATH, userUid), { isOnline: newState });
         };
 
         function renderDriverCard(id, data) {
-            const avg = data.totalRating ? (data.totalRating / data.tripCount).toFixed(1) : "5.0";
+            const avg = data.tripCount > 0 ? (data.totalRating / data.tripCount).toFixed(1) : "5.0";
             document.getElementById('driver-list').innerHTML += `
                 <div class="p-4 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fa-solid fa-motorcycle"></i></div>
                         <div>
                             <p class="font-black text-gray-800 text-sm">${data.name} <span class="text-amber-400 ml-1"><i class="fa-solid fa-star"></i> ${avg}</span></p>
-                            <p class="text-[10px] text-gray-400 font-bold">${data.plate}</p>
+                            <p class="text-[10px] text-gray-400 font-bold">${data.plate || 'No Plate'}</p>
                         </div>
                     </div>
                     <button onclick="bookDriver('${id}')" class="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black">BOOK</button>
                 </div>`;
         }
 
-        window.bookDriver = async (dId) => {
-            const dest = document.getElementById('dest-input').value;
-            if(!dest) return alert("Enter destination");
-            await updateDoc(doc(db, COLL_PATH, dId), { request: { pId: userUid, pName: userData.name, dest, status: 'pending' } });
-            document.getElementById('p-status-box').classList.remove('hidden');
-            document.getElementById('p-status-text').innerText = "Waiting for Driver...";
+        window.showDashboard = () => {
+            document.getElementById('stat-trips').innerText = userData.tripCount || 0;
+            const avg = userData.tripCount > 0 ? (userData.totalRating / userData.tripCount).toFixed(1) : "5.0";
+            document.getElementById('stat-rating').innerText = avg;
+            document.getElementById('dashboard-overlay').classList.remove('hidden');
         };
+        window.closeDashboard = () => document.getElementById('dashboard-overlay').classList.add('hidden');
     </script>
 </body>
 </html>
