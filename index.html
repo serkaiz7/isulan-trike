@@ -13,7 +13,6 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; touch-action: manipulation; }
         #map { height: 45vh; width: 100%; z-index: 1; background: #e2e8f0; }
         .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2); }
-        .marker-pin { width: 30px; height: 30px; border-radius: 50% 50% 50% 0; background: #10b981; position: absolute; transform: rotate(-45deg); left: 50%; top: 50%; margin: -15px 0 0 -15px; border: 3px solid white; }
     </style>
 </head>
 <body class="bg-slate-50 flex flex-col h-screen">
@@ -47,7 +46,6 @@
 
     <div id="app-ui" class="hidden flex-col h-full relative">
         <div id="map"></div>
-        
         <div id="content-panel" class="flex-1 bg-white rounded-t-[2.5rem] -mt-8 z-[1001] shadow-2xl p-6 overflow-y-auto">
             <div class="w-12 h-1 bg-gray-100 rounded-full mx-auto mb-6"></div>
 
@@ -76,49 +74,84 @@
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
+        // IMPORTANT: REPLACE WITH YOUR ACTUAL CONFIG
+        const firebaseConfig = { 
+            apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
   authDomain: "isulantrike.firebaseapp.com",
   projectId: "isulantrike",
   storageBucket: "isulantrike.firebasestorage.app",
   messagingSenderId: "262164007490",
   appId: "1:262164007490:web:2ba9c91b468bbd09ff3bdb",
-  measurementId: "G-3K2TEVV4X5" };
+  measurementId: "G-3K2TEVV4X5"
+        };
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const COLL = `artifacts/isulan-trike/users`;
+        const COLL = "users"; // Simplified path for reliability
 
         let userUid, userData, map, markers = {};
 
-        // 1. AUTH & GPS FIX
+        // 1. REGISTRATION & LOGIN FIX
+        window.handleAuth = async (type) => {
+            const e = document.getElementById('auth-email').value;
+            const p = document.getElementById('auth-pass').value;
+            if (!e || !p) return alert("Please fill in all fields.");
+
+            try {
+                if (type === 'login') {
+                    await signInWithEmailAndPassword(auth, e, p);
+                } else {
+                    const isDriver = confirm("Register as Driver? (Cancel for Passenger)");
+                    const cred = await createUserWithEmailAndPassword(auth, e, p);
+                    await setDoc(doc(db, COLL, cred.user.uid), {
+                        name: e.split('@')[0],
+                        role: isDriver ? "driver" : "passenger",
+                        isOnline: false,
+                        subscriptionExpiry: 0,
+                        lat: 6.6294,
+                        lng: 124.605
+                    });
+                    location.reload();
+                }
+            } catch (err) { alert("Auth Error: " + err.message); }
+        };
+
         onAuthStateChanged(auth, async (u) => {
             if (u) {
                 userUid = u.uid;
                 const snap = await getDoc(doc(db, COLL, userUid));
-                userData = snap.data();
-                initMap();
-                startTracking();
-                listenToData();
-                document.getElementById('auth-screen').style.display = 'none';
-                document.getElementById('app-ui').classList.replace('hidden', 'flex');
-                document.getElementById(userData.role + '-panel').classList.remove('hidden');
+                if (snap.exists()) {
+                    userData = snap.data();
+                    initApp();
+                }
+            } else {
+                document.getElementById('auth-screen').classList.remove('hidden');
             }
         });
 
-        function initMap() {
+        function initApp() {
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('app-ui').classList.replace('hidden', 'flex');
+            document.getElementById(userData.role + '-panel').classList.remove('hidden');
+            
             map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 15);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+            startTracking();
+            listenToData();
         }
 
+        // 2. GPS TRACKING FIX
         function startTracking() {
             navigator.geolocation.watchPosition(p => {
                 const { latitude, longitude } = p.coords;
                 updateDoc(doc(db, COLL, userUid), { lat: latitude, lng: longitude });
-                map.panTo([latitude, longitude]);
+                if (userData.role === 'passenger') map.panTo([latitude, longitude]);
             }, null, { enableHighAccuracy: true });
         }
 
-        // 2. REAL-TIME DATA & MARKER SYNC
+        // 3. REAL-TIME DATA & MARKER HANDSHAKE
         function listenToData() {
             onSnapshot(collection(db, COLL), (snap) => {
                 const list = document.getElementById('driver-list');
@@ -128,30 +161,26 @@
                     const data = d.data();
                     const id = d.id;
 
-                    // Update UI for the current user (if driver)
                     if (id === userUid) {
                         userData = data;
-                        if (data.role === 'driver' && data.request) {
-                            showBookingUI(data.request);
-                        } else {
-                            document.getElementById('booking-request').classList.add('hidden');
-                        }
+                        if (data.role === 'driver' && data.request) showBookingUI(data.request);
+                        else document.getElementById('booking-request').classList.add('hidden');
                         return;
                     }
 
-                    // Update Map Markers
+                    // Marker logic: update existing or create new
                     if (data.lat && data.lng && (data.isOnline || data.role === 'passenger')) {
-                        if (!markers[id]) {
-                            markers[id] = L.marker([data.lat, data.lng]).addTo(map);
-                        } else {
+                        if (markers[id]) {
                             markers[id].setLatLng([data.lat, data.lng]);
+                        } else {
+                            const icon = L.divIcon({ className: 'custom-icon', html: `<div style="background:${data.role === 'driver' ? '#10b981' : '#3b82f6'}; width:12px; height:12px; border-radius:50%; border:2px solid white;"></div>` });
+                            markers[id] = L.marker([data.lat, data.lng], { icon }).addTo(map);
                         }
                     } else if (markers[id]) {
                         map.removeLayer(markers[id]);
                         delete markers[id];
                     }
 
-                    // List Online Drivers for Passenger
                     if (userData.role === 'passenger' && data.role === 'driver' && data.isOnline) {
                         renderDriverCard(id, data);
                     }
@@ -159,15 +188,14 @@
             });
         }
 
-        // 3. BOOKING LOGIC FIX
+        // 4. BOOKING FLOW
         window.bookDriver = async (driverId) => {
             const dest = document.getElementById('dest-input').value;
-            if (!dest) return alert("Enter destination first!");
-            
+            if (!dest) return alert("Please enter destination.");
             await updateDoc(doc(db, COLL, driverId), {
                 request: { passengerId: userUid, passengerName: userData.name, destination: dest }
             });
-            alert("Request sent! Wait for driver to accept.");
+            alert("Booking request sent!");
         };
 
         function showBookingUI(req) {
@@ -177,20 +205,15 @@
         }
 
         window.respondToBooking = async (accept) => {
-            if (accept) {
-                alert("Trip started! Follow the map.");
-                // Here you would add trip tracking logic
-            }
+            if (accept) alert("Heading to passenger!");
             await updateDoc(doc(db, COLL, userUid), { request: deleteField() });
-        }
+        };
 
-        // 4. GCASH PAYMENT (PAYMONGO INTEGRATION)
+        // 5. GCASH INTEGRATION (PAYMONGO)
         window.payWithGCash = async () => {
             const btn = document.getElementById('pay-btn');
-            btn.innerText = "LINKING GCASH...";
-            
+            btn.innerText = "OPENING GCASH...";
             try {
-                // In Production, move this to a Backend Cloud Function for security
                 const response = await fetch('https://api.paymongo.com/v1/checkout_sessions', {
                     method: 'POST',
                     headers: {
@@ -200,10 +223,8 @@
                     body: JSON.stringify({
                         data: {
                             attributes: {
-                                send_email_receipt: false,
-                                show_description: true,
                                 payment_method_types: ['gcash'],
-                                line_items: [{ currency: 'PHP', amount: 2000, name: '24H Driver Duty Pass', quantity: 1 }],
+                                line_items: [{ currency: 'PHP', amount: 2000, name: '24H Driver Pass', quantity: 1 }],
                                 success_url: window.location.href
                             }
                         }
@@ -211,20 +232,18 @@
                 });
                 const session = await response.json();
                 window.location.href = session.data.attributes.checkout_url;
-            } catch (e) {
-                alert("Payment Error: " + e.message);
-            }
+            } catch (e) { alert("GCash Error: " + e.message); }
         };
 
         window.toggleDuty = () => {
-            const now = Date.now();
-            if (!userData.subscriptionExpiry || now > userData.subscriptionExpiry) {
+            if (Date.now() > userData.subscriptionExpiry) {
                 document.getElementById('payment-modal').classList.remove('hidden');
             } else {
                 const s = !userData.isOnline;
                 updateDoc(doc(db, COLL, userUid), { isOnline: s });
-                document.getElementById('duty-btn').innerText = s ? "GO OFFLINE" : "GO ONLINE";
-                document.getElementById('duty-btn').className = s ? "w-full py-12 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl" : "w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl";
+                const btn = document.getElementById('duty-btn');
+                btn.innerText = s ? "GO OFFLINE" : "GO ONLINE";
+                btn.className = s ? "w-full py-12 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl" : "w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl";
             }
         };
 
@@ -232,7 +251,7 @@
             document.getElementById('driver-list').innerHTML += `
                 <div class="p-4 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm">
                     <p class="font-black text-gray-800">${data.name}</p>
-                    <button onclick="bookDriver('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-black">BOOK NOW</button>
+                    <button onclick="bookDriver('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-black">BOOK</button>
                 </div>`;
         }
     </script>
