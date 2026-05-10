@@ -14,7 +14,8 @@
         .marker-label { background: white; border-radius: 4px; padding: 1px 5px; font-size: 10px; font-weight: 800; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid #eee; }
         .trike-icon { color: #16a34a; font-size: 24px; }
         .user-icon { color: #2563eb; font-size: 24px; }
-        .driver-card:active { background-color: #f0fdf4; scale: 0.98; }
+        .star-btn { font-size: 32px; color: #d1d5db; cursor: pointer; transition: color 0.2s; }
+        .star-btn.active { color: #facc15; }
     </style>
 </head>
 <body class="bg-gray-50 flex flex-col h-screen overflow-hidden">
@@ -30,6 +31,27 @@
                 <button onclick="startApp('passenger')" class="bg-white text-green-700 font-black py-4 rounded-2xl shadow-xl hover:bg-gray-100 transition">PASSENGER</button>
                 <button onclick="startApp('driver')" class="bg-yellow-400 text-green-900 font-black py-4 rounded-2xl shadow-xl hover:bg-yellow-300 transition">DRIVER</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Rating Popup (Passenger Only) -->
+    <div id="rating-modal" class="hidden fixed inset-0 z-[4000] bg-black/60 flex items-center justify-center p-6 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-xs rounded-[2.5rem] p-8 text-center shadow-2xl">
+            <div class="w-20 h-20 bg-yellow-100 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                <i class="fa-solid fa-star"></i>
+            </div>
+            <h3 class="text-2xl font-black text-gray-800 mb-2">Arrived!</h3>
+            <p class="text-gray-500 text-sm mb-6">How was your ride with <span id="rate-driver-name" class="font-bold text-green-600">the driver</span>?</p>
+            
+            <div class="flex justify-center gap-2 mb-8">
+                <i class="fa-solid fa-star star-btn" onclick="setRating(1)"></i>
+                <i class="fa-solid fa-star star-btn" onclick="setRating(2)"></i>
+                <i class="fa-solid fa-star star-btn" onclick="setRating(3)"></i>
+                <i class="fa-solid fa-star star-btn" onclick="setRating(4)"></i>
+                <i class="fa-solid fa-star star-btn" onclick="setRating(5)"></i>
+            </div>
+            
+            <button onclick="submitRating()" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all">Submit Rating</button>
         </div>
     </div>
 
@@ -50,18 +72,17 @@
             <!-- PASSENGER VIEW -->
             <div id="passenger-panel" class="hidden">
                 <div id="status-box-passenger" class="hidden mb-4 bg-blue-600 text-white p-4 rounded-2xl shadow-lg">
-                    <p class="text-[10px] font-bold uppercase opacity-80 tracking-widest">Driver On The Way</p>
-                    <p id="status-driver-info" class="text-lg font-black italic">Driver Accepted Your Ride!</p>
+                    <p class="text-[10px] font-bold uppercase opacity-80 tracking-widest">Active Ride</p>
+                    <p id="status-driver-info" class="text-lg font-black italic">Driver On The Way!</p>
                 </div>
 
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="font-black text-xl text-gray-800">Nearby Drivers</h2>
                     <span class="bg-green-600 text-white px-3 py-1 rounded-full text-[11px] font-black">MIN FARE: ₱21.00</span>
                 </div>
-                <input id="destination-input" type="text" placeholder="Where to in Isulan? (e.g. Kenram)" 
-                       class="w-full p-4 bg-gray-100 rounded-xl mb-4 outline-none font-bold text-gray-800 border-2 border-transparent focus:border-green-500 transition-all">
+                <input id="destination-input" type="text" placeholder="Where to in Isulan?" class="w-full p-4 bg-gray-100 rounded-xl mb-4 outline-none font-bold text-gray-800 border-2 border-transparent focus:border-green-500">
                 <div id="driver-list" class="space-y-3">
-                    <p class="text-center text-gray-400 text-sm py-10 italic">Scanning Isulan for online drivers...</p>
+                    <p class="text-center text-gray-400 text-sm py-10 italic">Scanning Isulan...</p>
                 </div>
             </div>
 
@@ -70,7 +91,7 @@
                 <div id="active-trip-panel" class="hidden mb-6 p-6 bg-green-50 border-2 border-green-200 rounded-3xl">
                     <p class="text-xs font-black text-green-700 uppercase tracking-widest mb-1">Ongoing Trip</p>
                     <p id="trip-details" class="text-lg font-black text-gray-800 mb-4">Passenger Name</p>
-                    <button onclick="completeTrip()" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-lg active:bg-green-700 transition-all">COMPLETE TASK</button>
+                    <button onclick="completeTrip()" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-lg">COMPLETE TASK</button>
                 </div>
 
                 <div id="offline-controls">
@@ -86,13 +107,12 @@
         <div class="bg-green-700 text-white p-6 rounded-3xl shadow-2xl flex flex-col gap-4 border-2 border-white/20">
             <div class="flex justify-between items-start">
                 <div>
-                    <p class="text-[10px] font-bold uppercase opacity-80 tracking-widest text-white/90">New Ride Request!</p>
-                    <h3 id="alert-passenger-name" class="text-2xl font-black">Passenger Name</h3>
+                    <p class="text-[10px] font-bold uppercase opacity-80 tracking-widest">New Ride Request!</p>
+                    <h3 id="alert-passenger-name" class="text-2xl font-black">Name</h3>
                 </div>
                 <i class="fa-solid fa-bell animate-bounce text-xl"></i>
             </div>
             <div class="bg-black/10 p-4 rounded-xl">
-                <p class="text-xs uppercase opacity-70 mb-1">Destination:</p>
                 <p id="alert-destination" class="text-lg font-bold">---</p>
             </div>
             <div class="flex gap-2">
@@ -105,9 +125,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, updateDoc, serverTimestamp, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, updateDoc, serverTimestamp, deleteField, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // === REPLACE WITH YOUR FIREBASE KEYS ===
         const firebaseConfig = { apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
   authDomain: "isulantrike.firebaseapp.com",
   projectId: "isulantrike",
@@ -115,15 +134,14 @@
   messagingSenderId: "262164007490",
   appId: "1:262164007490:web:2ba9c91b468bbd09ff3bdb",
   measurementId: "G-3K2TEVV4X5" };
-        
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const COLL = "isulan_v4_tasks"; 
+        const COLL = "isulan_v5_rating"; 
 
-        let map, userMarker, userUid, currentRole, userName, myPos = {lat: 6.6294, lng: 124.605};
-        let peerMarkers = {};
-        let pickupMarker;
+        let userUid, currentRole, userName, myPos = {lat: 6.6294, lng: 124.605};
+        let peerMarkers = {}, currentRating = 0, activeDriverId = null;
+        let map, userMarker, pickupMarker;
 
         window.startApp = async (role) => {
             userName = document.getElementById('username').value;
@@ -136,15 +154,13 @@
             document.getElementById('app-ui').classList.replace('hidden', 'flex');
             document.getElementById('user-display').innerText = userName;
 
-            if(role === 'driver') document.getElementById('driver-panel').classList.remove('hidden');
-            else document.getElementById('passenger-panel').classList.remove('hidden');
+            role === 'driver' ? document.getElementById('driver-panel').classList.remove('hidden') : document.getElementById('passenger-panel').classList.remove('hidden');
 
             initMap();
             setupTracking();
             listenForPeers();
-            
             if(role === 'driver') listenForBookings();
-            if(role === 'passenger') listenForAcceptance();
+            if(role === 'passenger') listenForRideStatus();
         };
 
         function initMap() {
@@ -155,27 +171,24 @@
 
         async function setupTracking() {
             const userRef = doc(db, COLL, userUid);
-            await setDoc(userRef, { name: userName, role: currentRole, lat: myPos.lat, lng: myPos.lng, isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
-
+            await setDoc(userRef, { name: userName, role: currentRole, lat: myPos.lat, lng: myPos.lng, isOnline: false, rating: 5, totalRates: 0 }, { merge: true });
             navigator.geolocation.watchPosition(async (pos) => {
                 myPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                 userMarker.setLatLng([myPos.lat, myPos.lng]);
                 await updateDoc(userRef, { lat: myPos.lat, lng: myPos.lng, lastSeen: serverTimestamp() });
-            }, null, { enableHighAccuracy: true });
+            });
         }
 
         function listenForPeers() {
             onSnapshot(collection(db, COLL), (snap) => {
-                const listDiv = document.getElementById('driver-list');
-                if(currentRole === 'passenger') listDiv.innerHTML = '';
-                
+                if(currentRole === 'passenger') document.getElementById('driver-list').innerHTML = '';
                 snap.forEach(docSnap => {
                     const data = docSnap.data();
                     const id = docSnap.id;
                     if(id === userUid) return;
 
                     if(data.isOnline) {
-                        const iconHtml = `<div class="relative"><div class="marker-label">${data.name}</div><i class="fa-solid ${data.role === 'driver' ? 'fa-motorcycle trike-icon' : 'fa-person-walking user-icon'}"></i></div>`;
+                        const iconHtml = `<div class="relative"><div class="marker-label">${data.name} ★${(data.rating || 5).toFixed(1)}</div><i class="fa-solid ${data.role === 'driver' ? 'fa-motorcycle trike-icon' : 'fa-person-walking user-icon'}"></i></div>`;
                         const icon = L.divIcon({ className: 'custom', html: iconHtml, iconSize: [30,30], iconAnchor: [15,15] });
                         if(peerMarkers[id]) peerMarkers[id].setLatLng([data.lat, data.lng]).setIcon(icon);
                         else peerMarkers[id] = L.marker([data.lat, data.lng], { icon }).addTo(map);
@@ -187,20 +200,13 @@
                             card.onclick = () => sendRideRequest(id, data.name);
                             card.innerHTML = `
                                 <div class="flex items-center gap-4">
-                                    <div class="bg-green-100 p-3 rounded-full text-green-600"><i class="fa-solid fa-motorcycle text-lg"></i></div>
-                                    <div>
-                                        <p class="font-black text-gray-800 leading-none mb-1">${data.name}</p>
-                                        <p class="text-[11px] text-gray-400 font-bold uppercase tracking-wider">${dist} km away</p>
-                                    </div>
+                                    <div class="bg-green-100 p-3 rounded-full text-green-600"><i class="fa-solid fa-motorcycle"></i></div>
+                                    <div><p class="font-black text-gray-800">${data.name}</p><p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">${dist} km • ★${(data.rating || 5).toFixed(1)}</p></div>
                                 </div>
-                                <div class="text-right"><p class="text-xs font-black text-green-600">₱21.00</p><p class="text-[9px] text-gray-300 font-bold tracking-widest">HIRE</p></div>
-                            `;
-                            listDiv.appendChild(card);
+                                <div class="text-right"><p class="text-xs font-black text-green-600">₱21.00</p></div>`;
+                            document.getElementById('driver-list').appendChild(card);
                         }
-                    } else if(peerMarkers[id]) {
-                        map.removeLayer(peerMarkers[id]);
-                        delete peerMarkers[id];
-                    }
+                    } else if(peerMarkers[id]) { map.removeLayer(peerMarkers[id]); delete peerMarkers[id]; }
                 });
             });
         }
@@ -208,20 +214,33 @@
         async function sendRideRequest(driverId, driverName) {
             const dest = document.getElementById('destination-input').value;
             if(!dest) return alert("Please type your destination first!");
-            
-            if(confirm(`Hire ${driverName} to ${dest}? (Min fare ₱21)`)) {
-                await updateDoc(doc(db, COLL, driverId), {
-                    incomingRequest: {
-                        passengerId: userUid,
-                        passengerName: userName,
-                        destination: dest,
-                        passengerLat: myPos.lat,
-                        passengerLng: myPos.lng,
-                        status: 'pending'
+            if(confirm(`Hire ${driverName}?`)) {
+                activeDriverId = driverId;
+                await updateDoc(doc(db, COLL, driverId), { incomingRequest: { passengerId: userUid, passengerName: userName, destination: dest, passengerLat: myPos.lat, passengerLng: myPos.lng, status: 'pending' } });
+                alert("Request sent!");
+            }
+        }
+
+        function listenForRideStatus() {
+            onSnapshot(collection(db, COLL), (snap) => {
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if(data.role === 'driver' && data.incomingRequest?.passengerId === userUid) {
+                        activeDriverId = docSnap.id;
+                        const statusBox = document.getElementById('status-box-passenger');
+                        const statusTxt = document.getElementById('status-driver-info');
+                        
+                        if(data.incomingRequest.status === 'accepted') {
+                            statusBox.classList.remove('hidden');
+                            statusTxt.innerText = `${data.name} is on the way!`;
+                        } else if(data.incomingRequest.status === 'completed') {
+                            statusBox.classList.add('hidden');
+                            document.getElementById('rate-driver-name').innerText = data.name;
+                            document.getElementById('rating-modal').classList.remove('hidden');
+                        }
                     }
                 });
-                alert("Request sent! Watching for Driver acceptance...");
-            }
+            });
         }
 
         function listenForBookings() {
@@ -236,71 +255,45 @@
             });
         }
 
-        function listenForAcceptance() {
-            onSnapshot(collection(db, COLL), (snap) => {
-                snap.forEach(docSnap => {
-                    const data = docSnap.data();
-                    if(data.role === 'driver' && data.incomingRequest?.passengerId === userUid) {
-                        if(data.incomingRequest.status === 'accepted') {
-                            const pStatus = document.getElementById('status-box-passenger');
-                            const pText = document.getElementById('status-driver-info');
-                            pStatus.classList.remove('hidden');
-                            pText.innerText = `${data.name} is on the way!`;
-                        }
-                    }
-                });
-            });
-        }
-
         window.toggleDuty = async () => {
-            const userRef = doc(db, COLL, userUid);
-            const btn = document.getElementById('duty-btn');
-            const lbl = document.getElementById('duty-status-label');
-            const dot = document.getElementById('role-indicator');
-            const isOffline = btn.innerText === "GO ONLINE";
-
-            await updateDoc(userRef, { isOnline: isOffline });
-            btn.innerText = isOffline ? "GO OFFLINE" : "GO ONLINE";
-            btn.className = isOffline ? "w-full bg-red-500 text-white font-black py-6 rounded-3xl text-2xl shadow-xl" : "w-full bg-gray-200 text-white font-black py-6 rounded-3xl text-2xl shadow-xl";
-            lbl.innerText = isOffline ? "ONLINE" : "OFFLINE";
-            lbl.className = isOffline ? "text-green-600 font-black tracking-widest uppercase mb-2 text-xs" : "text-gray-400 font-black tracking-widest uppercase mb-2 text-xs";
-            dot.className = isOffline ? "w-3 h-3 rounded-full bg-green-500" : "w-3 h-3 rounded-full bg-gray-400";
+            const isOffline = document.getElementById('duty-btn').innerText === "GO ONLINE";
+            await updateDoc(doc(db, COLL, userUid), { isOnline: isOffline });
+            document.getElementById('duty-btn').innerText = isOffline ? "GO OFFLINE" : "GO ONLINE";
+            document.getElementById('duty-btn').className = isOffline ? "w-full bg-red-500 text-white font-black py-6 rounded-3xl text-2xl shadow-xl" : "w-full bg-gray-200 text-white font-black py-6 rounded-3xl text-2xl shadow-xl";
         };
 
         window.acceptRide = async () => {
-            const userRef = doc(db, COLL, userUid);
-            const snap = await (onSnapshot(userRef, async (s) => {
-                const data = s.data();
-                const req = data.incomingRequest;
-                if(req) {
-                    await updateDoc(userRef, { "incomingRequest.status": 'accepted' });
-                    
-                    // Update Driver UI
-                    document.getElementById('booking-alert').classList.add('hidden');
-                    document.getElementById('offline-controls').classList.add('hidden');
-                    document.getElementById('active-trip-panel').classList.remove('hidden');
-                    document.getElementById('trip-details').innerText = `${req.passengerName} → ${req.destination}`;
-
-                    // Pin passenger location
-                    if(pickupMarker) map.removeLayer(pickupMarker);
-                    pickupMarker = L.marker([req.passengerLat, req.passengerLng]).addTo(map)
-                        .bindPopup(`<b>PICKUP: ${req.passengerName}</b>`).openPopup();
-                }
-            }));
+            await updateDoc(doc(db, COLL, userUid), { "incomingRequest.status": 'accepted' });
+            document.getElementById('booking-alert').classList.add('hidden');
+            document.getElementById('offline-controls').classList.add('hidden');
+            document.getElementById('active-trip-panel').classList.remove('hidden');
         };
 
         window.completeTrip = async () => {
-            if(confirm("Passenger arrived? Task will be marked as complete.")) {
-                await updateDoc(doc(db, COLL, userUid), {
-                    incomingRequest: deleteField()
-                });
-                
-                // Reset Driver UI
+            if(confirm("Complete ride?")) {
+                await updateDoc(doc(db, COLL, userUid), { "incomingRequest.status": 'completed' });
                 document.getElementById('active-trip-panel').classList.add('hidden');
                 document.getElementById('offline-controls').classList.remove('hidden');
-                if(pickupMarker) map.removeLayer(pickupMarker);
-                alert("Task Completed! You are now ready for the next passenger.");
             }
+        };
+
+        window.setRating = (num) => {
+            currentRating = num;
+            const stars = document.querySelectorAll('.star-btn');
+            stars.forEach((s, i) => s.classList.toggle('active', i < num));
+        };
+
+        window.submitRating = async () => {
+            if(currentRating === 0) return alert("Please select a star rating!");
+            const driverRef = doc(db, COLL, activeDriverId);
+            await updateDoc(driverRef, { 
+                rating: increment(currentRating / 10), // Simplistic rating logic for demo
+                totalRates: increment(1),
+                incomingRequest: deleteField() 
+            });
+            document.getElementById('rating-modal').classList.add('hidden');
+            alert("Thank you for rating!");
+            location.reload();
         };
 
         window.dismissAlert = async () => {
