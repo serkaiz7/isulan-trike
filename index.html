@@ -1,3 +1,4 @@
+<!-- IsulanTrike v6 - Fixed Rating Popup Loop -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,39 +10,39 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <style>
-        #map { height: 50vh; width: 100%; z-index: 1; border-bottom: 2px solid #e5e7eb; }
+        #map { height: 45vh; width: 100%; z-index: 1; border-bottom: 2px solid #e5e7eb; }
         .glass { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); }
         .marker-label { background: white; border-radius: 4px; padding: 1px 5px; font-size: 10px; font-weight: 800; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid #eee; }
         .trike-icon { color: #16a34a; font-size: 24px; }
         .user-icon { color: #2563eb; font-size: 24px; }
-        .star-btn { font-size: 32px; color: #d1d5db; cursor: pointer; transition: color 0.2s; }
+        .star-btn { font-size: 35px; color: #d1d5db; cursor: pointer; transition: transform 0.1s; }
         .star-btn.active { color: #facc15; }
+        .star-btn:active { transform: scale(1.2); }
     </style>
 </head>
 <body class="bg-gray-50 flex flex-col h-screen overflow-hidden">
 
     <!-- Auth Screen -->
-    <div id="auth-screen" class="fixed inset-0 z-[2000] bg-green-600 flex flex-col items-center justify-center p-6 text-white text-center">
+    <div id="auth-screen" class="fixed inset-0 z-[5000] bg-green-600 flex flex-col items-center justify-center p-6 text-white text-center">
         <i class="fa-solid fa-motorcycle text-7xl mb-4"></i>
         <h1 class="text-5xl font-black mb-2 tracking-tighter">IsulanTrike</h1>
-        <p class="mb-10 opacity-90 font-medium italic text-sm">Isulan, Sultan Kudarat - 2026 Edition</p>
         <div class="w-full max-w-xs space-y-4">
-            <input id="username" type="text" placeholder="Enter Your Name" class="w-full p-4 rounded-2xl text-gray-900 shadow-lg outline-none font-bold">
+            <input id="username" type="text" placeholder="Enter Your Name" class="w-full p-4 rounded-2xl text-gray-900 font-bold outline-none shadow-lg">
             <div class="grid grid-cols-2 gap-4">
-                <button onclick="startApp('passenger')" class="bg-white text-green-700 font-black py-4 rounded-2xl shadow-xl hover:bg-gray-100 transition">PASSENGER</button>
-                <button onclick="startApp('driver')" class="bg-yellow-400 text-green-900 font-black py-4 rounded-2xl shadow-xl hover:bg-yellow-300 transition">DRIVER</button>
+                <button onclick="startApp('passenger')" class="bg-white text-green-700 font-black py-4 rounded-2xl shadow-xl">PASSENGER</button>
+                <button onclick="startApp('driver')" class="bg-yellow-400 text-green-900 font-black py-4 rounded-2xl shadow-xl">DRIVER</button>
             </div>
         </div>
     </div>
 
-    <!-- Rating Popup (Passenger Only) -->
-    <div id="rating-modal" class="hidden fixed inset-0 z-[4000] bg-black/60 flex items-center justify-center p-6 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-xs rounded-[2.5rem] p-8 text-center shadow-2xl">
+    <!-- Rating Modal (Z-index 4000 to be on top) -->
+    <div id="rating-modal" class="hidden fixed inset-0 z-[4000] bg-black/80 flex items-center justify-center p-6 backdrop-blur-md">
+        <div class="bg-white w-full max-w-xs rounded-[2.5rem] p-8 text-center shadow-2xl animate-bounce-in">
             <div class="w-20 h-20 bg-yellow-100 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
                 <i class="fa-solid fa-star"></i>
             </div>
-            <h3 class="text-2xl font-black text-gray-800 mb-2">Arrived!</h3>
-            <p class="text-gray-500 text-sm mb-6">How was your ride with <span id="rate-driver-name" class="font-bold text-green-600">the driver</span>?</p>
+            <h3 class="text-2xl font-black text-gray-800 mb-2">You Arrived!</h3>
+            <p class="text-gray-500 text-sm mb-6">Rate your experience with <span id="rate-driver-name" class="font-bold text-green-600">the driver</span></p>
             
             <div class="flex justify-center gap-2 mb-8">
                 <i class="fa-solid fa-star star-btn" onclick="setRating(1)"></i>
@@ -51,81 +52,59 @@
                 <i class="fa-solid fa-star star-btn" onclick="setRating(5)"></i>
             </div>
             
-            <button onclick="submitRating()" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all">Submit Rating</button>
+            <button onclick="submitRating()" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all">SUBMIT RATING</button>
         </div>
     </div>
 
-    <!-- Main Content Area -->
     <div id="app-ui" class="hidden flex-col h-full">
         <div id="map"></div>
-
-        <div class="absolute top-2 left-2 right-2 z-[1000] glass p-2 rounded-xl flex justify-between items-center shadow-md border border-white/50">
-            <div class="flex items-center gap-2">
-                <div id="role-indicator" class="w-3 h-3 rounded-full bg-gray-400"></div>
-                <span id="user-display" class="font-bold text-sm text-gray-700 tracking-tight text-ellipsis overflow-hidden whitespace-nowrap max-w-[120px]">User</span>
-            </div>
-            <button onclick="location.reload()" class="text-red-500 font-bold text-[10px] uppercase tracking-widest px-2 py-1">Logout</button>
-        </div>
-
-        <div class="flex-1 overflow-y-auto bg-white rounded-t-[2rem] -mt-6 z-[1001] shadow-2xl p-5 border-t border-gray-100">
+        <div class="flex-1 overflow-y-auto bg-white rounded-t-[2.5rem] -mt-10 z-[1001] shadow-2xl p-6">
             
-            <!-- PASSENGER VIEW -->
+            <!-- PASSENGER PANEL -->
             <div id="passenger-panel" class="hidden">
-                <div id="status-box-passenger" class="hidden mb-4 bg-blue-600 text-white p-4 rounded-2xl shadow-lg">
-                    <p class="text-[10px] font-bold uppercase opacity-80 tracking-widest">Active Ride</p>
-                    <p id="status-driver-info" class="text-lg font-black italic">Driver On The Way!</p>
+                <div id="active-ride-banner" class="hidden mb-4 bg-blue-600 text-white p-4 rounded-2xl animate-pulse">
+                    <p class="text-[10px] font-bold uppercase opacity-80 tracking-widest">Ongoing Trip</p>
+                    <p id="active-status-text" class="text-lg font-black italic">Driver Accepted!</p>
                 </div>
 
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="font-black text-xl text-gray-800">Nearby Drivers</h2>
-                    <span class="bg-green-600 text-white px-3 py-1 rounded-full text-[11px] font-black">MIN FARE: ₱21.00</span>
+                    <h2 class="font-black text-xl text-gray-800">Nearby Trikes</h2>
+                    <span class="bg-green-600 text-white px-3 py-1 rounded-full text-[10px] font-black">₱21.00 MIN</span>
                 </div>
-                <input id="destination-input" type="text" placeholder="Where to in Isulan?" class="w-full p-4 bg-gray-100 rounded-xl mb-4 outline-none font-bold text-gray-800 border-2 border-transparent focus:border-green-500">
-                <div id="driver-list" class="space-y-3">
-                    <p class="text-center text-gray-400 text-sm py-10 italic">Scanning Isulan...</p>
-                </div>
+                <input id="destination-input" type="text" placeholder="Where are you going?" class="w-full p-4 bg-gray-100 rounded-2xl mb-4 font-bold border-2 border-transparent focus:border-green-500 outline-none">
+                <div id="driver-list" class="space-y-3"></div>
             </div>
 
-            <!-- DRIVER VIEW -->
-            <div id="driver-panel" class="hidden h-full flex flex-col justify-center text-center">
-                <div id="active-trip-panel" class="hidden mb-6 p-6 bg-green-50 border-2 border-green-200 rounded-3xl">
-                    <p class="text-xs font-black text-green-700 uppercase tracking-widest mb-1">Ongoing Trip</p>
-                    <p id="trip-details" class="text-lg font-black text-gray-800 mb-4">Passenger Name</p>
-                    <button onclick="completeTrip()" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-lg">COMPLETE TASK</button>
+            <!-- DRIVER PANEL -->
+            <div id="driver-panel" class="hidden h-full flex flex-col items-center justify-center text-center">
+                <div id="trip-card" class="hidden w-full p-6 bg-green-50 border-2 border-green-200 rounded-3xl mb-4">
+                    <p class="text-xs font-black text-green-700 uppercase mb-1">Ongoing Passenger</p>
+                    <p id="passenger-info" class="text-xl font-black text-gray-800 mb-4">Name</p>
+                    <button onclick="completeTrip()" class="w-full bg-green-600 text-white font-black py-4 rounded-2xl shadow-lg">END TASK & COMPLETE</button>
                 </div>
 
-                <div id="offline-controls">
-                    <p id="duty-status-label" class="text-gray-400 font-black tracking-widest uppercase mb-2 text-xs">Offline Mode</p>
-                    <button id="duty-btn" onclick="toggleDuty()" class="w-full bg-gray-200 text-white font-black py-6 rounded-3xl text-2xl shadow-xl transition-all">GO ONLINE</button>
+                <div id="duty-controls" class="w-full">
+                    <p id="duty-label" class="text-gray-400 font-black mb-2 text-xs uppercase">Offline</p>
+                    <button id="duty-btn" onclick="toggleDuty()" class="w-full bg-gray-200 text-white font-black py-6 rounded-3xl text-2xl shadow-xl">GO ONLINE</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Booking Notification (For Driver) -->
-    <div id="booking-alert" class="hidden fixed top-0 inset-x-0 z-[3000] p-4">
-        <div class="bg-green-700 text-white p-6 rounded-3xl shadow-2xl flex flex-col gap-4 border-2 border-white/20">
-            <div class="flex justify-between items-start">
-                <div>
-                    <p class="text-[10px] font-bold uppercase opacity-80 tracking-widest">New Ride Request!</p>
-                    <h3 id="alert-passenger-name" class="text-2xl font-black">Name</h3>
-                </div>
-                <i class="fa-solid fa-bell animate-bounce text-xl"></i>
-            </div>
-            <div class="bg-black/10 p-4 rounded-xl">
-                <p id="alert-destination" class="text-lg font-bold">---</p>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="dismissAlert()" class="flex-1 bg-white/10 py-4 rounded-xl font-bold text-sm">Dismiss</button>
-                <button onclick="acceptRide()" class="flex-[2] bg-yellow-400 text-green-900 py-4 rounded-xl font-black text-lg shadow-lg">Accept (₱21+)</button>
-            </div>
+    <!-- DRIVER ALERT MODAL -->
+    <div id="booking-alert" class="hidden fixed top-4 inset-x-4 z-[3000] bg-green-700 text-white p-6 rounded-3xl shadow-2xl border-2 border-white/20">
+        <h3 id="alert-p-name" class="text-2xl font-black">Passenger Name</h3>
+        <p id="alert-dest" class="bg-black/20 p-3 rounded-xl my-3 font-bold text-sm italic">Destination</p>
+        <div class="flex gap-2">
+            <button onclick="dismissAlert()" class="flex-1 bg-white/10 py-4 rounded-xl font-bold">Ignore</button>
+            <button onclick="acceptRide()" class="flex-[2] bg-yellow-400 text-green-900 py-4 rounded-xl font-black">ACCEPT (₱21)</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, updateDoc, deleteField, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, updateDoc, serverTimestamp, deleteField, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
   authDomain: "isulantrike.firebaseapp.com",
@@ -137,30 +116,32 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const COLL = "isulan_v5_rating"; 
+        const COLL = "isulan_v6_final";
 
-        let userUid, currentRole, userName, myPos = {lat: 6.6294, lng: 124.605};
-        let peerMarkers = {}, currentRating = 0, activeDriverId = null;
-        let map, userMarker, pickupMarker;
+        let userUid, userName, currentRole, activeDriverId = null, myPos = {lat: 6.6294, lng: 124.605};
+        let map, userMarker, pickupMarker, peerMarkers = {}, selectedStars = 0;
 
         window.startApp = async (role) => {
             userName = document.getElementById('username').value;
-            if(!userName) return alert("Please enter your name");
+            if(!userName) return alert("Enter Name");
             currentRole = role;
             const cred = await signInAnonymously(auth);
             userUid = cred.user.uid;
-            
+
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-ui').classList.replace('hidden', 'flex');
-            document.getElementById('user-display').innerText = userName;
-
-            role === 'driver' ? document.getElementById('driver-panel').classList.remove('hidden') : document.getElementById('passenger-panel').classList.remove('hidden');
-
+            
             initMap();
             setupTracking();
             listenForPeers();
-            if(role === 'driver') listenForBookings();
-            if(role === 'passenger') listenForRideStatus();
+
+            if(role === 'driver') {
+                document.getElementById('driver-panel').classList.remove('hidden');
+                listenForIncoming();
+            } else {
+                document.getElementById('passenger-panel').classList.remove('hidden');
+                listenForRideUpdates();
+            }
         };
 
         function initMap() {
@@ -170,40 +151,33 @@
         }
 
         async function setupTracking() {
-            const userRef = doc(db, COLL, userUid);
-            await setDoc(userRef, { name: userName, role: currentRole, lat: myPos.lat, lng: myPos.lng, isOnline: false, rating: 5, totalRates: 0 }, { merge: true });
-            navigator.geolocation.watchPosition(async (pos) => {
-                myPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            await setDoc(doc(db, COLL, userUid), { name: userName, role: currentRole, lat: myPos.lat, lng: myPos.lng, isOnline: false, rating: 5 }, { merge: true });
+            navigator.geolocation.watchPosition(async (p) => {
+                myPos = { lat: p.coords.latitude, lng: p.coords.longitude };
                 userMarker.setLatLng([myPos.lat, myPos.lng]);
-                await updateDoc(userRef, { lat: myPos.lat, lng: myPos.lng, lastSeen: serverTimestamp() });
+                await updateDoc(doc(db, COLL, userUid), { lat: myPos.lat, lng: myPos.lng });
             });
         }
 
         function listenForPeers() {
             onSnapshot(collection(db, COLL), (snap) => {
                 if(currentRole === 'passenger') document.getElementById('driver-list').innerHTML = '';
-                snap.forEach(docSnap => {
-                    const data = docSnap.data();
-                    const id = docSnap.id;
+                snap.forEach(dDoc => {
+                    const data = dDoc.data();
+                    const id = dDoc.id;
                     if(id === userUid) return;
 
                     if(data.isOnline) {
                         const iconHtml = `<div class="relative"><div class="marker-label">${data.name} ★${(data.rating || 5).toFixed(1)}</div><i class="fa-solid ${data.role === 'driver' ? 'fa-motorcycle trike-icon' : 'fa-person-walking user-icon'}"></i></div>`;
-                        const icon = L.divIcon({ className: 'custom', html: iconHtml, iconSize: [30,30], iconAnchor: [15,15] });
+                        const icon = L.divIcon({ className: 'custom', html: iconHtml, iconSize: [30,30] });
                         if(peerMarkers[id]) peerMarkers[id].setLatLng([data.lat, data.lng]).setIcon(icon);
                         else peerMarkers[id] = L.marker([data.lat, data.lng], { icon }).addTo(map);
 
                         if(currentRole === 'passenger' && data.role === 'driver') {
-                            const dist = calculateDistance(myPos.lat, myPos.lng, data.lat, data.lng).toFixed(2);
                             const card = document.createElement('div');
-                            card.className = "driver-card glass p-4 rounded-2xl flex justify-between items-center border border-gray-100 shadow-sm";
-                            card.onclick = () => sendRideRequest(id, data.name);
-                            card.innerHTML = `
-                                <div class="flex items-center gap-4">
-                                    <div class="bg-green-100 p-3 rounded-full text-green-600"><i class="fa-solid fa-motorcycle"></i></div>
-                                    <div><p class="font-black text-gray-800">${data.name}</p><p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">${dist} km • ★${(data.rating || 5).toFixed(1)}</p></div>
-                                </div>
-                                <div class="text-right"><p class="text-xs font-black text-green-600">₱21.00</p></div>`;
+                            card.className = "p-4 glass rounded-2xl flex justify-between items-center border border-gray-100 shadow-sm";
+                            card.onclick = () => sendRequest(id, data.name);
+                            card.innerHTML = `<div><p class="font-black text-gray-800">${data.name}</p><p class="text-[10px] text-gray-400">★${(data.rating || 5).toFixed(1)}</p></div><p class="text-green-600 font-black">₱21</p>`;
                             document.getElementById('driver-list').appendChild(card);
                         }
                     } else if(peerMarkers[id]) { map.removeLayer(peerMarkers[id]); delete peerMarkers[id]; }
@@ -211,30 +185,29 @@
             });
         }
 
-        async function sendRideRequest(driverId, driverName) {
+        async function sendRequest(dId, dName) {
             const dest = document.getElementById('destination-input').value;
-            if(!dest) return alert("Please type your destination first!");
-            if(confirm(`Hire ${driverName}?`)) {
-                activeDriverId = driverId;
-                await updateDoc(doc(db, COLL, driverId), { incomingRequest: { passengerId: userUid, passengerName: userName, destination: dest, passengerLat: myPos.lat, passengerLng: myPos.lng, status: 'pending' } });
-                alert("Request sent!");
-            }
+            if(!dest) return alert("Enter Destination");
+            activeDriverId = dId;
+            await updateDoc(doc(db, COLL, dId), { incomingRequest: { pId: userUid, pName: userName, dest: dest, status: 'pending' } });
+            alert("Requested " + dName);
         }
 
-        function listenForRideStatus() {
+        // --- PASSENGER LOGIC ---
+        function listenForRideUpdates() {
             onSnapshot(collection(db, COLL), (snap) => {
-                snap.forEach(docSnap => {
-                    const data = docSnap.data();
-                    if(data.role === 'driver' && data.incomingRequest?.passengerId === userUid) {
-                        activeDriverId = docSnap.id;
-                        const statusBox = document.getElementById('status-box-passenger');
-                        const statusTxt = document.getElementById('status-driver-info');
+                snap.forEach(dDoc => {
+                    const data = dDoc.data();
+                    if(data.incomingRequest?.pId === userUid) {
+                        activeDriverId = dDoc.id;
+                        const banner = document.getElementById('active-ride-banner');
                         
                         if(data.incomingRequest.status === 'accepted') {
-                            statusBox.classList.remove('hidden');
-                            statusTxt.innerText = `${data.name} is on the way!`;
-                        } else if(data.incomingRequest.status === 'completed') {
-                            statusBox.classList.add('hidden');
+                            banner.classList.remove('hidden');
+                            document.getElementById('active-status-text').innerText = `${data.name} is on the way!`;
+                        } 
+                        else if(data.incomingRequest.status === 'completed') {
+                            banner.classList.add('hidden');
                             document.getElementById('rate-driver-name').innerText = data.name;
                             document.getElementById('rating-modal').classList.remove('hidden');
                         }
@@ -243,56 +216,54 @@
             });
         }
 
-        function listenForBookings() {
+        // --- DRIVER LOGIC ---
+        function listenForIncoming() {
             onSnapshot(doc(db, COLL, userUid), (snap) => {
                 const data = snap.data();
                 if(data?.incomingRequest && data.incomingRequest.status === 'pending') {
-                    const req = data.incomingRequest;
-                    document.getElementById('alert-passenger-name').innerText = req.passengerName;
-                    document.getElementById('alert-destination').innerText = req.destination;
+                    document.getElementById('alert-p-name').innerText = data.incomingRequest.pName;
+                    document.getElementById('alert-dest').innerText = "To: " + data.incomingRequest.dest;
                     document.getElementById('booking-alert').classList.remove('hidden');
                 }
             });
         }
 
         window.toggleDuty = async () => {
-            const isOffline = document.getElementById('duty-btn').innerText === "GO ONLINE";
-            await updateDoc(doc(db, COLL, userUid), { isOnline: isOffline });
-            document.getElementById('duty-btn').innerText = isOffline ? "GO OFFLINE" : "GO ONLINE";
-            document.getElementById('duty-btn').className = isOffline ? "w-full bg-red-500 text-white font-black py-6 rounded-3xl text-2xl shadow-xl" : "w-full bg-gray-200 text-white font-black py-6 rounded-3xl text-2xl shadow-xl";
+            const isOff = document.getElementById('duty-btn').innerText === "GO ONLINE";
+            await updateDoc(doc(db, COLL, userUid), { isOnline: isOff });
+            document.getElementById('duty-btn').innerText = isOff ? "GO OFFLINE" : "GO ONLINE";
+            document.getElementById('duty-btn').className = isOff ? "w-full bg-red-500 text-white font-black py-6 rounded-3xl" : "w-full bg-gray-200 text-white font-black py-6 rounded-3xl";
         };
 
         window.acceptRide = async () => {
-            await updateDoc(doc(db, COLL, userUid), { "incomingRequest.status": 'accepted' });
+            await updateDoc(doc(db, COLL, userUid), { "incomingRequest.status": "accepted" });
             document.getElementById('booking-alert').classList.add('hidden');
-            document.getElementById('offline-controls').classList.add('hidden');
-            document.getElementById('active-trip-panel').classList.remove('hidden');
+            document.getElementById('duty-controls').classList.add('hidden');
+            document.getElementById('trip-card').classList.remove('hidden');
         };
 
         window.completeTrip = async () => {
-            if(confirm("Complete ride?")) {
-                await updateDoc(doc(db, COLL, userUid), { "incomingRequest.status": 'completed' });
-                document.getElementById('active-trip-panel').classList.add('hidden');
-                document.getElementById('offline-controls').classList.remove('hidden');
-            }
+            await updateDoc(doc(db, COLL, userUid), { "incomingRequest.status": "completed" });
+            document.getElementById('trip-card').classList.add('hidden');
+            document.getElementById('duty-controls').classList.remove('hidden');
         };
 
-        window.setRating = (num) => {
-            currentRating = num;
+        // --- RATING LOGIC ---
+        window.setRating = (n) => {
+            selectedStars = n;
             const stars = document.querySelectorAll('.star-btn');
-            stars.forEach((s, i) => s.classList.toggle('active', i < num));
+            stars.forEach((s, i) => s.classList.toggle('active', i < n));
         };
 
         window.submitRating = async () => {
-            if(currentRating === 0) return alert("Please select a star rating!");
-            const driverRef = doc(db, COLL, activeDriverId);
-            await updateDoc(driverRef, { 
-                rating: increment(currentRating / 10), // Simplistic rating logic for demo
-                totalRates: increment(1),
+            if(selectedStars === 0) return alert("Pick stars!");
+            // Update driver rating and FINALLY delete the request
+            await updateDoc(doc(db, COLL, activeDriverId), { 
+                rating: increment(selectedStars === 5 ? 0.1 : -0.1),
                 incomingRequest: deleteField() 
             });
             document.getElementById('rating-modal').classList.add('hidden');
-            alert("Thank you for rating!");
+            alert("Rating sent! Safe travels.");
             location.reload();
         };
 
@@ -300,14 +271,6 @@
             document.getElementById('booking-alert').classList.add('hidden');
             await updateDoc(doc(db, COLL, userUid), { incomingRequest: deleteField() });
         };
-
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371;
-            const dLat = (lat2-lat1) * Math.PI / 180;
-            const dLon = (lon2-lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
-        }
     </script>
 </body>
 </html>
