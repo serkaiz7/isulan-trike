@@ -7,803 +7,204 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --green: #00c896;
-            --green-dark: #00a07a;
-            --green-light: #e6fff9;
-            --gold: #f5c842;
-            --charcoal: #1a1a2e;
-            --gray-soft: #f5f7fa;
-            --card-shadow: 0 4px 24px rgba(0,200,150,0.10);
-        }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--gray-soft); overflow: hidden; height: 100dvh; }
-        h1, h2, h3, .syne { font-family: 'Syne', sans-serif; }
-
-        /* MAP */
-        #map { height: 42vh; width: 100%; z-index: 1; }
-        .leaflet-control-zoom { display: none; }
-        .marker-label { background: white; border-radius: 8px; padding: 2px 7px; font-size: 9px; font-family: 'Syne', sans-serif; font-weight: 700; position: absolute; top: -34px; left: 50%; transform: translateX(-50%); box-shadow: 0 3px 10px rgba(0,0,0,0.12); border: 1px solid #eee; white-space: nowrap; }
-
-        /* SCREENS */
-        .screen { position: fixed; inset: 0; z-index: 5000; }
-
-        /* AUTH */
-        #auth-screen { background: linear-gradient(160deg, #003d2e 0%, #00c896 100%); display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 60px 28px 40px; }
-        .auth-logo { text-align: center; }
-        .auth-logo .logo-ring { width: 96px; height: 96px; border-radius: 32px; background: rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 44px; color: white; border: 2px solid rgba(255,255,255,0.2); }
-        .auth-form { width: 100%; max-width: 360px; }
-        .auth-input { width: 100%; padding: 16px 20px; background: rgba(255,255,255,0.10); border: 1.5px solid rgba(255,255,255,0.2); border-radius: 16px; outline: none; font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 15px; color: white; margin-bottom: 12px; transition: border-color .2s; }
-        .auth-input::placeholder { color: rgba(255,255,255,0.45); }
-        .auth-input:focus { border-color: rgba(255,255,255,0.6); }
-        .btn-primary { width: 100%; padding: 17px; background: white; color: #00a07a; border-radius: 16px; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px; border: none; cursor: pointer; margin-bottom: 10px; transition: transform .15s, box-shadow .15s; box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
-        .btn-primary:active { transform: scale(0.98); }
-        .btn-ghost { width: 100%; padding: 15px; background: rgba(0,0,0,0.18); color: white; border-radius: 16px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; border: none; cursor: pointer; margin-bottom: 10px; transition: background .2s; }
-        .btn-ghost:active { background: rgba(0,0,0,0.28); }
-        .btn-link { background: none; border: none; color: rgba(255,255,255,0.55); font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: underline; width: 100%; padding: 8px; }
-
-        /* SETUP */
-        #setup-screen { background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 28px; }
-        .setup-input { width: 100%; padding: 16px 20px; background: var(--gray-soft); border-radius: 14px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; border: 2px solid transparent; outline: none; transition: border-color .2s; margin-bottom: 12px; }
-        .setup-input:focus { border-color: var(--green); }
-        .btn-green { width: 100%; padding: 17px; background: var(--green); color: white; border-radius: 16px; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px; border: none; cursor: pointer; box-shadow: 0 6px 20px rgba(0,200,150,0.25); }
-
-        /* APP MAIN */
-        #app-ui { display: flex; flex-direction: column; height: 100dvh; }
-        
-        /* STATUS BAR */
-        .status-bar { position: absolute; top: 10px; left: 12px; right: 12px; z-index: 1000; background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border-radius: 20px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.10); border: 1px solid rgba(255,255,255,0.8); }
-        .status-avatar { width: 38px; height: 38px; border-radius: 12px; background: var(--green-light); color: var(--green); display: flex; align-items: center; justify-content: center; font-size: 16px; }
-        .online-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; display: inline-block; margin-right: 5px; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(1.3)} }
-
-        /* BOTTOM SHEET */
-        .bottom-sheet { flex: 1; background: white; border-radius: 28px 28px 0 0; margin-top: -20px; z-index: 100; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 -8px 30px rgba(0,0,0,0.08); }
-        .sheet-handle { width: 40px; height: 4px; background: #e5e7eb; border-radius: 99px; margin: 14px auto 0; flex-shrink: 0; }
-        .sheet-content { flex: 1; overflow-y: auto; padding: 16px 20px 24px; -webkit-overflow-scrolling: touch; }
-
-        /* TABS */
-        .tab-bar { display: flex; gap: 6px; padding: 12px 20px 0; flex-shrink: 0; }
-        .tab-btn { flex: 1; padding: 10px 6px; border-radius: 12px; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; border: none; cursor: pointer; transition: all .2s; background: var(--gray-soft); color: #9ca3af; }
-        .tab-btn.active { background: var(--charcoal); color: white; }
-
-        /* DRIVER CARD */
-        .driver-card { background: white; border: 1.5px solid #f0f0f0; border-radius: 20px; padding: 16px; display: flex; align-items: center; gap: 14px; margin-bottom: 10px; cursor: pointer; transition: all .18s; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
-        .driver-card:active { transform: scale(0.98); background: var(--green-light); border-color: var(--green); }
-        .driver-avatar { width: 50px; height: 50px; border-radius: 16px; background: var(--green-light); color: var(--green); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
-        .rating-badge { display: inline-flex; align-items: center; gap: 3px; background: #fffbeb; color: #d97706; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 8px; }
-
-        /* ACTIVE RIDE STATUS */
-        .ride-status-card { background: linear-gradient(135deg, var(--charcoal), #16213e); color: white; border-radius: 22px; padding: 18px; margin-bottom: 14px; }
-
-        /* HISTORY CARDS */
-        .history-card { background: var(--gray-soft); border-radius: 18px; padding: 16px; margin-bottom: 10px; }
-        .history-card .trip-icon { width: 40px; height: 40px; background: var(--green-light); border-radius: 12px; color: var(--green); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
-        .history-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 3px 8px; border-radius: 8px; }
-
-        /* EARNINGS SUMMARY */
-        .earnings-card { background: linear-gradient(135deg, #00c896, #009970); border-radius: 22px; padding: 20px; color: white; margin-bottom: 14px; }
-        .stat-box { background: rgba(255,255,255,0.15); border-radius: 14px; padding: 14px; text-align: center; flex: 1; }
-
-        /* DRIVER ONLINE BUTTON */
-        .duty-btn { width: 100%; padding: 22px; border-radius: 22px; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; border: none; cursor: pointer; transition: all .2s; }
-        .duty-btn.offline { background: var(--gray-soft); color: #9ca3af; }
-        .duty-btn.online { background: var(--green); color: white; box-shadow: 0 8px 24px rgba(0,200,150,0.30); }
-
-        /* TRIP IN PROGRESS */
-        .trip-progress-card { background: var(--green-light); border: 2px solid var(--green); border-radius: 22px; padding: 20px; text-align: center; }
-        .end-trip-btn { width: 100%; padding: 18px; background: #ef4444; color: white; border-radius: 16px; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px; border: none; cursor: pointer; margin-top: 14px; box-shadow: 0 6px 18px rgba(239,68,68,0.25); }
-
-        /* BOOKING ALERT */
-        #booking-alert { position: fixed; inset-x: 0; bottom: 0; z-index: 6000; padding: 0 16px 20px; transform: translateY(100%); transition: transform .35s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        #booking-alert.show { transform: translateY(0); }
-        .booking-card { background: var(--charcoal); color: white; border-radius: 28px 28px 24px 24px; padding: 28px 24px 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.25); }
-        .accept-btn { flex: 2; padding: 16px; background: var(--gold); color: #1a1a2e; border-radius: 16px; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px; border: none; cursor: pointer; }
-        .ignore-btn { flex: 1; padding: 16px; background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.55); border-radius: 16px; font-family: 'Syne', sans-serif; font-weight: 700; border: none; cursor: pointer; }
-
-        /* RATING MODAL */
-        #rating-modal { position: fixed; inset: 0; z-index: 7000; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); display: none; align-items: flex-end; padding: 16px; }
-        .rating-sheet { background: white; width: 100%; border-radius: 28px; padding: 30px 24px 32px; }
-        .star-btn { font-size: 36px; color: #e5e7eb; cursor: pointer; transition: color .15s, transform .15s; }
-        .star-btn.active { color: var(--gold); transform: scale(1.1); }
-
-        /* ANIMATIONS */
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .slide-up { animation: slideUp .35s ease forwards; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .fade-in { animation: fadeIn .3s ease forwards; }
-
-        /* SECTION LABEL */
-        .section-label { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
-
-        /* EMPTY STATE */
-        .empty-state { text-align: center; padding: 40px 20px; color: #9ca3af; }
-        .empty-state i { font-size: 44px; margin-bottom: 12px; display: block; }
-
-        /* SEARCH INPUT */
-        .search-input { width: 100%; padding: 15px 18px 15px 46px; background: var(--gray-soft); border-radius: 16px; border: 2px solid transparent; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; outline: none; transition: border-color .2s; position: relative; }
-        .search-input:focus { border-color: var(--green); background: white; }
-        .search-wrap { position: relative; margin-bottom: 16px; }
-        .search-wrap i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 15px; }
-
-        /* SCROLL BAR */
-        .sheet-content::-webkit-scrollbar { width: 4px; }
-        .sheet-content::-webkit-scrollbar-track { background: transparent; }
-        .sheet-content::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 99px; }
-
-        /* DIVIDER */
-        .route-line { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-        .route-dot { width: 10px; height: 10px; border-radius: 50%; }
-        .route-dash { width: 2px; height: 16px; background: #d1d5db; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; }
+        #map { height: 40vh; width: 100%; z-index: 1; transition: height 0.3s ease; }
+        #map.hidden-map { height: 0vh; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .marker-label { background: white; border-radius: 6px; padding: 2px 6px; font-size: 10px; font-weight: 800; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #eee; white-space: nowrap; }
+        .star-btn { font-size: 32px; color: #d1d5db; cursor: pointer; transition: color 0.2s; }
+        .star-btn.active { color: #facc15; }
+        .animate-pop { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes pop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 flex flex-col h-screen">
 
-<!-- 1. AUTH SCREEN -->
-<div id="auth-screen" class="screen" style="background:linear-gradient(180deg,#059669 0%,#047857 100%);display:flex;flex-direction:column;justify-content:space-between;padding:60px 32px 48px;z-index:5000;">
-    <div style="text-align:center;margin-top:20px;">
-        <i class="fa-solid fa-motorcycle" style="font-size:72px;color:white;margin-bottom:16px;display:block;"></i>
-        <h1 style="font-family:'Syne',sans-serif;font-size:48px;font-weight:900;color:white;margin:0 0 6px;letter-spacing:-2px;">IsulanTrike</h1>
-        <p style="color:rgba(255,255,255,0.75);font-size:14px;font-weight:500;margin:0;">Premium Real-time Transport</p>
+    <!-- 1. AUTH SCREEN -->
+    <div id="auth-screen" class="fixed inset-0 z-[5000] bg-emerald-600 flex flex-col p-8 justify-between text-white">
+        <div class="mt-12 text-center">
+            <i class="fa-solid fa-motorcycle text-7xl mb-4"></i>
+            <h1 class="text-5xl font-black tracking-tighter">IsulanTrike</h1>
+            <p class="opacity-80 font-medium text-lg">Premium Transport</p>
+        </div>
+        <div class="space-y-4 w-full max-w-sm mx-auto">
+            <input id="auth-email" type="email" placeholder="Email" class="w-full p-5 bg-white/10 border border-white/20 rounded-2xl outline-none font-bold placeholder:text-white/50 text-white">
+            <input id="auth-pass" type="password" placeholder="Password" class="w-full p-5 bg-white/10 border border-white/20 rounded-2xl outline-none font-bold placeholder:text-white/50 text-white">
+            <button onclick="handleAuth('login')" class="w-full py-5 bg-white text-emerald-700 rounded-2xl font-black shadow-xl">Sign In</button>
+            <button onclick="handleAuth('register')" class="w-full py-5 bg-emerald-700 text-white border-2 border-emerald-500 rounded-2xl font-black">Register</button>
+            <button onclick="handleAuth('anon')" class="w-full py-3 text-white/70 font-bold text-sm">Continue as Guest ✨</button>
+        </div>
     </div>
-    <div style="width:100%;max-width:360px;margin:0 auto;">
-        <input id="auth-email" class="auth-input" type="email" placeholder="Email">
-        <input id="auth-pass" class="auth-input" type="password" placeholder="Password">
-        <button class="btn-primary" onclick="handleAuth('login')">Sign In</button>
-        <button class="btn-ghost" onclick="handleAuth('anon')">Guest Mode ✨</button>
-        <button class="btn-link" onclick="handleAuth('register')">Create New Account</button>
-    </div>
-</div>
 
-<!-- 2. SETUP SCREEN -->
-<div id="setup-screen" class="screen hidden" style="z-index:5100;background:white;">
-    <div style="text-align:center;margin-bottom:32px;">
-        <div style="width:72px;height:72px;background:var(--green-light);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:34px;margin:0 auto 16px;">👤</div>
-        <h2 style="font-size:26px;margin:0 0 6px;">Finish Your Profile</h2>
-        <p style="color:#9ca3af;font-size:14px;margin:0;">Tell us a bit about you</p>
+    <!-- 2. SETUP SCREEN -->
+    <div id="setup-screen" class="hidden fixed inset-0 z-[5100] bg-white flex flex-col p-10 items-center justify-center">
+        <h2 class="text-3xl font-black mb-8 italic">Finish Profile</h2>
+        <div class="w-full max-w-xs space-y-4 text-center">
+            <input id="setup-name" type="text" placeholder="Your Full Name" class="w-full p-5 bg-gray-100 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-emerald-500">
+            <select id="setup-role" class="w-full p-5 bg-gray-100 rounded-2xl font-bold outline-none" onchange="togglePlateField()">
+                <option value="passenger">Passenger</option>
+                <option value="driver">Driver</option>
+            </select>
+            <input id="setup-plate" type="text" placeholder="Plate Number (ABC-123)" class="hidden w-full p-5 bg-gray-100 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-emerald-500">
+            <button onclick="saveInitialProfile()" class="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-100 mt-4">Save & Start</button>
+        </div>
     </div>
-    <div style="width:100%;max-width:340px;">
-        <input id="setup-name" class="setup-input" type="text" placeholder="Your Full Name">
-        <select id="setup-role" class="setup-input" onchange="togglePlateField()">
-            <option value="passenger">🧑 Passenger</option>
-            <option value="driver">🏍️ Driver</option>
-        </select>
-        <input id="setup-plate" type="text" placeholder="Plate Number (ABC-123)" class="setup-input hidden">
-        <button class="btn-green" onclick="saveInitialProfile()">Save & Get Riding</button>
-    </div>
-</div>
 
-<!-- 3. MAIN APP -->
-<div id="app-ui" class="hidden" style="display:flex;flex-direction:column;height:100dvh;">
-    <div style="position:relative;flex-shrink:0;">
+    <!-- 3. MAIN APP UI -->
+    <div id="app-ui" class="hidden flex-col h-full relative">
         <div id="map"></div>
-        <!-- Status Bar -->
-        <div class="status-bar">
-            <div style="display:flex;align-items:center;gap:10px;">
-                <div class="status-avatar">
+
+        <div class="absolute top-4 left-4 right-4 z-[1000] glass p-3 rounded-2xl flex justify-between items-center shadow-lg border border-white/50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
                     <i id="role-icon" class="fa-solid fa-person"></i>
                 </div>
                 <div>
-                    <p id="user-display" style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin:0;color:#1a1a2e;">User</p>
-                    <p id="role-display" style="font-size:11px;font-weight:600;color:var(--green);margin:0;text-transform:uppercase;letter-spacing:.05em;">Passenger</p>
+                    <p id="user-display" class="font-black text-sm text-gray-800 line-clamp-1">User</p>
+                    <p id="role-display" class="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Passenger</p>
                 </div>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-                <div id="online-indicator" style="display:none;align-items:center;font-size:11px;font-weight:700;color:var(--green);"><span class="online-dot"></span>ONLINE</div>
-                <button onclick="location.reload()" style="width:36px;height:36px;border-radius:10px;background:#fee2e2;color:#ef4444;border:none;cursor:pointer;font-size:14px;"><i class="fa-solid fa-power-off"></i></button>
+            <div class="flex gap-2">
+                <button id="toggle-map-btn" onclick="toggleMap()" class="p-3 text-emerald-600 bg-emerald-50 rounded-xl"><i class="fa-solid fa-map"></i></button>
+                <button onclick="location.reload()" class="p-3 text-red-500 bg-red-50 rounded-xl"><i class="fa-solid fa-power-off"></i></button>
             </div>
         </div>
-    </div>
 
-    <!-- Bottom Sheet -->
-    <div class="bottom-sheet">
-        <div class="sheet-handle"></div>
+        <div id="content-panel" class="flex-1 bg-white rounded-t-[2.5rem] -mt-8 z-[1001] shadow-[0_-15px_40px_rgba(0,0,0,0.08)] p-6 overflow-y-auto custom-scroll">
+            <div class="w-12 h-1 bg-gray-100 rounded-full mx-auto mb-6"></div>
 
-        <!-- TABS (shown for both, labels change) -->
-        <div class="tab-bar" id="tab-bar">
-            <button class="tab-btn active" id="tab-main" onclick="switchTab('main')">
-                <i class="fa-solid fa-map-location-dot" style="display:block;font-size:16px;margin-bottom:3px;"></i>Ride
-            </button>
-            <button class="tab-btn" id="tab-history" onclick="switchTab('history')">
-                <i class="fa-solid fa-clock-rotate-left" style="display:block;font-size:16px;margin-bottom:3px;"></i>History
-            </button>
-            <button class="tab-btn" id="tab-dash" onclick="switchTab('dash')">
-                <i class="fa-solid fa-chart-pie" style="display:block;font-size:16px;margin-bottom:3px;"></i>Dashboard
-            </button>
-        </div>
-
-        <!-- SHEET CONTENT -->
-        <div class="sheet-content">
-
-            <!-- ===== PASSENGER PANELS ===== -->
             <div id="passenger-panel" class="hidden">
-
-                <!-- TAB: RIDE -->
-                <div id="p-tab-main">
-                    <div id="active-ride-status" class="hidden ride-status-card fade-in">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                            <span style="font-size:11px;font-weight:800;text-transform:uppercase;opacity:.6;letter-spacing:.06em;">Ride Active</span>
-                            <span style="font-size:11px;background:rgba(0,200,150,0.2);color:var(--green);padding:3px 10px;border-radius:99px;font-weight:700;">En Route</span>
-                        </div>
-                        <p id="status-driver-text" style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin:0;">Driver is on the way!</p>
-                    </div>
-
-                    <div class="search-wrap">
-                        <i class="fa-solid fa-location-dot"></i>
-                        <input id="dest-input" class="search-input" type="text" placeholder="Where are you going?">
-                    </div>
-
-                    <p class="section-label">Nearby Drivers</p>
-                    <div id="driver-list"></div>
+                <div id="active-ride-status" class="hidden mb-6 bg-blue-600 text-white p-5 rounded-3xl animate-pop">
+                    <p class="text-[10px] font-black uppercase opacity-70 tracking-widest">Ongoing Trip</p>
+                    <p id="status-driver-text" class="text-lg font-black italic">Waiting for response...</p>
                 </div>
-
-                <!-- TAB: HISTORY (Passenger) -->
-                <div id="p-tab-history" class="hidden">
-                    <p class="section-label">Ride History</p>
-                    <div id="p-history-list">
-                        <div class="empty-state"><i class="fa-regular fa-clock"></i><p style="font-size:14px;font-weight:500;">No rides yet.<br>Book your first trip!</p></div>
-                    </div>
+                <div class="mb-6 relative">
+                    <i class="fa-solid fa-location-dot absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500"></i>
+                    <input id="dest-input" type="text" placeholder="Where are you going?" class="w-full p-5 pl-12 bg-gray-50 rounded-2xl outline-none font-bold border-2 border-transparent focus:border-emerald-500 transition-all">
                 </div>
-
-                <!-- TAB: DASHBOARD (Passenger) -->
-                <div id="p-tab-dash" class="hidden">
-                    <p class="section-label">Your Stats</p>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
-                        <div style="background:var(--green-light);border-radius:18px;padding:16px;text-align:center;">
-                            <p style="font-size:28px;font-family:'Syne',sans-serif;font-weight:800;color:var(--green);margin:0;" id="p-stat-trips">0</p>
-                            <p style="font-size:11px;color:#6b7280;font-weight:600;margin:4px 0 0;">Total Rides</p>
-                        </div>
-                        <div style="background:#fffbeb;border-radius:18px;padding:16px;text-align:center;">
-                            <p style="font-size:28px;font-family:'Syne',sans-serif;font-weight:800;color:#d97706;margin:0;" id="p-stat-spent">₱0</p>
-                            <p style="font-size:11px;color:#6b7280;font-weight:600;margin:4px 0 0;">Total Spent</p>
-                        </div>
-                    </div>
-                    <p class="section-label">All Drivers Ridden With</p>
-                    <div id="p-dash-drivers">
-                        <div class="empty-state" style="padding:20px;"><i class="fa-solid fa-motorcycle"></i><p style="font-size:13px;">Driver history will appear here.</p></div>
-                    </div>
-                </div>
+                <div id="driver-list" class="space-y-3 mb-8"></div>
             </div>
 
-            <!-- ===== DRIVER PANELS ===== -->
             <div id="driver-panel" class="hidden">
-
-                <!-- TAB: RIDE (Driver) -->
-                <div id="d-tab-main">
-                    <div id="driver-active-trip" class="hidden trip-progress-card fade-in">
-                        <span style="font-size:11px;font-weight:800;color:var(--green-dark);text-transform:uppercase;letter-spacing:.06em;">Trip in Progress</span>
-                        <p id="current-p-name" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin:8px 0 4px;color:var(--charcoal);">Passenger Name</p>
-                        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:4px;">
-                            <span id="current-p-pickup" style="font-size:12px;color:#6b7280;background:white;padding:5px 10px;border-radius:10px;"><i class="fa-solid fa-circle-dot" style="color:var(--green);"></i> Pickup</span>
-                            <span id="current-p-dest" style="font-size:12px;color:#6b7280;background:white;padding:5px 10px;border-radius:10px;"><i class="fa-solid fa-location-dot" style="color:#ef4444;"></i> Destination</span>
-                        </div>
-                        <button class="end-trip-btn" onclick="completeTrip()"><i class="fa-solid fa-flag-checkered"></i> END TRIP · ₱21.00</button>
-                    </div>
-
-                    <div id="driver-offline-ui">
-                        <div style="background:var(--gray-soft);border-radius:18px;padding:16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
-                            <div>
-                                <p style="font-size:11px;color:#9ca3af;font-weight:700;margin:0 0 2px;">Today's Earnings</p>
-                                <p id="d-today-earn" style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--charcoal);margin:0;">₱0.00</p>
-                            </div>
-                            <div style="font-size:28px;">💰</div>
-                        </div>
-                        <button id="duty-btn" class="duty-btn offline" onclick="toggleDuty()">GO ONLINE</button>
-                        <p id="duty-status-text" style="text-align:center;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-top:10px;">You are currently offline</p>
-                    </div>
+                <div id="driver-active-trip" class="hidden w-full p-6 bg-emerald-50 border-2 border-emerald-200 rounded-[2.5rem] mb-6 text-center animate-pop">
+                    <h2 id="current-p-name" class="text-2xl font-black mb-1">...</h2>
+                    <p id="current-p-dest" class="text-sm font-bold text-gray-500 mb-6">Loading destination...</p>
+                    <button onclick="completeTrip()" class="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black shadow-lg">FINISH RIDE</button>
                 </div>
-
-                <!-- TAB: HISTORY (Driver) -->
-                <div id="d-tab-history" class="hidden">
-                    <p class="section-label">Trip History</p>
-                    <div id="d-history-list">
-                        <div class="empty-state"><i class="fa-regular fa-clock"></i><p style="font-size:14px;font-weight:500;">No trips yet.<br>Go online to start!</p></div>
-                    </div>
-                </div>
-
-                <!-- TAB: DASHBOARD (Driver) -->
-                <div id="d-tab-dash" class="hidden">
-                    <div class="earnings-card">
-                        <p style="font-size:12px;font-weight:700;opacity:.75;margin:0 0 6px;text-transform:uppercase;letter-spacing:.06em;">Total Earnings</p>
-                        <p id="d-total-earn" style="font-family:'Syne',sans-serif;font-size:38px;font-weight:800;margin:0 0 16px;">₱0.00</p>
-                        <div style="display:flex;gap:8px;">
-                            <div class="stat-box">
-                                <p id="d-stat-trips" style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin:0;">0</p>
-                                <p style="font-size:11px;opacity:.75;margin:4px 0 0;font-weight:600;">Trips</p>
-                            </div>
-                            <div class="stat-box">
-                                <p id="d-stat-rating" style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin:0;">5.0</p>
-                                <p style="font-size:11px;opacity:.75;margin:4px 0 0;font-weight:600;">Rating</p>
-                            </div>
-                            <div class="stat-box">
-                                <p id="d-stat-today" style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin:0;">₱0</p>
-                                <p style="font-size:11px;opacity:.75;margin:4px 0 0;font-weight:600;">Today</p>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="section-label">Passenger Records</p>
-                    <div id="d-dash-passengers">
-                        <div class="empty-state" style="padding:20px;"><i class="fa-solid fa-users"></i><p style="font-size:13px;">Passenger records will appear here.</p></div>
-                    </div>
+                <div id="driver-offline-ui" class="mb-8">
+                    <button id="duty-btn" onclick="toggleDuty()" class="w-full py-8 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl">GO ONLINE</button>
                 </div>
             </div>
-
         </div>
     </div>
-</div>
 
-<!-- 4. BOOKING ALERT (Driver) -->
-<div id="booking-alert">
-    <div class="booking-card">
-        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;">
-            <div>
-                <span style="font-size:11px;font-weight:800;opacity:.55;text-transform:uppercase;letter-spacing:.07em;">New Booking!</span>
-                <p id="alert-p-name" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin:4px 0 0;">Passenger</p>
-            </div>
-            <div style="width:44px;height:44px;background:var(--gold);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;animation:pulse 1s infinite;">🔔</div>
-        </div>
-        <div style="background:rgba(255,255,255,0.07);border-radius:14px;padding:12px;margin-bottom:16px;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                <i class="fa-solid fa-circle-dot" style="color:var(--green);font-size:12px;"></i>
-                <span id="alert-pickup" style="font-size:13px;opacity:.85;">Pickup location</span>
-            </div>
-            <div style="width:1px;height:12px;background:rgba(255,255,255,0.2);margin-left:5px;"></div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
-                <i class="fa-solid fa-location-dot" style="color:#ef4444;font-size:12px;"></i>
-                <span id="alert-dest" style="font-size:13px;opacity:.85;">Destination</span>
-            </div>
-        </div>
-        <div style="font-size:18px;font-family:'Syne',sans-serif;font-weight:800;color:var(--gold);margin-bottom:16px;">₱21.00</div>
-        <div style="display:flex;gap:10px;">
-            <button class="ignore-btn" onclick="dismissAlert()">Ignore</button>
-            <button class="accept-btn" onclick="acceptRide()">✓ ACCEPT</button>
-        </div>
-    </div>
-</div>
+    <!-- FIREBASE MODULE -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField, increment, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-<!-- 5. RATING MODAL -->
-<div id="rating-modal" class="hidden">
-    <div class="rating-sheet">
-        <div style="text-align:center;margin-bottom:20px;">
-            <div style="width:64px;height:64px;background:#fffbeb;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 14px;">⭐</div>
-            <h3 style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin:0 0 6px;color:var(--charcoal);">How was your ride?</h3>
-            <p style="color:#9ca3af;font-size:14px;margin:0;">Rate your experience with <strong id="rate-driver-name" style="color:var(--green);">Driver</strong></p>
-        </div>
-        <div style="display:flex;justify-content:center;gap:8px;margin-bottom:24px;">
-            <i class="fa-solid fa-star star-btn" onclick="setRating(1)"></i>
-            <i class="fa-solid fa-star star-btn" onclick="setRating(2)"></i>
-            <i class="fa-solid fa-star star-btn" onclick="setRating(3)"></i>
-            <i class="fa-solid fa-star star-btn" onclick="setRating(4)"></i>
-            <i class="fa-solid fa-star star-btn" onclick="setRating(5)"></i>
-        </div>
-        <button onclick="submitRating()" style="width:100%;padding:17px;background:var(--green);color:white;border-radius:16px;font-family:'Syne',sans-serif;font-weight:800;font-size:16px;border:none;cursor:pointer;box-shadow:0 6px 18px rgba(0,200,150,0.25);">Submit Review</button>
-    </div>
-</div>
-
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField, increment, arrayUnion, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-    const firebaseConfig = { apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
+        // ==========================================
+        // 1. PASTE YOUR FIREBASE CONFIG HERE
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
   authDomain: "isulantrike.firebaseapp.com",
   projectId: "isulantrike",
   storageBucket: "isulantrike.firebasestorage.app",
   messagingSenderId: "262164007490",
   appId: "1:262164007490:web:2ba9c91b468bbd09ff3bdb",
-  measurementId: "G-3K2TEVV4X5" };
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const COLL = "isulan_elite_v7";
-    const FARE = 21;
-
-    let userUid, userData, map, userMarker, peerMarkers = {}, currentRating = 0, activeDriverId = null;
-
-    // =====================
-    // AUTH
-    // =====================
-    window.handleAuth = async (type) => {
-        const e = document.getElementById('auth-email').value;
-        const p = document.getElementById('auth-pass').value;
-        if (type === 'anon') signInAnonymously(auth).catch(err => alert(err.message));
-        else if (type === 'login') signInWithEmailAndPassword(auth, e, p).catch(err => alert(err.message));
-        else createUserWithEmailAndPassword(auth, e, p).catch(err => alert(err.message));
-    };
-
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            userUid = user.uid;
-            const snap = await getDoc(doc(db, COLL, userUid));
-            if (snap.exists()) {
-                userData = snap.data();
-                launchApp();
-            } else if (user.isAnonymous) {
-                userData = { uid: userUid, name: "Guest", role: "passenger", isOnline: true, history: [], rating: 5, totalRates: 0, totalTrips: 0, earnings: 0 };
-                await setDoc(doc(db, COLL, userUid), userData);
-                launchApp();
-            } else {
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('setup-screen').classList.remove('hidden');
-            }
-        }
-    });
-
-    window.saveInitialProfile = async () => {
-        const name = document.getElementById('setup-name').value.trim();
-        const role = document.getElementById('setup-role').value;
-        if (!name) return alert("Please enter your name");
-        userData = { uid: userUid, name, role, plate: document.getElementById('setup-plate').value.trim() || 'N/A', rating: 5, totalRates: 0, isOnline: false, history: [], totalTrips: 0, earnings: 0 };
-        await setDoc(doc(db, COLL, userUid), userData);
-        location.reload();
-    };
-
-    window.togglePlateField = () => {
-        document.getElementById('setup-plate').classList.toggle('hidden', document.getElementById('setup-role').value !== 'driver');
-    };
-
-    // =====================
-    // CORE APP
-    // =====================
-    function launchApp() {
-        document.getElementById('auth-screen').classList.add('hidden');
-        document.getElementById('setup-screen').classList.add('hidden');
-        const ui = document.getElementById('app-ui');
-        ui.classList.remove('hidden');
-        ui.style.display = 'flex';
-
-        document.getElementById('user-display').innerText = userData.name;
-        document.getElementById('role-display').innerText = userData.role;
-        document.getElementById('role-icon').className = userData.role === 'driver' ? 'fa-solid fa-motorcycle' : 'fa-solid fa-person';
-        document.getElementById(userData.role + '-panel').classList.remove('hidden');
-
-        initMap();
-        listenForPeers();
-        if (userData.role === 'driver') {
-            listenForBookings();
-            refreshDriverDash();
-        }
-        if (userData.role === 'passenger') {
-            listenForRideStatus();
-            refreshPassengerDash();
-        }
-    }
-
-    function initMap() {
-        map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 15);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '' }).addTo(map);
-        userMarker = L.circleMarker([6.6294, 124.605], { radius: 9, color: '#fff', fillColor: '#00c896', fillOpacity: 1, weight: 3 }).addTo(map);
-
-        navigator.geolocation.watchPosition(async p => {
-            const pos = [p.coords.latitude, p.coords.longitude];
-            userMarker.setLatLng(pos);
-            map.setView(pos, map.getZoom());
-            if (userData.isOnline) {
-                await updateDoc(doc(db, COLL, userUid), { lat: pos[0], lng: pos[1], lastSeen: serverTimestamp() });
-            }
-        }, null, { enableHighAccuracy: true });
-    }
-
-    function listenForPeers() {
-        onSnapshot(collection(db, COLL), snap => {
-            if (userData.role === 'passenger') document.getElementById('driver-list').innerHTML = '';
-            snap.forEach(dDoc => {
-                const data = dDoc.data();
-                if (dDoc.id === userUid || !data.isOnline || !data.lat) {
-                    if (peerMarkers[dDoc.id]) { map.removeLayer(peerMarkers[dDoc.id]); delete peerMarkers[dDoc.id]; }
-                    return;
-                }
-                const iconHtml = `<div style="position:relative;"><div class="marker-label">${data.name} ★${(data.rating||5).toFixed(1)}</div><span style="font-size:22px;">${data.role === 'driver' ? '🏍️' : '🧑'}</span></div>`;
-                const icon = L.divIcon({ html: iconHtml, className: '', iconSize: [30, 30] });
-                if (peerMarkers[dDoc.id]) peerMarkers[dDoc.id].setLatLng([data.lat, data.lng]).setIcon(icon);
-                else peerMarkers[dDoc.id] = L.marker([data.lat, data.lng], { icon }).addTo(map);
-
-                if (userData.role === 'passenger' && data.role === 'driver') {
-                    const card = document.createElement('div');
-                    card.className = 'driver-card slide-up';
-                    card.innerHTML = `
-                        <div class="driver-avatar"><i class="fa-solid fa-motorcycle"></i></div>
-                        <div style="flex:1;min-width:0;">
-                            <p style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin:0 0 4px;color:var(--charcoal);">${data.name}</p>
-                            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                                <span class="rating-badge"><i class="fa-solid fa-star"></i>${(data.rating||5).toFixed(1)}</span>
-                                <span style="font-size:11px;color:#9ca3af;font-weight:600;">Plate: ${data.plate || '---'}</span>
-                            </div>
-                        </div>
-                        <div style="text-align:right;">
-                            <p style="font-family:'Syne',sans-serif;font-weight:800;color:var(--green);font-size:15px;margin:0;">₱${FARE}</p>
-                            <p style="font-size:10px;color:#9ca3af;margin:2px 0 0;">Base fare</p>
-                        </div>`;
-                    card.onclick = () => requestRide(dDoc.id, data.name, data.plate);
-                    document.getElementById('driver-list').appendChild(card);
-                }
-            });
-            if (userData.role === 'passenger' && document.getElementById('driver-list').children.length === 0) {
-                document.getElementById('driver-list').innerHTML = '<div class="empty-state"><i class="fa-solid fa-motorcycle"></i><p style="font-size:13px;">No drivers online nearby.<br>Check back shortly.</p></div>';
-            }
-        });
-    }
-
-    // =====================
-    // BOOKING FLOW
-    // =====================
-    window.requestRide = async (dId, dName, dPlate) => {
-        const dest = document.getElementById('dest-input').value.trim();
-        if (!dest) { document.getElementById('dest-input').focus(); return alert("Please enter your destination first!"); }
-        if (!confirm(`Book a ride with ${dName}?\nTo: ${dest}`)) return;
-        activeDriverId = dId;
-        // Get current position as pickup
-        navigator.geolocation.getCurrentPosition(async pos => {
-            const pickup = `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
-            await updateDoc(doc(db, COLL, dId), {
-                request: { pId: userUid, pName: userData.name, dest, pickup, status: 'pending', requestedAt: Date.now() }
-            });
-            document.getElementById('active-ride-status').classList.remove('hidden');
-            document.getElementById('status-driver-text').innerText = `Request sent to ${dName}!`;
-        }, () => {
-            updateDoc(doc(db, COLL, dId), {
-                request: { pId: userUid, pName: userData.name, dest, pickup: 'Current Location', status: 'pending', requestedAt: Date.now() }
-            });
-        });
-    };
-
-    function listenForBookings() {
-        onSnapshot(doc(db, COLL, userUid), snap => {
-            const data = snap.data();
-            if (data?.request?.status === 'pending') {
-                document.getElementById('alert-p-name').innerText = data.request.pName;
-                document.getElementById('alert-dest').innerText = data.request.dest;
-                document.getElementById('alert-pickup').innerText = data.request.pickup || 'Current Location';
-                document.getElementById('booking-alert').classList.add('show');
-            }
-        });
-    }
-
-    window.acceptRide = async () => {
-        const snap = await getDoc(doc(db, COLL, userUid));
-        const req = snap.data().request;
-        await updateDoc(doc(db, COLL, userUid), { "request.status": 'accepted' });
-        document.getElementById('booking-alert').classList.remove('show');
-        document.getElementById('driver-offline-ui').classList.add('hidden');
-        document.getElementById('driver-active-trip').classList.remove('hidden');
-        document.getElementById('current-p-name').innerText = req.pName;
-        document.getElementById('current-p-pickup').innerHTML = `<i class="fa-solid fa-circle-dot" style="color:var(--green);"></i> ${req.pickup}`;
-        document.getElementById('current-p-dest').innerHTML = `<i class="fa-solid fa-location-dot" style="color:#ef4444;"></i> ${req.dest}`;
-    };
-
-    window.completeTrip = async () => {
-        const snap = await getDoc(doc(db, COLL, userUid));
-        const req = snap.data().request;
-        const tripRecord = {
-            pName: req.pName, pId: req.pId, dest: req.dest, pickup: req.pickup,
-            fare: FARE, completedAt: Date.now(), date: new Date().toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }),
-            time: new Date().toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })
+  measurementId: "G-3K2TEVV4X5"
         };
-        await updateDoc(doc(db, COLL, userUid), {
-            "request.status": 'completed',
-            earnings: increment(FARE),
-            totalTrips: increment(1),
-            history: arrayUnion(tripRecord)
-        });
-        document.getElementById('driver-active-trip').classList.add('hidden');
-        document.getElementById('driver-offline-ui').classList.remove('hidden');
-        // Update today's earnings display
-        const newData = (await getDoc(doc(db, COLL, userUid))).data();
-        userData = newData;
-        document.getElementById('d-today-earn').innerText = `₱${(newData.earnings || 0).toFixed(2)}`;
-        refreshDriverDash();
-    };
 
-    function listenForRideStatus() {
-        onSnapshot(collection(db, COLL), snap => {
-            snap.forEach(dDoc => {
-                const data = dDoc.data();
-                if (data.request?.pId === userUid) {
-                    activeDriverId = dDoc.id;
-                    if (data.request.status === 'accepted') {
-                        document.getElementById('active-ride-status').classList.remove('hidden');
-                        document.getElementById('status-driver-text').innerText = `${data.name} is on the way!`;
-                    } else if (data.request.status === 'completed') {
-                        // Save to passenger history
-                        const tripRecord = {
-                            dName: data.name, dPlate: data.plate || 'N/A', dRating: (data.rating || 5).toFixed(1),
-                            dest: data.request.dest, pickup: data.request.pickup || 'Current Location',
-                            fare: FARE, completedAt: Date.now(),
-                            date: new Date().toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }),
-                            time: new Date().toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })
-                        };
-                        updateDoc(doc(db, COLL, userUid), { history: arrayUnion(tripRecord), totalTrips: increment(1) });
-                        document.getElementById('active-ride-status').classList.add('hidden');
-                        document.getElementById('rate-driver-name').innerText = data.name;
-                        const modal = document.getElementById('rating-modal');
-                        modal.style.display = 'flex';
-                        refreshPassengerDash();
-                    }
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = "isulan-trike-2026";
+        const COLL_PATH = `artifacts/${appId}/public/data/users`;
+
+        let userUid, userData, map, userMarker, peerMarkers = {}, currentRating = 0, activeDriverId = null;
+
+        // AUTH HANDLERS
+        window.handleAuth = async (type) => {
+            const e = document.getElementById('auth-email').value;
+            const p = document.getElementById('auth-pass').value;
+            try {
+                if(type === 'anon') await signInAnonymously(auth);
+                else if(type === 'login') await signInWithEmailAndPassword(auth, e, p);
+                else await createUserWithEmailAndPassword(auth, e, p);
+            } catch (err) { alert(err.message); }
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userUid = user.uid;
+                const snap = await getDoc(doc(db, COLL_PATH, userUid));
+                if(snap.exists()) {
+                    userData = snap.data();
+                    launchApp();
+                } else {
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    document.getElementById('setup-screen').classList.remove('hidden');
                 }
-            });
-        });
-    }
-
-    // =====================
-    // TABS
-    // =====================
-    window.switchTab = (tab) => {
-        const role = userData.role;
-        const prefix = role === 'passenger' ? 'p' : 'd';
-        ['main', 'history', 'dash'].forEach(t => {
-            document.getElementById(`${prefix}-tab-${t}`).classList.toggle('hidden', t !== tab);
-            document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
-        });
-        if (tab === 'history') renderHistory();
-        if (tab === 'dash') { role === 'driver' ? refreshDriverDash() : refreshPassengerDash(); }
-    };
-
-    // =====================
-    // HISTORY RENDER
-    // =====================
-    function renderHistory() {
-        const role = userData.role;
-        const list = document.getElementById(role === 'driver' ? 'd-history-list' : 'p-history-list');
-        const history = userData.history || [];
-        if (!history.length) { list.innerHTML = '<div class="empty-state"><i class="fa-regular fa-clock"></i><p style="font-size:14px;">No history yet.</p></div>'; return; }
-        list.innerHTML = '';
-        [...history].reverse().forEach(trip => {
-            const card = document.createElement('div');
-            card.className = 'history-card slide-up';
-            if (role === 'passenger') {
-                card.innerHTML = `
-                    <div style="display:flex;align-items:flex-start;gap:12px;">
-                        <div class="trip-icon"><i class="fa-solid fa-motorcycle"></i></div>
-                        <div style="flex:1;min-width:0;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                                <p style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin:0;color:var(--charcoal);">${trip.dName}</p>
-                                <span style="font-family:'Syne',sans-serif;font-weight:800;color:var(--green);font-size:14px;">₱${trip.fare}</span>
-                            </div>
-                            <p style="font-size:12px;color:#6b7280;margin:0 0 6px;"><i class="fa-solid fa-id-card" style="margin-right:4px;color:var(--green);"></i>Plate: <strong>${trip.dPlate}</strong></p>
-                            <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:6px;">
-                                <p style="font-size:12px;color:#9ca3af;margin:0;"><i class="fa-solid fa-circle-dot" style="color:var(--green);font-size:10px;margin-right:5px;"></i>${trip.pickup}</p>
-                                <p style="font-size:12px;color:#9ca3af;margin:0;"><i class="fa-solid fa-location-dot" style="color:#ef4444;font-size:10px;margin-right:5px;"></i>${trip.dest}</p>
-                            </div>
-                            <p style="font-size:11px;color:#c4c4c4;margin:0;"><i class="fa-regular fa-clock" style="margin-right:4px;"></i>${trip.date} · ${trip.time}</p>
-                        </div>
-                    </div>`;
-            } else {
-                card.innerHTML = `
-                    <div style="display:flex;align-items:flex-start;gap:12px;">
-                        <div class="trip-icon"><i class="fa-solid fa-person"></i></div>
-                        <div style="flex:1;min-width:0;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                                <p style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin:0;color:var(--charcoal);">${trip.pName}</p>
-                                <span style="font-family:'Syne',sans-serif;font-weight:800;color:var(--green);font-size:14px;">+₱${trip.fare}</span>
-                            </div>
-                            <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:6px;">
-                                <p style="font-size:12px;color:#9ca3af;margin:0;"><i class="fa-solid fa-circle-dot" style="color:var(--green);font-size:10px;margin-right:5px;"></i>${trip.pickup}</p>
-                                <p style="font-size:12px;color:#9ca3af;margin:0;"><i class="fa-solid fa-location-dot" style="color:#ef4444;font-size:10px;margin-right:5px;"></i>${trip.dest}</p>
-                            </div>
-                            <p style="font-size:11px;color:#c4c4c4;margin:0;"><i class="fa-regular fa-clock" style="margin-right:4px;"></i>${trip.date} · ${trip.time}</p>
-                        </div>
-                    </div>`;
             }
-            list.appendChild(card);
         });
-    }
 
-    // =====================
-    // DASHBOARDS
-    // =====================
-    async function refreshPassengerDash() {
-        const snap = await getDoc(doc(db, COLL, userUid));
-        const data = snap.data();
-        userData = data;
-        const history = data.history || [];
-        document.getElementById('p-stat-trips').innerText = history.length;
-        document.getElementById('p-stat-spent').innerText = `₱${history.length * FARE}`;
+        window.saveInitialProfile = async () => {
+            const name = document.getElementById('setup-name').value;
+            const role = document.getElementById('setup-role').value;
+            if(!name) return alert("Enter your name");
+            userData = { uid: userUid, name, role, rating: 5, totalRates: 0, earnings: 0, isOnline: false, history: [] };
+            await setDoc(doc(db, COLL_PATH, userUid), userData);
+            launchApp();
+        };
 
-        // Build unique driver list
-        const driverMap = {};
-        history.forEach(t => {
-            if (!driverMap[t.dName]) driverMap[t.dName] = { ...t, count: 0 };
-            driverMap[t.dName].count++;
-        });
-        const el = document.getElementById('p-dash-drivers');
-        if (!Object.keys(driverMap).length) { el.innerHTML = '<div class="empty-state" style="padding:20px;"><i class="fa-solid fa-motorcycle"></i><p style="font-size:13px;">No rides yet.</p></div>'; return; }
-        el.innerHTML = '';
-        Object.values(driverMap).forEach(d => {
-            el.innerHTML += `
-                <div class="history-card" style="display:flex;align-items:center;gap:12px;">
-                    <div class="driver-avatar"><i class="fa-solid fa-motorcycle"></i></div>
-                    <div style="flex:1;">
-                        <p style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin:0 0 3px;color:var(--charcoal);">${d.dName}</p>
-                        <p style="font-size:12px;color:#6b7280;margin:0 0 3px;"><i class="fa-solid fa-id-card" style="color:var(--green);margin-right:4px;"></i>Plate: <strong>${d.dPlate}</strong></p>
-                        <p style="font-size:11px;color:#9ca3af;margin:0;">${d.count} ride${d.count>1?'s':''} · Last: ${d.date}</p>
-                    </div>
-                    <span class="rating-badge"><i class="fa-solid fa-star"></i>${d.dRating}</span>
-                </div>`;
-        });
-    }
-
-    async function refreshDriverDash() {
-        const snap = await getDoc(doc(db, COLL, userUid));
-        const data = snap.data();
-        userData = data;
-        const history = data.history || [];
-        const earnings = data.earnings || 0;
-        document.getElementById('d-total-earn').innerText = `₱${earnings.toFixed(2)}`;
-        document.getElementById('d-stat-trips').innerText = history.length;
-        document.getElementById('d-stat-rating').innerText = (data.rating || 5).toFixed(1);
-        document.getElementById('d-today-earn').innerText = `₱${earnings.toFixed(2)}`;
-
-        // Today's earnings calc
-        const today = new Date().toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
-        const todayTrips = history.filter(t => t.date === today);
-        const todayEarn = todayTrips.reduce((s, t) => s + (t.fare || 0), 0);
-        document.getElementById('d-stat-today').innerText = `₱${todayEarn}`;
-
-        // Passenger records
-        const el = document.getElementById('d-dash-passengers');
-        if (!history.length) { el.innerHTML = '<div class="empty-state" style="padding:20px;"><i class="fa-solid fa-users"></i><p style="font-size:13px;">No passenger records yet.</p></div>'; return; }
-        el.innerHTML = '';
-        [...history].reverse().forEach(t => {
-            el.innerHTML += `
-                <div class="history-card" style="display:flex;align-items:flex-start;gap:12px;">
-                    <div class="trip-icon"><i class="fa-solid fa-person"></i></div>
-                    <div style="flex:1;min-width:0;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                            <p style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin:0;color:var(--charcoal);">${t.pName}</p>
-                            <span style="font-family:'Syne',sans-serif;font-weight:800;color:var(--green);font-size:14px;">+₱${t.fare}</span>
-                        </div>
-                        <p style="font-size:12px;color:#9ca3af;margin:0 0 3px;"><i class="fa-solid fa-circle-dot" style="color:var(--green);font-size:10px;margin-right:4px;"></i>${t.pickup}</p>
-                        <p style="font-size:12px;color:#9ca3af;margin:0 0 6px;"><i class="fa-solid fa-location-dot" style="color:#ef4444;font-size:10px;margin-right:4px;"></i>${t.dest}</p>
-                        <p style="font-size:11px;color:#c4c4c4;margin:0;"><i class="fa-regular fa-clock" style="margin-right:4px;"></i>${t.date} · ${t.time}</p>
-                    </div>
-                </div>`;
-        });
-    }
-
-    // =====================
-    // UTILS
-    // =====================
-    window.toggleDuty = async () => {
-        userData.isOnline = !userData.isOnline;
-        const btn = document.getElementById('duty-btn');
-        const txt = document.getElementById('duty-status-text');
-        const ind = document.getElementById('online-indicator');
-        if (userData.isOnline) {
-            btn.className = 'duty-btn online'; btn.innerText = 'GO OFFLINE';
-            txt.innerText = 'You are online & accepting rides';
-            ind.style.display = 'flex';
-        } else {
-            btn.className = 'duty-btn offline'; btn.innerText = 'GO ONLINE';
-            txt.innerText = 'You are currently offline';
-            ind.style.display = 'none';
+        function launchApp() {
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('app-ui').classList.replace('hidden', 'flex');
+            document.getElementById('user-display').innerText = userData.name;
+            document.getElementById('role-display').innerText = userData.role;
+            document.getElementById(userData.role + '-panel').classList.remove('hidden');
+            initMap();
+            listenForPeers();
         }
-        await updateDoc(doc(db, COLL, userUid), { isOnline: userData.isOnline });
-    };
 
-    window.setRating = (n) => {
-        currentRating = n;
-        document.querySelectorAll('.star-btn').forEach((s, i) => s.classList.toggle('active', i < n));
-    };
+        function initMap() {
+            map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 15);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+            userMarker = L.circleMarker([6.6294, 124.605], { radius: 10, color: '#fff', fillColor: '#10b981', fillOpacity: 1, weight: 4 }).addTo(map);
+        }
 
-    window.submitRating = async () => {
-        if (!currentRating) return alert("Please select a star rating!");
-        const driverRef = doc(db, COLL, activeDriverId);
-        const dSnap = await getDoc(driverRef);
-        const dData = dSnap.data();
-        const newRating = ((dData.rating || 5) * (dData.totalRates || 1) + currentRating) / ((dData.totalRates || 1) + 1);
-        await updateDoc(driverRef, { rating: newRating, totalRates: increment(1), request: deleteField() });
-        document.getElementById('rating-modal').style.display = 'none';
-        alert("Thanks for your review! 🎉");
-        location.reload();
-    };
+        function listenForPeers() {
+            onSnapshot(collection(db, COLL_PATH), snap => {
+                if(userData.role === 'passenger') document.getElementById('driver-list').innerHTML = '';
+                snap.forEach(dDoc => {
+                    const data = dDoc.data();
+                    if(dDoc.id === userUid) return;
+                    if(userData.role === 'passenger' && data.role === 'driver' && data.isOnline) {
+                        document.getElementById('driver-list').innerHTML += `
+                            <div class="p-5 bg-white border rounded-2xl flex justify-between items-center">
+                                <p class="font-black">${data.name}</p>
+                                <button class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold">BOOK</button>
+                            </div>`;
+                    }
+                });
+            });
+        }
 
-    window.dismissAlert = async () => {
-        document.getElementById('booking-alert').classList.remove('show');
-        await updateDoc(doc(db, COLL, userUid), { request: deleteField() });
-    };
-</script>
+        window.toggleDuty = async () => {
+            userData.isOnline = !userData.isOnline;
+            const btn = document.getElementById('duty-btn');
+            btn.innerText = userData.isOnline ? "GO OFFLINE" : "GO ONLINE";
+            btn.className = userData.isOnline ? "w-full py-8 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl" : "w-full py-8 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl";
+            await updateDoc(doc(db, COLL_PATH, userUid), { isOnline: userData.isOnline });
+        };
+    </script>
 </body>
 </html>
