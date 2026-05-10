@@ -11,11 +11,10 @@
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; }
         #map { height: 50vh; width: 100%; filter: saturate(1.1) brightness(1.02); }
-        .card-shadow { box-shadow: 0 20px 40px rgba(0,0,0,0.06); }
         .btn-gradient { background: linear-gradient(135deg, #059669 0%, #10b981 100%); }
-        .hide-scroll::-webkit-scrollbar { display: none; }
         .animate-pop { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes pop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .hide-scroll::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="bg-gray-50 text-slate-900">
@@ -27,7 +26,7 @@
                 <span class="text-4xl">🛺</span>
             </div>
             <h1 class="text-5xl font-extrabold tracking-tighter">Isulan<span class="text-emerald-600">Trike</span></h1>
-            <p class="text-slate-400 font-medium mt-2">Elite transport at your fingertips.</p>
+            <p class="text-slate-400 font-medium mt-2">Premium transport for the people.</p>
         </div>
 
         <div class="space-y-4 w-full max-w-sm mx-auto">
@@ -39,18 +38,32 @@
         </div>
     </div>
 
-    <!-- 2. DASHBOARD / LANDING -->
+    <!-- 2. PROFILE SETUP (Only for new non-guest accounts) -->
+    <div id="setup-screen" class="hidden fixed inset-0 z-[5100] bg-white flex flex-col p-10 items-center justify-center text-center">
+        <h2 class="text-3xl font-black mb-2 italic">Finish Setup</h2>
+        <p class="text-slate-400 mb-10 font-medium">Select your role to continue.</p>
+        <div class="w-full max-w-xs space-y-4">
+            <input id="setup-name" type="text" placeholder="Your Name" class="w-full p-5 bg-slate-100 rounded-2xl outline-none font-bold">
+            <select id="setup-role" class="w-full p-5 bg-slate-100 rounded-2xl font-bold" onchange="togglePlateField()">
+                <option value="passenger">Passenger</option>
+                <option value="driver">Driver</option>
+            </select>
+            <input id="setup-plate" type="text" placeholder="Plate Number (ABC-123)" class="hidden w-full p-5 bg-slate-100 rounded-2xl font-bold">
+            <button onclick="saveInitialProfile()" class="btn-gradient w-full py-5 rounded-2xl text-white font-black mt-4 shadow-lg shadow-emerald-100">Complete Profile</button>
+        </div>
+    </div>
+
+    <!-- 3. DASHBOARD -->
     <div id="landing-page" class="hidden fixed inset-0 z-[4000] bg-white flex flex-col p-8 animate-pop">
         <div class="flex justify-between items-start mb-8">
             <div>
-                <span id="land-role-label" class="text-[9px] font-black bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full uppercase tracking-widest mb-2 inline-block">Passenger</span>
-                <h2 class="text-4xl font-black text-slate-800">Hi, <span id="land-name">Guest</span></h2>
+                <span id="land-role-label" class="text-[9px] font-black bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full uppercase tracking-widest mb-2 inline-block">Role</span>
+                <h2 class="text-4xl font-black text-slate-800">Hi, <span id="land-name">User</span></h2>
             </div>
-            <button onclick="goToApp()" class="btn-gradient p-5 rounded-[1.5rem] text-white shadow-lg shadow-emerald-200 active:scale-90 transition-transform">
-                <span class="text-xl">🗺️</span>
-            </button>
+            <button onclick="goToApp()" class="btn-gradient p-5 rounded-[1.5rem] text-white shadow-lg shadow-emerald-200">🗺️</button>
         </div>
 
+        <!-- Driver Stats -->
         <div id="driver-stats" class="hidden grid grid-cols-2 gap-4 mb-8">
             <div class="bg-slate-900 p-6 rounded-[2rem] text-white">
                 <p class="text-[9px] text-slate-500 font-bold uppercase mb-1">Balance</p>
@@ -63,50 +76,26 @@
         </div>
 
         <div class="flex-1 overflow-y-auto hide-scroll">
-            <h3 class="text-lg font-bold mb-4 italic flex items-center justify-between">
-                Recent Activity
-                <span id="anon-badge" class="hidden text-[9px] text-slate-300 border border-slate-200 px-2 py-0.5 rounded">GUEST MODE</span>
-            </h3>
+            <h3 class="text-lg font-bold mb-4">Activity History</h3>
             <div id="history-list" class="space-y-4"></div>
         </div>
 
-        <button onclick="processLogout()" class="mt-6 py-4 border-2 border-slate-100 rounded-2xl text-slate-400 font-bold flex items-center justify-center gap-2 hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all">
-            Logout
-        </button>
+        <button onclick="processLogout()" class="mt-6 py-4 border-2 border-slate-100 rounded-2xl text-slate-400 font-bold">Logout</button>
     </div>
 
-    <!-- 3. MAP UI -->
+    <!-- 4. MAP UI -->
     <div id="app-ui" class="hidden fixed inset-0 z-[4500] bg-white flex flex-col">
         <div id="map"></div>
-        <button onclick="backToDashboard()" class="absolute top-8 left-8 z-[4600] p-4 bg-white rounded-2xl shadow-xl active:scale-90 transition-transform">
-            <span class="text-xl">🏠</span>
-        </button>
-
+        <button onclick="backToDashboard()" class="absolute top-8 left-8 z-[4600] p-4 bg-white rounded-2xl shadow-xl font-bold">🏠</button>
+        
         <div class="flex-1 bg-white rounded-t-[3.5rem] -mt-16 z-[4550] p-10 shadow-[0_-20px_60px_rgba(0,0,0,0.1)]">
-            <div class="w-12 h-1.5 bg-slate-100 rounded-full mx-auto mb-10"></div>
-
             <div id="passenger-panel" class="hidden">
                 <h3 class="text-2xl font-black mb-6">Nearby Drivers</h3>
-                <div id="driver-list" class="space-y-3">
-                    <p class="text-center text-slate-300 py-10 font-bold animate-pulse">Scanning Isulan area...</p>
-                </div>
+                <div id="driver-list" class="space-y-3"></div>
             </div>
-
-            <div id="driver-panel" class="hidden">
-                <button id="duty-btn" onclick="toggleDuty()" class="w-full py-16 rounded-[3rem] bg-slate-50 border-4 border-dashed border-slate-100 text-slate-300 font-black text-3xl flex flex-col items-center justify-center transition-all cursor-pointer">
-                    <span id="duty-text">GO ONLINE</span>
-                    <span id="duty-sub" class="text-xs mt-2 opacity-50">Offline</span>
-                </button>
+            <div id="driver-panel" class="hidden text-center">
+                <button id="duty-btn" onclick="toggleDuty()" class="w-full py-16 rounded-[3rem] bg-slate-50 border-4 border-dashed border-slate-100 text-slate-300 font-black text-3xl">GO ONLINE</button>
             </div>
-        </div>
-    </div>
-
-    <!-- 4. RIDE POPUP -->
-    <div id="pop-request" class="hidden fixed inset-0 z-[6000] bg-slate-900/60 backdrop-blur-md flex items-end sm:items-center justify-center p-6">
-        <div class="w-full max-w-sm bg-white rounded-[3rem] p-10 shadow-2xl animate-pop">
-            <h3 id="req-passenger-name" class="text-3xl font-black mb-6">New Ride</h3>
-            <button onclick="acceptTrip()" class="w-full py-5 btn-gradient text-white rounded-3xl font-black shadow-xl mb-4">Accept (₱21.00)</button>
-            <button onclick="closePop('pop-request')" class="w-full py-4 text-slate-300 font-bold">Decline</button>
         </div>
     </div>
 
@@ -130,21 +119,16 @@
         let userUid, userData, map;
 
         window.handleAuth = (type) => {
-            if(type === 'anon') {
-                document.getElementById('btn-guest').innerText = "Entering...";
-                signInAnonymously(auth).catch(alert);
-            } else {
+            if(type === 'anon') signInAnonymously(auth).catch(alert);
+            else {
                 const e = document.getElementById('auth-email').value;
                 const p = document.getElementById('auth-pass').value;
-                if(!e || !p) return alert("Fill fields");
                 if(type === 'login') signInWithEmailAndPassword(auth, e, p).catch(alert);
                 if(type === 'register') createUserWithEmailAndPassword(auth, e, p).catch(alert);
             }
         };
 
-        window.processLogout = () => {
-            signOut(auth).then(() => location.reload());
-        };
+        window.processLogout = () => signOut(auth).then(() => location.reload());
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -154,85 +138,67 @@
                 if(snap.exists()) {
                     userData = snap.data();
                     showDashboard();
-                } else {
-                    // AUTO-INITIALIZE GUEST OR NEW USER
-                    userData = {
-                        uid: userUid,
-                        name: user.isAnonymous ? "Guest Traveler" : "New User",
-                        role: "passenger", // Default to passenger
-                        isAnonymous: user.isAnonymous,
-                        history: [],
-                        earnings: 0,
-                        trips: 0
-                    };
+                } else if(user.isAnonymous) {
+                    // Guests get auto-passenger role to skip screens
+                    userData = { uid: userUid, name: "Guest Traveler", role: "passenger", isAnonymous: true, history: [], earnings: 0, trips: 0 };
                     await setDoc(doc(db, COLL, userUid), userData);
                     showDashboard();
+                } else {
+                    // Registered users must choose role
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    document.getElementById('setup-screen').classList.remove('hidden');
                 }
             }
         });
 
+        window.saveInitialProfile = async () => {
+            const name = document.getElementById('setup-name').value;
+            const role = document.getElementById('setup-role').value;
+            if(!name) return alert("Name is required");
+
+            userData = {
+                uid: userUid,
+                name: name,
+                role: role,
+                plate: document.getElementById('setup-plate').value || 'N/A',
+                isAnonymous: false,
+                history: [],
+                earnings: 0,
+                trips: 0
+            };
+            await setDoc(doc(db, COLL, userUid), userData);
+            location.reload();
+        };
+
         function showDashboard() {
             document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('app-ui').classList.add('hidden');
             document.getElementById('landing-page').classList.remove('hidden');
             
             document.getElementById('land-name').innerText = userData.name;
             document.getElementById('land-role-label').innerText = userData.role;
 
-            if(userData.isAnonymous) {
-                document.getElementById('anon-badge').classList.remove('hidden');
-                document.getElementById('history-list').innerHTML = `<div class="p-12 text-center text-slate-200 font-bold border-2 border-dashed border-slate-100 rounded-[2.5rem]">Records are only saved for verified accounts.</div>`;
-            } else {
-                renderHistory();
-                if(userData.role === 'driver') {
-                    document.getElementById('driver-stats').classList.remove('hidden');
-                    document.getElementById('stat-earn').innerText = (userData.earnings || 0).toFixed(2);
-                    document.getElementById('stat-trips').innerText = userData.trips || 0;
-                }
+            if(userData.role === 'driver') {
+                document.getElementById('driver-stats').classList.remove('hidden');
+                document.getElementById('stat-earn').innerText = (userData.earnings || 0).toFixed(2);
+                document.getElementById('stat-trips').innerText = userData.trips || 0;
             }
+            renderHistory();
         }
 
-        window.backToDashboard = () => showDashboard();
+        window.togglePlateField = () => {
+            document.getElementById('setup-plate').classList.toggle('hidden', document.getElementById('setup-role').value !== 'driver');
+        };
 
+        window.backToDashboard = () => showDashboard();
         window.goToApp = () => {
             document.getElementById('landing-page').classList.add('hidden');
             document.getElementById('app-ui').classList.remove('hidden');
             document.getElementById(userData.role + '-panel').classList.remove('hidden');
-            if(!map) initMap();
-            if(userData.role === 'passenger') listenForDrivers();
-        };
-
-        function initMap() {
-            map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 15);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-        }
-
-        function listenForDrivers() {
-            onSnapshot(collection(db, "active_drivers"), (snap) => {
-                const list = document.getElementById('driver-list');
-                list.innerHTML = '';
-                snap.forEach(doc => {
-                    const d = doc.data();
-                    if(d.status === 'online') {
-                        list.innerHTML += `
-                            <div class="p-5 bg-slate-50 rounded-3xl flex justify-between items-center cursor-pointer active:scale-95 transition-all">
-                                <div><p class="font-black text-slate-800">${d.name}</p><p class="text-[9px] text-emerald-500 font-bold">ONLINE</p></div>
-                                <button onclick="alert('Request Sent!')" class="bg-white px-4 py-2 rounded-xl text-xs font-black shadow-sm">BOOK</button>
-                            </div>`;
-                    }
-                });
-            });
-        }
-
-        window.toggleDuty = async () => {
-            const btn = document.getElementById('duty-btn');
-            userData.isOnline = !userData.isOnline;
-            if(userData.isOnline) {
-                btn.className = "w-full py-16 rounded-[3rem] bg-emerald-600 text-white font-black text-3xl shadow-xl shadow-emerald-100 border-none scale-[1.02]";
-                document.getElementById('duty-text').innerText = "ONLINE";
-                await setDoc(doc(db, "active_drivers", userUid), { name: userData.name, status: 'online', lat: 6.6294, lng: 124.605 });
-            } else {
-                location.reload();
+            if(!map) {
+                map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 15);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
             }
         };
 
@@ -240,11 +206,21 @@
             const list = document.getElementById('history-list');
             list.innerHTML = userData.history?.length ? '' : '<p class="text-center text-slate-200 py-10 font-bold">No trips yet.</p>';
             (userData.history || []).forEach(h => {
-                list.innerHTML += `<div class="p-5 bg-slate-50 rounded-2xl flex justify-between items-center"><p class="font-bold">${h.dest}</p><p class="text-emerald-600 font-black">₱${h.fare}</p></div>`;
+                list.innerHTML += `<div class="p-5 bg-slate-50 rounded-2xl flex justify-between items-center"><p class="font-bold text-slate-700">${h.dest}</p><p class="text-emerald-600 font-black">₱${h.fare}</p></div>`;
             });
         }
 
-        window.closePop = (id) => document.getElementById(id).classList.add('hidden');
+        window.toggleDuty = async () => {
+            const btn = document.getElementById('duty-btn');
+            userData.isOnline = !userData.isOnline;
+            if(userData.isOnline) {
+                btn.className = "w-full py-16 rounded-[3rem] bg-emerald-600 text-white font-black text-3xl shadow-xl shadow-emerald-100 border-none";
+                btn.innerText = "ONLINE";
+                await setDoc(doc(db, "active_drivers", userUid), { name: userData.name, status: 'online', lat: 6.6294, lng: 124.605 });
+            } else {
+                location.reload();
+            }
+        };
     </script>
 </body>
 </html>
