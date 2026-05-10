@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IsulanTrike Elite - 2026</title>
+    <title>IsulanTrike Elite - Real-time GPS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -13,10 +13,9 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; touch-action: manipulation; }
         #map { height: 40vh; width: 100%; z-index: 1; background: #f3f4f6; }
         .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        .animate-pop { animation: pop 0.3s ease-out; }
-        @keyframes pop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .star-rating i.active { color: #facc15; }
         .custom-div-icon { background: none; border: none; }
+        .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
 <body class="bg-gray-50 flex flex-col h-screen">
@@ -25,12 +24,11 @@
         <div class="mt-12 text-center">
             <i class="fa-solid fa-motorcycle text-7xl mb-4"></i>
             <h1 class="text-5xl font-black tracking-tighter">IsulanTrike</h1>
-            <p class="opacity-80 font-medium">Premium Real-time Transport</p>
         </div>
         <div class="space-y-4 w-full max-w-sm mx-auto">
             <input id="auth-email" type="email" placeholder="Email" class="w-full p-5 bg-white/10 border border-white/20 rounded-2xl outline-none font-bold placeholder:text-white/50">
             <input id="auth-pass" type="password" placeholder="Password" class="w-full p-5 bg-white/10 border border-white/20 rounded-2xl outline-none font-bold placeholder:text-white/50">
-            <button onclick="handleAuth('login')" class="w-full py-5 bg-white text-emerald-700 rounded-2xl font-black shadow-xl">Sign In</button>
+            <button onclick="handleAuth('login')" class="w-full py-5 bg-white text-emerald-700 rounded-2xl font-black">Sign In</button>
             <button onclick="handleAuth('register')" class="w-full py-5 bg-emerald-700 text-white border-2 border-emerald-500 rounded-2xl font-black">Register</button>
         </div>
     </div>
@@ -43,7 +41,7 @@
                 <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center font-bold" id="user-initial">U</div>
                 <div>
                     <p id="user-display" class="font-black text-sm text-gray-800">User</p>
-                    <p id="role-display" class="text-[9px] font-bold text-emerald-500 uppercase">Role</p>
+                    <p id="role-display" class="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Role</p>
                 </div>
             </div>
             <button onclick="logout()" class="p-3 text-red-500 bg-red-50 rounded-xl"><i class="fa-solid fa-power-off"></i></button>
@@ -53,35 +51,32 @@
             <div class="w-12 h-1 bg-gray-100 rounded-full mx-auto mb-6"></div>
 
             <div id="passenger-panel" class="hidden">
-                <div id="p-status-box" class="hidden mb-6 p-5 rounded-3xl animate-pop bg-emerald-600 text-white shadow-lg">
+                <div id="p-status-box" class="hidden mb-6 p-5 rounded-3xl bg-emerald-600 text-white shadow-lg">
                     <div class="flex justify-between items-center mb-1">
-                        <p class="text-[10px] font-black uppercase opacity-70 tracking-widest">Status</p>
+                        <p class="text-[10px] font-black uppercase opacity-70">Booking Status</p>
                         <button onclick="cancelBooking()" class="text-[10px] bg-white/20 px-2 py-1 rounded-lg">Cancel</button>
                     </div>
-                    <p id="p-status-text" class="text-lg font-black italic">Finding Driver...</p>
+                    <p id="p-status-text" class="text-lg font-black italic">Connecting...</p>
                 </div>
-                <div class="mb-6 relative">
-                    <i class="fa-solid fa-location-dot absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500"></i>
-                    <input id="dest-input" type="text" placeholder="Where to?" class="w-full p-5 pl-12 bg-gray-50 rounded-2xl outline-none font-bold border-2 border-transparent focus:border-emerald-500">
-                </div>
+                <input id="dest-input" type="text" placeholder="Where to?" class="w-full p-5 bg-gray-50 rounded-2xl outline-none font-bold border-2 border-transparent focus:border-emerald-500 mb-6">
                 <div id="driver-list" class="space-y-3"></div>
             </div>
 
             <div id="driver-panel" class="hidden">
                 <div id="d-active-box" class="hidden w-full p-6 bg-emerald-50 border-2 border-emerald-200 rounded-[2.5rem] mb-6 text-center">
-                    <p class="text-xs font-black text-emerald-600 uppercase mb-2">Active Trip</p>
+                    <p class="text-xs font-black text-emerald-600 uppercase mb-2 italic">Active Trip</p>
                     <h2 id="current-p-name" class="text-2xl font-black mb-1">...</h2>
-                    <p id="current-p-dest" class="text-sm font-bold text-gray-500 italic mb-6">...</p>
-                    <button onclick="completeTrip()" class="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black shadow-lg">MARK AS ARRIVED</button>
+                    <p id="current-p-dest" class="text-sm font-bold text-gray-500 mb-6">...</p>
+                    <button onclick="completeTrip()" class="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black">ARRIVED AT DESTINATION</button>
                 </div>
-                <button id="duty-btn" onclick="toggleDuty()" class="w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl transition-all">GO ONLINE</button>
+                <button id="duty-btn" onclick="toggleDuty()" class="w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl">GO ONLINE</button>
             </div>
         </div>
     </div>
 
     <div id="rating-modal" class="hidden fixed inset-0 z-[7000] bg-black/80 backdrop-blur-md flex items-center justify-center p-6">
-        <div class="bg-white w-full max-w-sm rounded-[3rem] p-8 text-center animate-pop">
-            <h3 class="text-2xl font-black italic mb-6">Rate Your Ride</h3>
+        <div class="bg-white w-full max-w-sm rounded-[3rem] p-8 text-center">
+            <h3 class="text-2xl font-black italic mb-6">Rate Your Driver</h3>
             <div class="star-rating flex justify-center gap-3 mb-8 text-4xl text-gray-200">
                 <i class="fa-solid fa-star" onclick="setRating(1)"></i>
                 <i class="fa-solid fa-star" onclick="setRating(2)"></i>
@@ -89,7 +84,7 @@
                 <i class="fa-solid fa-star" onclick="setRating(4)"></i>
                 <i class="fa-solid fa-star" onclick="setRating(5)"></i>
             </div>
-            <button onclick="submitRating()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-lg">SUBMIT</button>
+            <button onclick="submitRating()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black">SUBMIT</button>
         </div>
     </div>
 
@@ -98,6 +93,7 @@
         import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // CONFIG (Replace with your actual keys)
         const firebaseConfig = { apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
   authDomain: "isulantrike.firebaseapp.com",
   projectId: "isulantrike",
@@ -113,9 +109,11 @@
         let userUid, userData, map, unsubscribe, currentRating = 0, lastDriverId = null, lastUpdate = 0;
         let markers = {}; 
 
-        const trikeIcon = L.divIcon({ html: '<i class="fa-solid fa-motorcycle text-emerald-600 text-3xl drop-shadow-md"></i>', className: 'custom-div-icon', iconSize: [30, 30], iconAnchor: [15, 15] });
-        const userIcon = L.divIcon({ html: '<i class="fa-solid fa-person-pin text-blue-600 text-3xl drop-shadow-md"></i>', className: 'custom-div-icon', iconSize: [30, 30], iconAnchor: [15, 15] });
+        // ICONS
+        const trikeIcon = L.divIcon({ html: '<div class="bg-emerald-500 p-2 rounded-full shadow-lg border-2 border-white text-white flex items-center justify-center"><i class="fa-solid fa-motorcycle text-lg"></i></div>', className: 'custom-div-icon', iconSize: [40, 40], iconAnchor: [20, 20] });
+        const passengerIcon = L.divIcon({ html: '<div class="bg-blue-500 p-2 rounded-full shadow-lg border-2 border-white text-white flex items-center justify-center animate-pulse-slow"><i class="fa-solid fa-user-large text-lg"></i></div>', className: 'custom-div-icon', iconSize: [40, 40], iconAnchor: [20, 20] });
 
+        // AUTH LOGIC
         window.handleAuth = async (type) => {
             const e = document.getElementById('auth-email').value;
             const p = document.getElementById('auth-pass').value;
@@ -158,17 +156,14 @@
             if (navigator.geolocation) {
                 navigator.geolocation.watchPosition(pos => {
                     const { latitude, longitude } = pos.coords;
-                    updatePos(latitude, longitude);
+                    const now = Date.now();
+                    if(now - lastUpdate > 5000) { // Throttle 5s
+                        lastUpdate = now;
+                        updateDoc(doc(db, COLL_PATH, userUid), { lat: latitude, lng: longitude });
+                    }
                 }, null, { enableHighAccuracy: true });
             }
             listen();
-        }
-
-        async function updatePos(lat, lng) {
-            const now = Date.now();
-            if(now - lastUpdate < 5000) return; 
-            lastUpdate = now;
-            await updateDoc(doc(db, COLL_PATH, userUid), { lat, lng });
         }
 
         function listen() {
@@ -176,8 +171,8 @@
             unsubscribe = onSnapshot(collection(db, COLL_PATH), snap => {
                 const list = document.getElementById('driver-list');
                 if(userData.role === 'passenger') list.innerHTML = '';
-
-                let activeParticipants = [];
+                
+                let viewBounds = [];
 
                 snap.forEach(dDoc => {
                     const data = dDoc.data();
@@ -186,37 +181,40 @@
                     if(id === userUid) {
                         userData = data;
                         syncUI(data);
-                        activeParticipants.push([data.lat, data.lng]);
-                    } else {
-                        // Logic to show markers
-                        const isRelevantDriver = userData.role === 'passenger' && data.role === 'driver' && data.isOnline;
-                        const isMyPassenger = userData.role === 'driver' && userData.request?.pId === id;
-                        const isMyDriver = userData.role === 'passenger' && userData.request?.dId === id;
+                        viewBounds.push([data.lat, data.lng]);
+                        return;
+                    }
 
-                        if((isRelevantDriver || isMyPassenger || isMyDriver) && data.lat) {
-                            const icon = data.role === 'driver' ? trikeIcon : userIcon;
-                            if(!markers[id]) markers[id] = L.marker([data.lat, data.lng], { icon }).addTo(map);
-                            else markers[id].setLatLng([data.lat, data.lng]);
-                            
-                            // If it's the person I'm on a trip with, track them for the camera focus
-                            if(isMyPassenger || isMyDriver) activeParticipants.push([data.lat, data.lng]);
-                        } else if(markers[id]) {
-                            map.removeLayer(markers[id]);
-                            delete markers[id];
-                        }
+                    // GPS LOGIC: Determine if we should see this person on map
+                    const isOnlineDriverForPassenger = (userData.role === 'passenger' && data.role === 'driver' && data.isOnline);
+                    const isMyBookedPassenger = (userData.role === 'driver' && userData.request?.pId === id);
+                    const isMyBookedDriver = (userData.role === 'passenger' && userData.request?.dId === id);
 
-                        if(isRelevantDriver && !data.request) renderDriverCard(id, data);
+                    if((isOnlineDriverForPassenger || isMyBookedPassenger || isMyBookedDriver) && data.lat) {
+                        const icon = data.role === 'driver' ? trikeIcon : passengerIcon;
+                        if(!markers[id]) markers[id] = L.marker([data.lat, data.lng], { icon }).addTo(map);
+                        else markers[id].setLatLng([data.lat, data.lng]);
                         
-                        if(userData.role === 'passenger' && data.lastFinishedTrip?.pId === userUid) {
-                            lastDriverId = id;
-                            document.getElementById('rating-modal').classList.remove('hidden');
-                        }
+                        // If actively in a trip, prepare to auto-zoom map
+                        if(isMyBookedPassenger || isMyBookedDriver) viewBounds.push([data.lat, data.lng]);
+                    } else if(markers[id]) {
+                        map.removeLayer(markers[id]);
+                        delete markers[id];
+                    }
+
+                    // UI Lists
+                    if(isOnlineDriverForPassenger && !data.request) renderDriverCard(id, data);
+                    
+                    // Passenger Rating Trigger
+                    if(userData.role === 'passenger' && data.lastFinishedTrip?.pId === userUid) {
+                        lastDriverId = id;
+                        document.getElementById('rating-modal').classList.remove('hidden');
                     }
                 });
 
-                // AUTO FOCUS MAP: If on a trip, zoom to show both people
-                if(activeParticipants.length > 1 && userData.request?.status === 'accepted') {
-                    map.fitBounds(L.latLngBounds(activeParticipants), { padding: [50, 50] });
+                // Map Auto-Zoom during active booking
+                if(viewBounds.length > 1 && userData.request?.status === 'accepted') {
+                    map.fitBounds(L.latLngBounds(viewBounds), { padding: [80, 80] });
                 }
             });
         }
@@ -227,7 +225,7 @@
                 const duty = document.getElementById('duty-btn');
                 if(data.request) {
                     duty.classList.add('hidden');
-                    if(data.request.status === 'pending' && confirm(`New booking from ${data.request.pName} to ${data.request.dest}?`)) {
+                    if(data.request.status === 'pending' && confirm(`Request from ${data.request.pName}?`)) {
                         updateDoc(doc(db, COLL_PATH, userUid), { "request.status": "accepted" });
                     }
                     if(data.request.status === 'accepted') {
@@ -258,7 +256,7 @@
 
         window.bookDriver = async (dId) => {
             const dest = document.getElementById('dest-input').value;
-            if(!dest) return alert("Enter destination");
+            if(!dest) return alert("Where to?");
             await updateDoc(doc(db, COLL_PATH, dId), { request: { pId: userUid, pName: userData.name, dest, status: 'pending' } });
             await updateDoc(doc(db, COLL_PATH, userUid), { request: { dId, status: 'pending' } });
         };
@@ -284,12 +282,12 @@
         function renderDriverCard(id, data) {
             const avg = data.tripCount > 0 ? (data.totalRating / data.tripCount).toFixed(1) : "5.0";
             document.getElementById('driver-list').innerHTML += `
-                <div class="p-4 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm animate-pop">
+                <div class="p-4 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fa-solid fa-motorcycle"></i></div>
                         <div><p class="font-black text-gray-800 text-sm">${data.name} <span class="text-amber-400 ml-1"><i class="fa-solid fa-star"></i> ${avg}</span></p></div>
                     </div>
-                    <button onclick="bookDriver('${id}')" class="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black active:scale-95 transition">BOOK</button>
+                    <button onclick="bookDriver('${id}')" class="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black">BOOK</button>
                 </div>`;
         }
     </script>
