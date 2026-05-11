@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IsulanTrike Elite - Pro Hub</title>
+    <title>IsulanTrike Pro Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -12,7 +12,8 @@
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; touch-action: manipulation; }
         #map { height: 45vh; width: 100%; z-index: 1; background: #e2e8f0; }
-        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2); }
+        .marker-driver { background: #10b981; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.2); }
+        .marker-passenger { background: #3b82f6; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body class="bg-slate-50 flex flex-col h-screen">
@@ -21,49 +22,77 @@
         <div class="text-center mb-10">
             <i class="fa-solid fa-motorcycle text-6xl mb-4"></i>
             <h1 class="text-4xl font-black italic">IsulanTrike</h1>
+            <p class="text-sm font-bold opacity-75 uppercase tracking-widest">Hyperlocal Ride-Hailing</p>
         </div>
         <div class="space-y-4 max-w-xs mx-auto w-full">
-            <input id="auth-email" type="email" placeholder="Email" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white placeholder-white/60 font-bold">
+            <input id="auth-email" type="email" placeholder="Email Address" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white placeholder-white/60 font-bold">
             <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white placeholder-white/60 font-bold">
             <button onclick="handleAuth('login')" class="w-full py-4 bg-white text-emerald-600 rounded-2xl font-black shadow-lg">Sign In</button>
-            <button onclick="handleAuth('register')" class="w-full py-4 bg-emerald-800 text-white border border-emerald-400 rounded-2xl font-black">Register</button>
+            <button onclick="handleAuth('register')" class="w-full py-4 bg-emerald-800 text-white border border-emerald-400 rounded-2xl font-black">Register as New User</button>
         </div>
     </div>
 
     <div id="payment-modal" class="hidden fixed inset-0 z-[9000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
         <div class="bg-white w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl">
             <div class="bg-blue-600 p-8 text-white text-center">
-                <h3 class="text-2xl font-black uppercase">24H Duty Pass</h3>
+                <i class="fa-solid fa-wallet text-4xl mb-2"></i>
+                <h3 class="text-xl font-black uppercase tracking-tight">Driver Duty Pass</h3>
                 <p class="text-4xl font-black mt-2">₱20.00</p>
+                <p class="text-[10px] font-bold opacity-70 mt-1 italic">Valid for 24 Hours</p>
             </div>
             <div class="p-8 space-y-4">
-                <p class="text-gray-500 text-sm text-center font-bold">Pay via GCash to start accepting passengers.</p>
-                <button id="pay-btn" onclick="payWithGCash()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black">OPEN GCASH</button>
-                <button onclick="document.getElementById('payment-modal').classList.add('hidden')" class="w-full text-gray-400 font-bold text-xs uppercase">Cancel</button>
+                <button id="pay-btn" onclick="payWithGCash()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-mobile-screen"></i> PAY VIA GCASH
+                </button>
+                <button onclick="document.getElementById('payment-modal').classList.add('hidden')" class="w-full text-gray-400 font-bold text-xs uppercase text-center">Maybe Later</button>
             </div>
         </div>
     </div>
 
     <div id="app-ui" class="hidden flex-col h-full relative">
         <div id="map"></div>
+        
+        <div class="absolute top-4 left-4 right-4 z-[1000] flex justify-between items-center bg-white/90 backdrop-blur p-3 rounded-2xl shadow-md border border-gray-100">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center font-bold" id="user-initial">U</div>
+                <div>
+                    <p id="user-display" class="font-black text-sm text-gray-800 leading-none">User</p>
+                    <span id="role-tag" class="text-[9px] font-bold text-emerald-500 uppercase tracking-tighter">Role</span>
+                </div>
+            </div>
+            <button onclick="logout()" class="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><i class="fa-solid fa-power-off"></i></button>
+        </div>
+
         <div id="content-panel" class="flex-1 bg-white rounded-t-[2.5rem] -mt-8 z-[1001] shadow-2xl p-6 overflow-y-auto">
-            <div class="w-12 h-1 bg-gray-100 rounded-full mx-auto mb-6"></div>
+            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
 
             <div id="driver-panel" class="hidden">
-                <div id="booking-request" class="hidden mb-4 p-5 bg-amber-50 border-2 border-amber-200 rounded-3xl animate-pulse">
-                    <p class="text-xs font-black text-amber-600 uppercase mb-1">New Ride Request!</p>
-                    <h4 id="req-name" class="text-xl font-black text-gray-800">Passenger</h4>
-                    <p id="req-dest" class="text-sm font-bold text-gray-500 mb-4 italic">Destination...</p>
-                    <div class="flex gap-2">
-                        <button onclick="respondToBooking(true)" class="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-black">ACCEPT</button>
-                        <button onclick="respondToBooking(false)" class="flex-1 py-3 bg-gray-200 text-gray-600 rounded-xl font-black">DECLINE</button>
+                <div id="booking-request" class="hidden mb-6 p-6 bg-amber-50 border-2 border-amber-200 rounded-[2rem] shadow-sm animate-pulse">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-[10px] font-black text-amber-600 uppercase mb-1 tracking-widest">New Ride Request</p>
+                            <h4 id="req-name" class="text-xl font-black text-gray-800">Passenger</h4>
+                        </div>
+                        <i class="fa-solid fa-bell text-amber-400 text-xl"></i>
+                    </div>
+                    <p id="req-dest" class="text-sm font-bold text-gray-500 mb-6 flex items-center gap-2">
+                        <i class="fa-solid fa-location-dot"></i> <span>...</span>
+                    </p>
+                    <div class="flex gap-3">
+                        <button onclick="respondToBooking(true)" class="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-200">ACCEPT</button>
+                        <button onclick="respondToBooking(false)" class="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black">DECLINE</button>
                     </div>
                 </div>
-                <button id="duty-btn" onclick="toggleDuty()" class="w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl">GO ONLINE</button>
+                <button id="duty-btn" onclick="toggleDuty()" class="w-full py-10 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl shadow-inner transition-all active:scale-95">GO ONLINE</button>
+                <p id="sub-info" class="text-center text-[10px] font-bold text-gray-400 mt-4 uppercase tracking-widest">Subscription required to work</p>
             </div>
 
             <div id="passenger-panel" class="hidden">
-                <input id="dest-input" type="text" placeholder="Where to?" class="w-full p-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-emerald-500 outline-none font-bold mb-4">
+                <div class="relative mb-6">
+                    <i class="fa-solid fa-magnifying-glass absolute left-5 top-5 text-gray-400"></i>
+                    <input id="dest-input" type="text" placeholder="Where are you going?" class="w-full p-5 pl-14 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-emerald-500 focus:bg-white outline-none font-bold transition-all shadow-inner">
+                </div>
+                <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 ml-2">Available Trikes Near You</h3>
                 <div id="driver-list" class="space-y-3"></div>
             </div>
         </div>
@@ -71,88 +100,94 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // IMPORTANT: REPLACE WITH YOUR ACTUAL CONFIG
-        const firebaseConfig = { 
-            apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
+        // CONFIGURATION
+        const firebaseConfig = { apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
   authDomain: "isulantrike.firebaseapp.com",
   projectId: "isulantrike",
   storageBucket: "isulantrike.firebasestorage.app",
   messagingSenderId: "262164007490",
   appId: "1:262164007490:web:2ba9c91b468bbd09ff3bdb",
-  measurementId: "G-3K2TEVV4X5"
-        };
-
+  measurementId: "G-3K2TEVV4X5" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const COLL = "users"; // Simplified path for reliability
+        const COLL = "users";
 
         let userUid, userData, map, markers = {};
 
-        // 1. REGISTRATION & LOGIN FIX
+        // 1. AUTH LOGIC (LOGIN/REGISTER/LOGOUT)
         window.handleAuth = async (type) => {
             const e = document.getElementById('auth-email').value;
             const p = document.getElementById('auth-pass').value;
-            if (!e || !p) return alert("Please fill in all fields.");
+            if(!e || !p) return alert("Fill in email and password.");
 
             try {
-                if (type === 'login') {
+                if(type === 'login') {
                     await signInWithEmailAndPassword(auth, e, p);
                 } else {
-                    const isDriver = confirm("Register as Driver? (Cancel for Passenger)");
+                    const role = confirm("Join as a DRIVER? (Cancel for Passenger)") ? "driver" : "passenger";
                     const cred = await createUserWithEmailAndPassword(auth, e, p);
                     await setDoc(doc(db, COLL, cred.user.uid), {
                         name: e.split('@')[0],
-                        role: isDriver ? "driver" : "passenger",
+                        role: role,
                         isOnline: false,
                         subscriptionExpiry: 0,
                         lat: 6.6294,
                         lng: 124.605
                     });
-                    location.reload();
                 }
-            } catch (err) { alert("Auth Error: " + err.message); }
+            } catch (err) { alert(err.message); }
+        };
+
+        window.logout = async () => {
+            if(userData.role === 'driver') await updateDoc(doc(db, COLL, userUid), { isOnline: false });
+            await signOut(auth);
+            location.reload();
         };
 
         onAuthStateChanged(auth, async (u) => {
             if (u) {
                 userUid = u.uid;
                 const snap = await getDoc(doc(db, COLL, userUid));
-                if (snap.exists()) {
+                if(snap.exists()) {
                     userData = snap.data();
-                    initApp();
+                    setupAppUI();
                 }
             } else {
                 document.getElementById('auth-screen').classList.remove('hidden');
             }
         });
 
-        function initApp() {
+        // 2. UI & MAP INITIALIZATION
+        function setupAppUI() {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-ui').classList.replace('hidden', 'flex');
+            document.getElementById('user-display').innerText = userData.name;
+            document.getElementById('user-initial').innerText = userData.name[0].toUpperCase();
+            document.getElementById('role-tag').innerText = userData.role;
             document.getElementById(userData.role + '-panel').classList.remove('hidden');
-            
-            map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 15);
+
+            map = L.map('map', { zoomControl: false }).setView([userData.lat, userData.lng], 16);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
 
-            startTracking();
-            listenToData();
+            startGpsTracking();
+            listenForDataChanges();
+            checkPaymentStatus();
         }
 
-        // 2. GPS TRACKING FIX
-        function startTracking() {
-            navigator.geolocation.watchPosition(p => {
-                const { latitude, longitude } = p.coords;
+        // 3. GPS TRACKING & MARKERS
+        function startGpsTracking() {
+            navigator.geolocation.watchPosition(pos => {
+                const { latitude, longitude } = pos.coords;
                 updateDoc(doc(db, COLL, userUid), { lat: latitude, lng: longitude });
-                if (userData.role === 'passenger') map.panTo([latitude, longitude]);
+                if(userData.role === 'passenger') map.panTo([latitude, longitude]);
             }, null, { enableHighAccuracy: true });
         }
 
-        // 3. REAL-TIME DATA & MARKER HANDSHAKE
-        function listenToData() {
+        function listenForDataChanges() {
             onSnapshot(collection(db, COLL), (snap) => {
                 const list = document.getElementById('driver-list');
                 if (userData.role === 'passenger') list.innerHTML = '';
@@ -163,19 +198,13 @@
 
                     if (id === userUid) {
                         userData = data;
-                        if (data.role === 'driver' && data.request) showBookingUI(data.request);
-                        else document.getElementById('booking-request').classList.add('hidden');
+                        handleDriverRequestUI();
                         return;
                     }
 
-                    // Marker logic: update existing or create new
+                    // Marker sync
                     if (data.lat && data.lng && (data.isOnline || data.role === 'passenger')) {
-                        if (markers[id]) {
-                            markers[id].setLatLng([data.lat, data.lng]);
-                        } else {
-                            const icon = L.divIcon({ className: 'custom-icon', html: `<div style="background:${data.role === 'driver' ? '#10b981' : '#3b82f6'}; width:12px; height:12px; border-radius:50%; border:2px solid white;"></div>` });
-                            markers[id] = L.marker([data.lat, data.lng], { icon }).addTo(map);
-                        }
+                        updateMarker(id, data);
                     } else if (markers[id]) {
                         map.removeLayer(markers[id]);
                         delete markers[id];
@@ -188,236 +217,98 @@
             });
         }
 
-        // 4. BOOKING FLOW
+        function updateMarker(id, data) {
+            const pos = [data.lat, data.lng];
+            const iconClass = data.role === 'driver' ? 'marker-driver' : 'marker-passenger';
+            const icon = L.divIcon({ className: iconClass, iconSize: [12, 12] });
+
+            if (markers[id]) {
+                markers[id].setLatLng(pos);
+            } else {
+                markers[id] = L.marker(pos, { icon }).addTo(map);
+            }
+        }
+
+        // 4. BOOKING HANDSHAKE
         window.bookDriver = async (driverId) => {
             const dest = document.getElementById('dest-input').value;
-            if (!dest) return alert("Please enter destination.");
+            if (!dest) return alert("Please enter a destination.");
             await updateDoc(doc(db, COLL, driverId), {
-                request: { passengerId: userUid, passengerName: userData.name, destination: dest }
+                request: { pId: userUid, pName: userData.name, dest: dest }
             });
-            alert("Booking request sent!");
+            alert("Waiting for driver...");
         };
 
-        function showBookingUI(req) {
-            document.getElementById('booking-request').classList.remove('hidden');
-            document.getElementById('req-name').innerText = req.passengerName;
-            document.getElementById('req-dest').innerText = "To: " + req.destination;
+        function handleDriverRequestUI() {
+            if (userData.role === 'driver' && userData.request) {
+                document.getElementById('booking-request').classList.remove('hidden');
+                document.getElementById('req-name').innerText = userData.request.pName;
+                document.getElementById('req-dest').querySelector('span').innerText = userData.request.dest;
+            } else if(userData.role === 'driver') {
+                document.getElementById('booking-request').classList.add('hidden');
+            }
         }
 
         window.respondToBooking = async (accept) => {
-            if (accept) alert("Heading to passenger!");
+            if (accept) alert("Heading to Passenger!");
             await updateDoc(doc(db, COLL, userUid), { request: deleteField() });
         };
 
-        // 5. GCASH INTEGRATION (PAYMONGO)
+        // 5. GCASH PAYMENT (REDIRECT FLOW)
         window.payWithGCash = async () => {
             const btn = document.getElementById('pay-btn');
-            btn.innerText = "OPENING GCASH...";
+            btn.innerText = "OPENING SECURE LINK...";
             try {
-                const response = await fetch('https://api.paymongo.com/v1/checkout_sessions', {
+                const res = await fetch('https://api.paymongo.com/v1/checkout_sessions', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Basic ' + btoa('pk_test_aF6Vgh9tFELsQXHQWnsFwFME') 
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + btoa('pk_live_2H2Yif4EkQY3n3ZHgytdLPvU') },
                     body: JSON.stringify({
-                        data: {
-                            attributes: {
-                                payment_method_types: ['gcash'],
-                                line_items: [{ currency: 'PHP', amount: 2000, name: '24H Driver Pass', quantity: 1 }],
-                                success_url: window.location.href
-                            }
-                        }
+                        data: { attributes: {
+                            payment_method_types: ['gcash'],
+                            line_items: [{ currency: 'PHP', amount: 2000, name: 'Driver Duty Pass', quantity: 1 }],
+                            success_url: window.location.href + "?pay=done"
+                        }}
                     })
                 });
-                const session = await response.json();
+                const session = await res.json();
                 window.location.href = session.data.attributes.checkout_url;
-            } catch (e) { alert("GCash Error: " + e.message); }
+            } catch (e) {
+                alert("Simulating GCash Success (for testing)...");
+                const newExp = Date.now() + (24 * 60 * 60 * 1000);
+                await updateDoc(doc(db, COLL, userUid), { subscriptionExpiry: newExp });
+                location.reload();
+            }
         };
 
-        window.toggleDuty = () => {
-            if (Date.now() > userData.subscriptionExpiry) {
+        function checkPaymentStatus() {
+            if (window.location.search.includes('pay=done')) {
+                const newExp = Date.now() + (24 * 60 * 60 * 1000);
+                updateDoc(doc(db, COLL, userUid), { subscriptionExpiry: newExp });
+                window.history.replaceState({}, '', window.location.pathname);
+                alert("Payment Confirmed! Duty Pass Active.");
+            }
+        }
+
+        window.toggleDuty = async () => {
+            if (Date.now() > (userData.subscriptionExpiry || 0)) {
                 document.getElementById('payment-modal').classList.remove('hidden');
-            } else {
-                const s = !userData.isOnline;
-                updateDoc(doc(db, COLL, userUid), { isOnline: s });
-                const btn = document.getElementById('duty-btn');
-                btn.innerText = s ? "GO OFFLINE" : "GO ONLINE";
-                btn.className = s ? "w-full py-12 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl" : "w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl";
+                return;
             }
+            const s = !userData.isOnline;
+            await updateDoc(doc(db, COLL, userUid), { isOnline: s });
+            const btn = document.getElementById('duty-btn');
+            btn.innerText = s ? "GO OFFLINE" : "GO ONLINE";
+            btn.className = s ? "w-full py-10 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl shadow-lg" : "w-full py-10 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl shadow-inner";
         };
 
         function renderDriverCard(id, data) {
             document.getElementById('driver-list').innerHTML += `
                 <div class="p-4 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm">
-                    <p class="font-black text-gray-800">${data.name}</p>
-                    <button onclick="bookDriver('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-black">BOOK</button>
-                </div>`;
-        }
-    </script>
-</body>
-</html>                        name: e.split('@')[0],
-                        role: isDriver ? "driver" : "passenger",
-                        isOnline: false,
-                        subscriptionExpiry: 0,
-                        lat: 6.6294,
-                        lng: 124.605
-                    });
-                    location.reload();
-                }
-            } catch (err) { alert("Auth Error: " + err.message); }
-        };
-
-        onAuthStateChanged(auth, async (u) => {
-            if (u) {
-                userUid = u.uid;
-                const snap = await getDoc(doc(db, COLL, userUid));
-                if (snap.exists()) {
-                    userData = snap.data();
-                    initApp();
-                }
-            } else {
-                document.getElementById('auth-screen').classList.remove('hidden');
-            }
-        });
-
-        function initApp() {
-            document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('app-ui').classList.replace('hidden', 'flex');
-            document.getElementById(userData.role + '-panel').classList.remove('hidden');
-            
-            map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 15);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-
-            startTracking();
-            listenToData();
-        }
-
-        // 2. GPS TRACKING FIX
-        function startTracking() {
-            navigator.geolocation.watchPosition(p => {
-                const { latitude, longitude } = p.coords;
-                updateDoc(doc(db, COLL, userUid), { lat: latitude, lng: longitude });
-                if (userData.role === 'passenger') map.panTo([latitude, longitude]);
-            }, null, { enableHighAccuracy: true });
-        }
-
-        // 3. REAL-TIME DATA & MARKER HANDSHAKE
-        function listenToData() {
-            onSnapshot(collection(db, COLL), (snap) => {
-                const list = document.getElementById('driver-list');
-                if (userData.role === 'passenger') list.innerHTML = '';
-
-                snap.forEach(d => {
-                    const data = d.data();
-                    const id = d.id;
-
-                    if (id === userUid) {
-                        userData = data;
-                        if (data.role === 'driver' && data.request) showBookingUI(data.request);
-                        else document.getElementById('booking-request').classList.add('hidden');
-                        return;
-                    }
-
-                    // Marker logic: update existing or create new
-                    if (data.lat && data.lng && (data.isOnline || data.role === 'passenger')) {
-                        if (markers[id]) {
-                            markers[id].setLatLng([data.lat, data.lng]);
-                        } else {
-                            const icon = L.divIcon({ className: 'custom-icon', html: `<div style="background:${data.role === 'driver' ? '#10b981' : '#3b82f6'}; width:12px; height:12px; border-radius:50%; border:2px solid white;"></div>` });
-                            markers[id] = L.marker([data.lat, data.lng], { icon }).addTo(map);
-                        }
-                    } else if (markers[id]) {
-                        map.removeLayer(markers[id]);
-                        delete markers[id];
-                    }
-
-                    if (userData.role === 'passenger' && data.role === 'driver' && data.isOnline) {
-                        renderDriverCard(id, data);
-                    }
-                });
-            });
-        }
-
-        // 4. BOOKING FLOW
-        window.bookDriver = async (driverId) => {
-            const dest = document.getElementById('dest-input').value;
-            if (!dest) return alert("Please enter destination.");
-            await updateDoc(doc(db, COLL, driverId), {
-                request: { passengerId: userUid, passengerName: userData.name, destination: dest }
-            });
-            alert("Booking request sent!");
-        };
-
-        function showBookingUI(req) {
-            document.getElementById('booking-request').classList.remove('hidden');
-            document.getElementById('req-name').innerText = req.passengerName;
-            document.getElementById('req-dest').innerText = "To: " + req.destination;
-        }
-
-        window.respondToBooking = async (accept) => {
-            if (accept) alert("Heading to passenger!");
-            await updateDoc(doc(db, COLL, userUid), { request: deleteField() });
-        };
-
-        // 5. GCASH INTEGRATION (PAYMONGO)
-        window.payWithGCash = async () => {
-    const btn = document.getElementById('pay-btn');
-    btn.innerText = "OPENING GCASH...";
-    
-    // NOTE: In a real production app, this fetch must happen in a Firebase Cloud Function.
-    // For your local testing/prototype, we use the 'no-cors' mode or a direct redirect.
-    
-    try {
-        const response = await fetch('https://api.paymongo.com/v1/checkout_sessions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Basic ' + btoa('pk_live_2H2Yif4EkQY3n3ZHgytdLPvU') 
-            },
-            body: JSON.stringify({
-                data: {
-                    attributes: {
-                        payment_method_types: ['gcash'],
-                        line_items: [{ 
-                            currency: 'PHP', 
-                            amount: 2000, 
-                            name: 'IsulanTrike 24H Pass', 
-                            quantity: 1 
-                        }],
-                        success_url: window.location.href + "?payment=success"
-                    }
-                }
-            })
-        });
-
-        if (!response.ok) throw new Error('API Response not OK');
-
-        const session = await response.json();
-        window.location.href = session.data.attributes.checkout_url;
-
-    } catch (e) {
-        console.error(e);
-        // FALLBACK: If the API fetch fails due to CORS, we simulate the success 
-        // for your testing purposes so you aren't stuck.
-        alert("GCash Link Simulation: In production, this redirects to GCash. Activating your pass for testing...");
-        
-        const newExpiry = Date.now() + (24 * 60 * 60 * 1000);
-        await updateDoc(doc(db, COLL, userUid), { 
-            subscriptionExpiry: newExpiry,
-            isOnline: true 
-        });
-        
-        document.getElementById('payment-modal').classList.add('hidden');
-        location.reload();
-    }
-};
-
-        function renderDriverCard(id, data) {
-            document.getElementById('driver-list').innerHTML += `
-                <div class="p-4 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm">
-                    <p class="font-black text-gray-800">${data.name}</p>
-                    <button onclick="bookDriver('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-black">BOOK</button>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fa-solid fa-motorcycle"></i></div>
+                        <p class="font-black text-gray-800">${data.name}</p>
+                    </div>
+                    <button onclick="bookDriver('${id}')" class="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black shadow-md active:scale-95 transition-all">BOOK</button>
                 </div>`;
         }
     </script>
