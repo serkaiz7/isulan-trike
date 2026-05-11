@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IsulanTrike Pro Hub</title>
+    <title>SaKai - Isulan App Trike</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -12,8 +12,10 @@
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; touch-action: manipulation; }
         #map { height: 45vh; width: 100%; z-index: 1; background: #e2e8f0; }
-        .marker-driver { background: #10b981; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.2); }
-        .marker-passenger { background: #3b82f6; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.2); }
+        .glow-text { text-shadow: 0 0 10px rgba(16, 185, 129, 0.6); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.05); } }
+        .marker-driver { background: #10b981; border: 2px solid white; border-radius: 50%; width: 12px; height: 12px; }
+        .marker-passenger { background: #3b82f6; border: 2px solid white; border-radius: 50%; width: 12px; height: 12px; }
     </style>
 </head>
 <body class="bg-slate-50 flex flex-col h-screen">
@@ -22,77 +24,68 @@
         <div class="text-center mb-10">
             <i class="fa-solid fa-motorcycle text-6xl mb-4"></i>
             <h1 class="text-4xl font-black italic">IsulanTrike</h1>
-            <p class="text-sm font-bold opacity-75 uppercase tracking-widest">Hyperlocal Ride-Hailing</p>
         </div>
         <div class="space-y-4 max-w-xs mx-auto w-full">
-            <input id="auth-email" type="email" placeholder="Email Address" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white placeholder-white/60 font-bold">
-            <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white placeholder-white/60 font-bold">
+            <input id="auth-email" type="email" placeholder="Email" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold">
+            <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold">
             <button onclick="handleAuth('login')" class="w-full py-4 bg-white text-emerald-600 rounded-2xl font-black shadow-lg">Sign In</button>
-            <button onclick="handleAuth('register')" class="w-full py-4 bg-emerald-800 text-white border border-emerald-400 rounded-2xl font-black">Register as New User</button>
+            <button onclick="handleAuth('register')" class="w-full py-4 bg-emerald-800 text-white border border-emerald-400 rounded-2xl font-black">Register</button>
         </div>
     </div>
 
-    <div id="payment-modal" class="hidden fixed inset-0 z-[9000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
-        <div class="bg-white w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl">
-            <div class="bg-blue-600 p-8 text-white text-center">
-                <i class="fa-solid fa-wallet text-4xl mb-2"></i>
-                <h3 class="text-xl font-black uppercase tracking-tight">Driver Duty Pass</h3>
-                <p class="text-4xl font-black mt-2">₱20.00</p>
-                <p class="text-[10px] font-bold opacity-70 mt-1 italic">Valid for 24 Hours</p>
+    <div id="rating-modal" class="hidden fixed inset-0 z-[9001] bg-black/80 backdrop-blur-md flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl">
+            <h3 class="text-2xl font-black mb-2">You Have Arrived!</h3>
+            <p class="text-gray-500 mb-6 font-bold">How was your ride with <span id="rate-driver-name">...</span>?</p>
+            <div class="flex justify-center gap-2 mb-8 text-3xl text-amber-400" id="star-box">
+                <i class="fa-solid fa-star" onclick="setStar(1)"></i>
+                <i class="fa-solid fa-star" onclick="setStar(2)"></i>
+                <i class="fa-solid fa-star" onclick="setStar(3)"></i>
+                <i class="fa-solid fa-star" onclick="setStar(4)"></i>
+                <i class="fa-solid fa-star" onclick="setStar(5)"></i>
             </div>
-            <div class="p-8 space-y-4">
-                <button id="pay-btn" onclick="payWithGCash()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-mobile-screen"></i> PAY VIA GCASH
-                </button>
-                <button onclick="document.getElementById('payment-modal').classList.add('hidden')" class="w-full text-gray-400 font-bold text-xs uppercase text-center">Maybe Later</button>
-            </div>
+            <button onclick="finishTrip()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black">SUBMIT & FINISH</button>
         </div>
     </div>
 
     <div id="app-ui" class="hidden flex-col h-full relative">
         <div id="map"></div>
-        
-        <div class="absolute top-4 left-4 right-4 z-[1000] flex justify-between items-center bg-white/90 backdrop-blur p-3 rounded-2xl shadow-md border border-gray-100">
+
+        <div class="absolute top-4 left-4 right-4 z-[1000] flex justify-between items-center bg-white/95 p-3 rounded-2xl shadow-md border border-gray-100">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center font-bold" id="user-initial">U</div>
-                <div>
-                    <p id="user-display" class="font-black text-sm text-gray-800 leading-none">User</p>
-                    <span id="role-tag" class="text-[9px] font-bold text-emerald-500 uppercase tracking-tighter">Role</span>
-                </div>
+                <div><p id="user-display" class="font-black text-sm text-gray-800 leading-none">User</p></div>
             </div>
-            <button onclick="logout()" class="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><i class="fa-solid fa-power-off"></i></button>
+            <button onclick="logout()" class="p-2 text-red-500"><i class="fa-solid fa-power-off"></i></button>
+        </div>
+
+        <div id="status-overlay" class="hidden absolute inset-0 z-[2000] bg-emerald-900/90 backdrop-blur flex flex-col items-center justify-center text-white text-center p-10">
+            <div class="w-20 h-20 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin mb-6"></div>
+            <h2 id="status-title" class="text-3xl font-black glow-text mb-2 uppercase italic tracking-tighter">Heading to Destination</h2>
+            <p id="status-desc" class="font-bold opacity-70">Please stay safe inside the vehicle</p>
         </div>
 
         <div id="content-panel" class="flex-1 bg-white rounded-t-[2.5rem] -mt-8 z-[1001] shadow-2xl p-6 overflow-y-auto">
             <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
 
             <div id="driver-panel" class="hidden">
-                <div id="booking-request" class="hidden mb-6 p-6 bg-amber-50 border-2 border-amber-200 rounded-[2rem] shadow-sm animate-pulse">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <p class="text-[10px] font-black text-amber-600 uppercase mb-1 tracking-widest">New Ride Request</p>
-                            <h4 id="req-name" class="text-xl font-black text-gray-800">Passenger</h4>
+                <div id="trip-card" class="hidden mb-6 p-6 bg-emerald-50 border-2 border-emerald-100 rounded-[2rem]">
+                    <p class="text-[10px] font-black text-emerald-600 uppercase mb-1 tracking-widest" id="trip-step-label">RIDE IN PROGRESS</p>
+                    <h4 id="trip-p-name" class="text-xl font-black text-gray-800">Passenger Name</h4>
+                    <p id="trip-p-dest" class="text-sm font-bold text-gray-500 mb-6 italic italic">...</p>
+
+                    <div id="driver-actions" class="flex gap-2">
                         </div>
-                        <i class="fa-solid fa-bell text-amber-400 text-xl"></i>
-                    </div>
-                    <p id="req-dest" class="text-sm font-bold text-gray-500 mb-6 flex items-center gap-2">
-                        <i class="fa-solid fa-location-dot"></i> <span>...</span>
-                    </p>
-                    <div class="flex gap-3">
-                        <button onclick="respondToBooking(true)" class="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-200">ACCEPT</button>
-                        <button onclick="respondToBooking(false)" class="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black">DECLINE</button>
-                    </div>
                 </div>
-                <button id="duty-btn" onclick="toggleDuty()" class="w-full py-10 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl shadow-inner transition-all active:scale-95">GO ONLINE</button>
-                <p id="sub-info" class="text-center text-[10px] font-bold text-gray-400 mt-4 uppercase tracking-widest">Subscription required to work</p>
+                <button id="duty-btn" onclick="toggleDuty()" class="w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl">GO ONLINE</button>
             </div>
 
             <div id="passenger-panel" class="hidden">
-                <div class="relative mb-6">
-                    <i class="fa-solid fa-magnifying-glass absolute left-5 top-5 text-gray-400"></i>
-                    <input id="dest-input" type="text" placeholder="Where are you going?" class="w-full p-5 pl-14 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-emerald-500 focus:bg-white outline-none font-bold transition-all shadow-inner">
+                <div id="p-waiting-card" class="hidden mb-6 p-6 bg-blue-50 border-2 border-blue-100 rounded-[2rem] text-center">
+                    <p class="text-blue-600 font-black italic mb-2">Driver is on the way!</p>
+                    <p id="wait-driver-name" class="font-black text-xl">...</p>
                 </div>
-                <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 ml-2">Available Trikes Near You</h3>
+                <input id="dest-input" type="text" placeholder="Where to?" class="w-full p-5 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-emerald-500 outline-none font-bold mb-4 shadow-inner">
                 <div id="driver-list" class="space-y-3"></div>
             </div>
         </div>
@@ -101,9 +94,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // CONFIGURATION
         const firebaseConfig = { apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
   authDomain: "isulantrike.firebaseapp.com",
   projectId: "isulantrike",
@@ -116,199 +108,177 @@
         const db = getFirestore(app);
         const COLL = "users";
 
-        let userUid, userData, map, markers = {};
+        let userUid, userData, map, markers = {}, currentRating = 5;
 
-        // 1. AUTH LOGIC (LOGIN/REGISTER/LOGOUT)
-        window.handleAuth = async (type) => {
+        // AUTH & INIT
+        window.handleAuth = async (t) => {
             const e = document.getElementById('auth-email').value;
             const p = document.getElementById('auth-pass').value;
-            if(!e || !p) return alert("Fill in email and password.");
-
             try {
-                if(type === 'login') {
-                    await signInWithEmailAndPassword(auth, e, p);
-                } else {
-                    const role = confirm("Join as a DRIVER? (Cancel for Passenger)") ? "driver" : "passenger";
+                if(t === 'login') await signInWithEmailAndPassword(auth, e, p);
+                else {
+                    const role = confirm("Register as Driver?") ? "driver" : "passenger";
                     const cred = await createUserWithEmailAndPassword(auth, e, p);
-                    await setDoc(doc(db, COLL, cred.user.uid), {
-                        name: e.split('@')[0],
-                        role: role,
-                        isOnline: false,
-                        subscriptionExpiry: 0,
-                        lat: 6.6294,
-                        lng: 124.605
-                    });
+                    await setDoc(doc(db, COLL, cred.user.uid), { name: e.split('@')[0], role, isOnline: false, subscriptionExpiry: Date.now() + 86400000, lat: 6.6294, lng: 124.605, tripCount: 0, totalRating: 0 });
                 }
             } catch (err) { alert(err.message); }
-        };
-
-        window.logout = async () => {
-            if(userData.role === 'driver') await updateDoc(doc(db, COLL, userUid), { isOnline: false });
-            await signOut(auth);
-            location.reload();
         };
 
         onAuthStateChanged(auth, async (u) => {
             if (u) {
                 userUid = u.uid;
                 const snap = await getDoc(doc(db, COLL, userUid));
-                if(snap.exists()) {
-                    userData = snap.data();
-                    setupAppUI();
-                }
-            } else {
-                document.getElementById('auth-screen').classList.remove('hidden');
-            }
+                userData = snap.data();
+                initApp();
+            } else document.getElementById('auth-screen').classList.remove('hidden');
         });
 
-        // 2. UI & MAP INITIALIZATION
-        function setupAppUI() {
+        function initApp() {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-ui').classList.replace('hidden', 'flex');
             document.getElementById('user-display').innerText = userData.name;
-            document.getElementById('user-initial').innerText = userData.name[0].toUpperCase();
-            document.getElementById('role-tag').innerText = userData.role;
+            document.getElementById('user-initial').innerText = userData.name[0];
             document.getElementById(userData.role + '-panel').classList.remove('hidden');
 
-            map = L.map('map', { zoomControl: false }).setView([userData.lat, userData.lng], 16);
+            map = L.map('map', { zoomControl: false }).setView([userData.lat, userData.lng], 15);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
 
-            startGpsTracking();
-            listenForDataChanges();
-            checkPaymentStatus();
+            navigator.geolocation.watchPosition(p => {
+                updateDoc(doc(db, COLL, userUid), { lat: p.coords.latitude, lng: p.coords.longitude });
+            });
+
+            syncData();
         }
 
-        // 3. GPS TRACKING & MARKERS
-        function startGpsTracking() {
-            navigator.geolocation.watchPosition(pos => {
-                const { latitude, longitude } = pos.coords;
-                updateDoc(doc(db, COLL, userUid), { lat: latitude, lng: longitude });
-                if(userData.role === 'passenger') map.panTo([latitude, longitude]);
-            }, null, { enableHighAccuracy: true });
-        }
-
-        function listenForDataChanges() {
+        // REAL-TIME SYNC
+        function syncData() {
             onSnapshot(collection(db, COLL), (snap) => {
-                const list = document.getElementById('driver-list');
-                if (userData.role === 'passenger') list.innerHTML = '';
+                const dList = document.getElementById('driver-list');
+                if(userData.role === 'passenger') dList.innerHTML = '';
 
                 snap.forEach(d => {
                     const data = d.data();
                     const id = d.id;
 
-                    if (id === userUid) {
+                    if(id === userUid) {
                         userData = data;
-                        handleDriverRequestUI();
+                        handleStatusLogic();
                         return;
                     }
 
-                    // Marker sync
-                    if (data.lat && data.lng && (data.isOnline || data.role === 'passenger')) {
-                        updateMarker(id, data);
-                    } else if (markers[id]) {
-                        map.removeLayer(markers[id]);
-                        delete markers[id];
+                    if(data.lat && data.lng && (data.isOnline || data.role === 'passenger')) {
+                        if(markers[id]) markers[id].setLatLng([data.lat, data.lng]);
+                        else markers[id] = L.marker([data.lat, data.lng], { icon: L.divIcon({ className: data.role === 'driver' ? 'marker-driver' : 'marker-passenger' }) }).addTo(map);
                     }
 
-                    if (userData.role === 'passenger' && data.role === 'driver' && data.isOnline) {
+                    if(userData.role === 'passenger' && data.role === 'driver' && data.isOnline && !data.activeTrip) {
                         renderDriverCard(id, data);
                     }
                 });
             });
         }
 
-        function updateMarker(id, data) {
-            const pos = [data.lat, data.lng];
-            const iconClass = data.role === 'driver' ? 'marker-driver' : 'marker-passenger';
-            const icon = L.divIcon({ className: iconClass, iconSize: [12, 12] });
+        // THE ELITE INTERACTION LOGIC
+        function handleStatusLogic() {
+            const overlay = document.getElementById('status-overlay');
+            const tripCard = document.getElementById('trip-card');
+            const pWait = document.getElementById('p-waiting-card');
+            const dActions = document.getElementById('driver-actions');
 
-            if (markers[id]) {
-                markers[id].setLatLng(pos);
-            } else {
-                markers[id] = L.marker(pos, { icon }).addTo(map);
+            // Reset
+            overlay.classList.add('hidden');
+            tripCard.classList.add('hidden');
+            pWait.classList.add('hidden');
+
+            if (userData.activeTrip) {
+                const trip = userData.activeTrip;
+
+                if (userData.role === 'driver') {
+                    tripCard.classList.remove('hidden');
+                    document.getElementById('trip-p-name').innerText = trip.pName;
+                    document.getElementById('trip-p-dest').innerText = "To: " + trip.dest;
+
+                    if (trip.status === 'requested') {
+                        dActions.innerHTML = `<button onclick="updateStatus('accepted')" class="w-full py-4 bg-emerald-600 text-white rounded-xl font-black">ACCEPT RIDE</button>`;
+                    } else if (trip.status === 'accepted') {
+                        dActions.innerHTML = `<button onclick="updateStatus('pickedup')" class="w-full py-4 bg-blue-600 text-white rounded-xl font-black">PICKUP PASSENGER</button>`;
+                    } else if (trip.status === 'pickedup') {
+                        dActions.innerHTML = `<button onclick="updateStatus('arrived')" class="w-full py-4 bg-orange-600 text-white rounded-xl font-black">CONFIRM ARRIVAL</button>`;
+                    }
+                }
+
+                if (userData.role === 'passenger') {
+                    if (trip.status === 'accepted') {
+                        pWait.classList.remove('hidden');
+                        document.getElementById('wait-driver-name').innerText = trip.dName;
+                    } else if (trip.status === 'pickedup') {
+                        overlay.classList.remove('hidden'); // SHOW GLOWING SCREEN
+                    } else if (trip.status === 'arrived') {
+                        document.getElementById('rate-driver-name').innerText = trip.dName;
+                        document.getElementById('rating-modal').classList.remove('hidden');
+                    }
+                }
             }
         }
 
-        // 4. BOOKING HANDSHAKE
-        window.bookDriver = async (driverId) => {
+        window.updateStatus = async (newStatus) => {
+            const trip = userData.activeTrip;
+            const updates = { "activeTrip.status": newStatus };
+
+            // Sync status to both parties
+            await updateDoc(doc(db, COLL, userUid), updates);
+            await updateDoc(doc(db, COLL, trip.pId || trip.dId), updates);
+        };
+
+        window.bookDriver = async (dId) => {
             const dest = document.getElementById('dest-input').value;
-            if (!dest) return alert("Please enter a destination.");
-            await updateDoc(doc(db, COLL, driverId), {
-                request: { pId: userUid, pName: userData.name, dest: dest }
+            const dSnap = await getDoc(doc(db, COLL, dId));
+            const dData = dSnap.data();
+
+            const tripObj = { status: 'requested', pId: userUid, pName: userData.name, dId: dId, dName: dData.name, dest };
+            await updateDoc(doc(db, COLL, dId), { activeTrip: tripObj });
+            await updateDoc(doc(db, COLL, userUid), { activeTrip: tripObj });
+        };
+
+        // RATING SYSTEM
+        window.setStar = (n) => {
+            currentRating = n;
+            const stars = document.getElementById('star-box').children;
+            for(let i=0; i<5; i++) stars[i].className = i < n ? 'fa-solid fa-star text-amber-400' : 'fa-solid fa-star text-gray-200';
+        };
+
+        window.finishTrip = async () => {
+            const trip = userData.activeTrip;
+            // Update Driver Stats
+            await updateDoc(doc(db, COLL, trip.dId), {
+                activeTrip: deleteField(),
+                totalRating: increment(currentRating),
+                tripCount: increment(1)
             });
-            alert("Waiting for driver...");
+            // Clear Passenger
+            await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() });
+            document.getElementById('rating-modal').classList.add('hidden');
+            alert("Trip Completed! Thank you.");
         };
 
-        function handleDriverRequestUI() {
-            if (userData.role === 'driver' && userData.request) {
-                document.getElementById('booking-request').classList.remove('hidden');
-                document.getElementById('req-name').innerText = userData.request.pName;
-                document.getElementById('req-dest').querySelector('span').innerText = userData.request.dest;
-            } else if(userData.role === 'driver') {
-                document.getElementById('booking-request').classList.add('hidden');
-            }
-        }
+        window.logout = () => signOut(auth).then(() => location.reload());
 
-        window.respondToBooking = async (accept) => {
-            if (accept) alert("Heading to Passenger!");
-            await updateDoc(doc(db, COLL, userUid), { request: deleteField() });
-        };
-
-        // 5. GCASH PAYMENT (REDIRECT FLOW)
-        window.payWithGCash = async () => {
-            const btn = document.getElementById('pay-btn');
-            btn.innerText = "OPENING SECURE LINK...";
-            try {
-                const res = await fetch('https://api.paymongo.com/v1/checkout_sessions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + btoa('pk_live_2H2Yif4EkQY3n3ZHgytdLPvU') },
-                    body: JSON.stringify({
-                        data: { attributes: {
-                            payment_method_types: ['gcash'],
-                            line_items: [{ currency: 'PHP', amount: 2000, name: 'Driver Duty Pass', quantity: 1 }],
-                            success_url: window.location.href + "?pay=done"
-                        }}
-                    })
-                });
-                const session = await res.json();
-                window.location.href = session.data.attributes.checkout_url;
-            } catch (e) {
-                alert("Simulating GCash Success (for testing)...");
-                const newExp = Date.now() + (24 * 60 * 60 * 1000);
-                await updateDoc(doc(db, COLL, userUid), { subscriptionExpiry: newExp });
-                location.reload();
-            }
-        };
-
-        function checkPaymentStatus() {
-            if (window.location.search.includes('pay=done')) {
-                const newExp = Date.now() + (24 * 60 * 60 * 1000);
-                updateDoc(doc(db, COLL, userUid), { subscriptionExpiry: newExp });
-                window.history.replaceState({}, '', window.location.pathname);
-                alert("Payment Confirmed! Duty Pass Active.");
-            }
-        }
-
-        window.toggleDuty = async () => {
-            if (Date.now() > (userData.subscriptionExpiry || 0)) {
-                document.getElementById('payment-modal').classList.remove('hidden');
-                return;
-            }
+        window.toggleDuty = () => {
             const s = !userData.isOnline;
-            await updateDoc(doc(db, COLL, userUid), { isOnline: s });
-            const btn = document.getElementById('duty-btn');
-            btn.innerText = s ? "GO OFFLINE" : "GO ONLINE";
-            btn.className = s ? "w-full py-10 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl shadow-lg" : "w-full py-10 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl shadow-inner";
+            updateDoc(doc(db, COLL, userUid), { isOnline: s });
+            document.getElementById('duty-btn').innerText = s ? "GO OFFLINE" : "GO ONLINE";
+            document.getElementById('duty-btn').className = s ? "w-full py-12 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl shadow-lg" : "w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl";
         };
 
         function renderDriverCard(id, data) {
+            const rating = data.tripCount > 0 ? (data.totalRating / data.tripCount).toFixed(1) : "5.0";
             document.getElementById('driver-list').innerHTML += `
                 <div class="p-4 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fa-solid fa-motorcycle"></i></div>
+                    <div>
                         <p class="font-black text-gray-800">${data.name}</p>
+                        <p class="text-[10px] font-bold text-amber-500"><i class="fa-solid fa-star"></i> ${rating} (${data.tripCount} trips)</p>
                     </div>
-                    <button onclick="bookDriver('${id}')" class="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black shadow-md active:scale-95 transition-all">BOOK</button>
+                    <button onclick="bookDriver('${id}')" class="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black">BOOK</button>
                 </div>`;
         }
     </script>
