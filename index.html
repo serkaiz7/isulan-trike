@@ -13,7 +13,6 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; touch-action: manipulation; }
         #map { height: 50vh; width: 100%; z-index: 1; background: #e2e8f0; transition: all 0.5s ease; }
         
-        /* Marquee / Running Text Styling */
         .marquee-container {
             background: #064e3b;
             color: #fbbf24;
@@ -37,10 +36,26 @@
             100% { transform: translateX(-100%); }
         }
 
+        /* Map Marker Styling */
+        .driver-marker-icon {
+            color: #10b981;
+            font-size: 24px;
+            text-shadow: 0 0 10px white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .passenger-marker-icon {
+            color: #3b82f6;
+            font-size: 20px;
+            text-shadow: 0 0 10px white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
         .glow-text { text-shadow: 0 0 15px rgba(16, 185, 129, 0.8); animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        .marker-driver { background: #10b981; border: 3px solid white; border-radius: 50%; width: 18px; height: 18px; box-shadow: 0 0 10px rgba(0,0,0,0.3); }
-        .marker-passenger { background: #3b82f6; border: 3px solid white; border-radius: 50%; width: 18px; height: 18px; box-shadow: 0 0 10px rgba(0,0,0,0.3); }
         .nav-btn { display: flex; flex-direction: column; align-items: center; font-size: 10px; font-weight: 800; color: #94a3b8; }
         .nav-btn.active { color: #10b981; }
         @keyframes progress { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
@@ -57,11 +72,7 @@
 
     <div id="auth-screen" class="fixed inset-0 z-[9000] bg-emerald-600 flex flex-col p-8 justify-center text-white">
         <div class="text-center mb-10">
-            <div class="flex justify-center mb-6">
-                 <svg width="100" height="100" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M21 16H20.4C20.6 15.4 20.8 14.7 20.8 14C20.8 11.2 18.5 9 15.8 9H13V7H14C14.6 7 15 6.6 15 6C15 5.4 14.6 5 14 5H10C9.4 5 9 5.4 9 6C9 6.6 9.4 7 10 7H11V9H5.2C2.5 9 0.2 11.2 0.2 14C0.2 14.7 0.4 15.4 0.6 16H0V18H21V16ZM5.2 11H15.8C17.5 11 18.8 12.3 18.8 14H2.2C2.2 12.3 3.5 11 5.2 11ZM6 22C7.1 22 8 21.1 8 20C8 18.9 7.1 18 6 18C4.9 18 4 18.9 4 20C4 21.1 4.9 22 6 22ZM18 22C19.1 22 20 21.1 20 20C20 18.9 19.1 18 18 18C16.9 18 16 18.9 16 20C16 21.1 16.9 22 18 22Z"/>
-                 </svg>
-            </div>
+            <i class="fa-solid fa-motorcycle text-6xl mb-4"></i>
             <h1 class="text-5xl font-black italic tracking-tighter">Sakai</h1>
             <p class="text-[10px] font-bold opacity-75 tracking-widest uppercase mt-2">Elite Local Transport</p>
         </div>
@@ -232,8 +243,22 @@
                         return; 
                     }
                     if(data.lat && data.lng && (data.isOnline || data.role === 'passenger')) {
-                        if(markers[id]) markers[id].setLatLng([data.lat, data.lng]);
-                        else markers[id] = L.marker([data.lat, data.lng], { icon: L.divIcon({ className: data.role === 'driver' ? 'marker-driver' : 'marker-passenger' }) }).addTo(map);
+                        if(markers[id]) {
+                            markers[id].setLatLng([data.lat, data.lng]);
+                        } else {
+                            // Map Icons update: Drivers get a tricycle, Passengers get a person
+                            const iconHtml = data.role === 'driver' 
+                                ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` 
+                                : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`;
+                            
+                            markers[id] = L.marker([data.lat, data.lng], { 
+                                icon: L.divIcon({ 
+                                    className: '', 
+                                    html: iconHtml,
+                                    iconSize: [30, 30]
+                                }) 
+                            }).addTo(map);
+                        }
                     } else if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
                     if(userData.role === 'passenger' && data.role === 'driver' && data.isOnline && !data.activeTrip) {
                         renderDriverCard(id, data);
