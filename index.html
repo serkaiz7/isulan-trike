@@ -210,9 +210,17 @@
             if (u) {
                 userUid = u.uid;
                 const snap = await getDoc(doc(db, COLL, userUid));
-                userData = snap.data();
-                initApp();
-            } else document.getElementById('auth-screen').classList.remove('hidden');
+                if (snap.exists()) {
+                    userData = snap.data();
+                    initApp();
+                } else {
+                    // Handle case where user is logged in but their doc was deleted
+                    signOut(auth);
+                }
+            } else {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('app-ui').classList.add('hidden');
+            }
         });
 
         function initApp() {
@@ -221,11 +229,13 @@
             document.getElementById(userData.role + '-panel').classList.remove('hidden');
             if(userData.role === 'driver') document.getElementById('nav-dash').classList.remove('hidden');
             
-            map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 16);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+            if(!map) {
+                map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 16);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+            }
 
             navigator.geolocation.watchPosition(p => {
-                updateDoc(doc(db, COLL, userUid), { lat: p.coords.latitude, lng: p.coords.longitude });
+                if(userUid) updateDoc(doc(db, COLL, userUid), { lat: p.coords.latitude, lng: p.coords.longitude });
             }, null, { enableHighAccuracy: true });
 
             syncData();
@@ -236,19 +246,24 @@
                 const dList = document.getElementById('driver-list');
                 if(userData.role === 'passenger') dList.innerHTML = '';
                 
+                // Track IDs present in this snapshot to clean up "ghosts"
+                const activeIds = new Set();
+
                 snap.forEach(d => {
                     const data = d.data();
                     const id = d.id;
+                    activeIds.add(id);
+
                     if(id === userUid) { 
                         userData = data; 
                         handleStatusLogic(); 
                         return; 
                     }
 
-                    // CONDITION: User must have coordinates AND (be Online OR be a Passenger)
-                    const shouldShowOnMap = data.lat && data.lng && (data.isOnline || data.role === 'passenger');
+                    // Show if they have coordinates AND (are Online OR are a Passenger)
+                    const shouldBeVisible = data.lat && data.lng && (data.isOnline || data.role === 'passenger');
 
-                    if(shouldShowOnMap) {
+                    if(shouldBeVisible) {
                         if(markers[id]) {
                             markers[id].setLatLng([data.lat, data.lng]);
                         } else {
@@ -265,7 +280,7 @@
                             }).addTo(map);
                         }
                     } else {
-                        // CLEANUP: Remove "digital footprint" if offline or criteria not met
+                        // User is in DB but set to offline: Remove footprint
                         if (markers[id]) {
                             map.removeLayer(markers[id]);
                             delete markers[id];
@@ -274,6 +289,14 @@
 
                     if(userData.role === 'passenger' && data.role === 'driver' && data.isOnline && !data.activeTrip) {
                         renderDriverCard(id, data);
+                    }
+                });
+
+                // GHOST CLEANUP: Remove markers for IDs that are NO LONGER in the database
+                Object.keys(markers).forEach(markerId => {
+                    if (!activeIds.has(markerId)) {
+                        map.removeLayer(markers[markerId]);
+                        delete markers[markerId];
                     }
                 });
             });
@@ -351,15 +374,6 @@
             toggleDashboard(false);
         };
 
-        window.updateDashboardStats = () => {
-            if(userData.role === 'driver') {
-                document.getElementById('stat-income').innerText = userData.income || 0;
-                document.getElementById('stat-trips').innerText = userData.tripCount || 0;
-                document.getElementById('stat-accepted').innerText = userData.acceptedCount || 0;
-                document.getElementById('stat-declined').innerText = userData.declinedCount || 0;
-            }
-        };
-
         window.setStar = (n) => {
             currentRating = n;
             const s = document.getElementById('star-box').children;
@@ -375,9 +389,9 @@
         };
 
         window.logout = async () => {
-            // Force offline status in DB before logging out
+            // Force offline before logout
             if (userUid) {
-                await updateDoc(doc(db, COLL, userUid), { isOnline: false });
+                try { await updateDoc(doc(db, COLL, userUid), { isOnline: false }); } catch(e){}
             }
             signOut(auth).then(() => location.reload());
         };
