@@ -18,6 +18,7 @@
         .marker-passenger { background: #3b82f6; border: 3px solid white; border-radius: 50%; width: 18px; height: 18px; box-shadow: 0 0 10px rgba(0,0,0,0.3); }
         .nav-btn { display: flex; flex-direction: column; align-items: center; font-size: 10px; font-weight: 800; color: #94a3b8; }
         .nav-btn.active { color: #10b981; }
+        @keyframes progress { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
     </style>
 </head>
 <body class="bg-slate-50 flex flex-col h-screen">
@@ -26,10 +27,11 @@
         <div class="text-center mb-10">
             <i class="fa-solid fa-motorcycle text-6xl mb-4"></i>
             <h1 class="text-4xl font-black italic">IsulanTrike</h1>
+            <p class="text-[10px] font-bold opacity-75 tracking-widest uppercase">Elite Transportation</p>
         </div>
         <div class="space-y-4 max-w-xs mx-auto w-full">
-            <input id="auth-email" type="email" placeholder="Email" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold">
-            <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold">
+            <input id="auth-email" type="email" placeholder="Email" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold placeholder-white/50">
+            <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold placeholder-white/50">
             <button onclick="handleAuth('login')" class="w-full py-4 bg-white text-emerald-600 rounded-2xl font-black shadow-lg">Sign In</button>
             <button onclick="handleAuth('register')" class="w-full py-4 bg-emerald-800 text-white border border-emerald-400 rounded-2xl font-black">Register</button>
         </div>
@@ -60,7 +62,7 @@
         </div>
         <div class="bg-white p-6 rounded-[2.5rem] shadow-sm space-y-4">
             <h4 class="font-black text-gray-800 mb-2">Profile Settings</h4>
-            <input id="edit-name" type="text" placeholder="Name" class="w-full p-4 bg-gray-50 rounded-2xl font-bold text-sm">
+            <input id="edit-name" type="text" placeholder="Full Name" class="w-full p-4 bg-gray-50 rounded-2xl font-bold text-sm">
             <input id="edit-plate" type="text" placeholder="Plate Number" class="w-full p-4 bg-gray-50 rounded-2xl font-bold text-sm">
             <input id="edit-phone" type="text" placeholder="Contact No." class="w-full p-4 bg-gray-50 rounded-2xl font-bold text-sm">
             <button onclick="updateProfile()" class="w-full py-4 bg-gray-800 text-white rounded-2xl font-black mt-4">Save Changes</button>
@@ -69,8 +71,9 @@
 
     <div id="rating-modal" class="hidden fixed inset-0 z-[8500] bg-black/80 backdrop-blur-md flex items-center justify-center p-6">
         <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center">
+            <i class="fa-solid fa-circle-check text-5xl text-emerald-500 mb-4"></i>
             <h3 class="text-2xl font-black mb-2 italic">You've Arrived!</h3>
-            <p class="text-gray-500 mb-6 font-bold">Fare Paid: ₱21.00</p>
+            <p class="text-gray-500 mb-6 font-bold uppercase text-xs tracking-widest">Fare Paid: ₱21.00</p>
             <div class="flex justify-center gap-2 mb-8 text-3xl text-amber-400" id="star-box">
                 <i class="fa-solid fa-star" onclick="setStar(1)"></i><i class="fa-solid fa-star" onclick="setStar(2)"></i><i class="fa-solid fa-star" onclick="setStar(3)"></i><i class="fa-solid fa-star" onclick="setStar(4)"></i><i class="fa-solid fa-star" onclick="setStar(5)"></i>
             </div>
@@ -86,36 +89,36 @@
                 <div class="w-3 h-3 bg-emerald-400 rounded-full animate-ping"></div>
                 <h2 class="text-2xl font-black glow-text uppercase italic">Heading to Destination</h2>
             </div>
-            <p class="text-[10px] font-bold tracking-widest uppercase opacity-70 mb-4">Estimated Fare: ₱21.00</p>
-            <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-emerald-400 h-full animate-[progress_3s_infinite]" style="width: 40%"></div>
+            <p class="text-[10px] font-bold tracking-widest uppercase opacity-70 mb-4">Fare: ₱21.00</p>
+            <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden relative">
+                <div class="absolute inset-0 bg-emerald-400/30 animate-[progress_2s_infinite]" style="width: 30%"></div>
             </div>
         </div>
 
-        <div id="content-panel" class="flex-1 bg-white rounded-t-[2.5rem] -mt-8 z-[1001] shadow-2xl p-6 overflow-y-auto pb-24">
+        <div id="content-panel" class="flex-1 bg-white rounded-t-[2.5rem] -mt-8 z-[1001] shadow-2xl p-6 overflow-y-auto pb-28">
             <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
 
             <div id="driver-panel" class="hidden">
-                <div id="trip-card" class="hidden mb-6 p-6 bg-emerald-50 border-2 border-emerald-100 rounded-[2rem]">
-                    <p class="text-[10px] font-black text-emerald-600 uppercase mb-1 tracking-widest">New Ride Request</p>
-                    <h4 id="trip-p-name" class="text-xl font-black text-gray-800">Passenger Name</h4>
-                    <p id="trip-p-dest" class="text-sm font-bold text-gray-500 mb-6 italic">...</p>
+                <div id="trip-card" class="hidden mb-6 p-6 bg-emerald-50 border-2 border-emerald-100 rounded-[2.5rem]">
+                    <p class="text-[10px] font-black text-emerald-600 uppercase mb-1 tracking-widest">Active Ride Request</p>
+                    <h4 id="trip-p-name" class="text-xl font-black text-gray-800">Passenger</h4>
+                    <p id="trip-p-dest" class="text-sm font-bold text-gray-500 mb-6 italic">To: ...</p>
                     <div id="driver-actions" class="flex gap-2"></div>
                 </div>
-                <button id="duty-btn" onclick="toggleDuty()" class="w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl">GO ONLINE</button>
+                <button id="duty-btn" onclick="toggleDuty()" class="w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl transition-all">GO ONLINE</button>
             </div>
 
             <div id="passenger-panel" class="hidden">
-                <div id="p-waiting-card" class="hidden mb-6 p-6 bg-blue-50 border-2 border-blue-100 rounded-[2rem] text-center">
-                    <p class="text-blue-600 font-black italic mb-2 tracking-widest uppercase text-[10px]">Driver is approaching</p>
+                <div id="p-waiting-card" class="hidden mb-6 p-6 bg-blue-50 border-2 border-blue-100 rounded-[2.5rem] text-center">
+                    <p class="text-blue-600 font-black italic mb-2 tracking-widest uppercase text-[10px]">Your trike is on the way</p>
                     <p id="wait-driver-name" class="font-black text-xl">...</p>
                 </div>
-                <input id="dest-input" type="text" placeholder="Where are you going? (Fare: ₱21)" class="w-full p-5 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-emerald-500 outline-none font-bold mb-4">
+                <input id="dest-input" type="text" placeholder="Where are you going? (Min: ₱21)" class="w-full p-5 bg-gray-50 rounded-3xl border-2 border-transparent focus:border-emerald-500 outline-none font-bold mb-4 shadow-inner">
                 <div id="driver-list" class="space-y-3"></div>
             </div>
         </div>
 
-        <div class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 flex justify-around items-center z-[7000]">
+        <div class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-gray-100 p-4 flex justify-around items-center z-[7000]">
             <button onclick="toggleDashboard(false)" class="nav-btn active"><i class="fa-solid fa-map-location-dot text-xl mb-1"></i>Map</button>
             <button id="nav-dash" onclick="toggleDashboard(true)" class="nav-btn hidden"><i class="fa-solid fa-chart-pie text-xl mb-1"></i>Dashboard</button>
             <button onclick="logout()" class="nav-btn text-red-400"><i class="fa-solid fa-power-off text-xl mb-1"></i>Logout</button>
@@ -141,14 +144,15 @@
 
         let userUid, userData, map, markers = {}, currentRating = 5;
 
-        // AUTH & PROFILE
+        // AUTHENTICATION
         window.handleAuth = async (t) => {
             const e = document.getElementById('auth-email').value;
             const p = document.getElementById('auth-pass').value;
+            if(!e || !p) return alert("Fill in details.");
             try {
                 if(t === 'login') await signInWithEmailAndPassword(auth, e, p);
                 else {
-                    const role = confirm("Register as Driver?") ? "driver" : "passenger";
+                    const role = confirm("Register as a Driver? (Cancel for Passenger)") ? "driver" : "passenger";
                     const cred = await createUserWithEmailAndPassword(auth, e, p);
                     await setDoc(doc(db, COLL, cred.user.uid), { 
                         name: e.split('@')[0], role, isOnline: false, lat: 6.6294, lng: 124.605, 
@@ -188,7 +192,7 @@
             syncData();
         }
 
-        // REAL-TIME SYNC
+        // DATA SYNCING
         function syncData() {
             onSnapshot(collection(db, COLL), (snap) => {
                 const dList = document.getElementById('driver-list');
@@ -205,7 +209,7 @@
                         return; 
                     }
 
-                    // Marker logic
+                    // Map Icons logic
                     if(data.lat && data.lng && (data.isOnline || data.role === 'passenger')) {
                         if(markers[id]) markers[id].setLatLng([data.lat, data.lng]);
                         else markers[id] = L.marker([data.lat, data.lng], { icon: L.divIcon({ className: data.role === 'driver' ? 'marker-driver' : 'marker-passenger' }) }).addTo(map);
@@ -218,7 +222,7 @@
             });
         }
 
-        // STATUS HANDSHAKE (INTERACTION SYSTEM)
+        // HANDSHAKE INTERACTION (FIXED DECLINE)
         function handleStatusLogic() {
             const overlay = document.getElementById('status-overlay');
             const tripCard = document.getElementById('trip-card');
@@ -247,8 +251,7 @@
                     }
                 } 
                 if (userData.role === 'passenger') {
-                    if (t.status === 'declined') { alert("Driver declined. Finding another..."); resetTripData(); }
-                    else if (t.status === 'accepted') { pWait.classList.remove('hidden'); document.getElementById('wait-driver-name').innerText = t.dName; }
+                    if (t.status === 'accepted') { pWait.classList.remove('hidden'); document.getElementById('wait-driver-name').innerText = t.dName; }
                     else if (t.status === 'pickedup') { overlay.classList.remove('hidden'); }
                     else if (t.status === 'arrived') { document.getElementById('rating-modal').classList.remove('hidden'); }
                 }
@@ -257,16 +260,24 @@
 
         window.updateStatus = async (s) => {
             const t = userData.activeTrip;
-            const up = { "activeTrip.status": s };
-            if(s === 'accepted') up.acceptedCount = increment(1);
-            if(s === 'declined') up.declinedCount = increment(1);
-            await updateDoc(doc(db, COLL, userUid), up);
-            await updateDoc(doc(db, COLL, t.pId || t.dId), up);
+            if(!t) return;
+
+            if(s === 'declined') {
+                // Bug Fix: Delete trip for both so panel disappears immediately
+                await updateDoc(doc(db, COLL, userUid), { declinedCount: increment(1), activeTrip: deleteField() });
+                await updateDoc(doc(db, COLL, t.pId), { activeTrip: deleteField() });
+                alert("Request declined.");
+            } else {
+                const up = { "activeTrip.status": s };
+                if(s === 'accepted') up.acceptedCount = increment(1);
+                await updateDoc(doc(db, COLL, userUid), up);
+                await updateDoc(doc(db, COLL, t.pId || t.dId), up);
+            }
         };
 
         window.bookDriver = async (dId) => {
             const dest = document.getElementById('dest-input').value;
-            if(!dest) return alert("Where are we going?");
+            if(!dest) return alert("Please enter destination.");
             const snap = await getDoc(doc(db, COLL, dId));
             const trip = { status: 'requested', pId: userUid, pName: userData.name, dId: dId, dName: snap.data().name, dest };
             await updateDoc(doc(db, COLL, dId), { activeTrip: trip });
@@ -278,13 +289,10 @@
             await updateDoc(doc(db, COLL, t.dId), { activeTrip: deleteField(), income: increment(21), tripCount: increment(1), totalRating: increment(currentRating) });
             await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() });
             document.getElementById('rating-modal').classList.add('hidden');
+            location.reload();
         };
 
-        async function resetTripData() {
-            await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() });
-        }
-
-        // UI HELPERS
+        // DASHBOARD & PROFILE
         window.toggleDashboard = (s) => document.getElementById('driver-dashboard').classList.toggle('hidden', !s);
         
         window.updateDashboardStats = () => {
@@ -325,9 +333,11 @@
             const avg = data.tripCount > 0 ? (data.totalRating / data.tripCount).toFixed(1) : "5.0";
             document.getElementById('driver-list').innerHTML += `
                 <div class="p-4 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm">
-                    <div><p class="font-black text-gray-800 text-sm">${data.name}</p>
-                    <p class="text-[10px] font-bold text-amber-500"><i class="fa-solid fa-star"></i> ${avg} | ${data.plate || 'No Plate'}</p></div>
-                    <button onclick="bookDriver('${id}')" class="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black shadow-md">BOOK</button>
+                    <div>
+                        <p class="font-black text-gray-800 text-sm">${data.name}</p>
+                        <p class="text-[10px] font-bold text-amber-500 uppercase tracking-tighter"><i class="fa-solid fa-star"></i> ${avg} | ${data.plate || 'NO PLATE'}</p>
+                    </div>
+                    <button onclick="bookDriver('${id}')" class="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black shadow-md active:scale-95 transition-all">BOOK</button>
                 </div>`;
         }
     </script>
