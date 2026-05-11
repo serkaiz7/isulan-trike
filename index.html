@@ -36,7 +36,6 @@
             100% { transform: translateX(-100%); }
         }
 
-        /* Map Marker Styling */
         .driver-marker-icon {
             color: #10b981;
             font-size: 24px;
@@ -174,13 +173,15 @@
         import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
-  authDomain: "isulantrike.firebaseapp.com",
-  projectId: "isulantrike",
-  storageBucket: "isulantrike.firebasestorage.app",
-  messagingSenderId: "262164007490",
-  appId: "1:262164007490:web:2ba9c91b468bbd09ff3bdb",
-  measurementId: "G-3K2TEVV4X5" };
+        const firebaseConfig = { 
+            apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
+            authDomain: "isulantrike.firebaseapp.com",
+            projectId: "isulantrike",
+            storageBucket: "isulantrike.firebasestorage.app",
+            messagingSenderId: "262164007490",
+            appId: "1:262164007490:web:2ba9c91b468bbd09ff3bdb",
+            measurementId: "G-3K2TEVV4X5" 
+        };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -234,6 +235,7 @@
             onSnapshot(collection(db, COLL), (snap) => {
                 const dList = document.getElementById('driver-list');
                 if(userData.role === 'passenger') dList.innerHTML = '';
+                
                 snap.forEach(d => {
                     const data = d.data();
                     const id = d.id;
@@ -242,11 +244,14 @@
                         handleStatusLogic(); 
                         return; 
                     }
-                    if(data.lat && data.lng && (data.isOnline || data.role === 'passenger')) {
+
+                    // CONDITION: User must have coordinates AND (be Online OR be a Passenger)
+                    const shouldShowOnMap = data.lat && data.lng && (data.isOnline || data.role === 'passenger');
+
+                    if(shouldShowOnMap) {
                         if(markers[id]) {
                             markers[id].setLatLng([data.lat, data.lng]);
                         } else {
-                            // Map Icons update: Drivers get a tricycle, Passengers get a person
                             const iconHtml = data.role === 'driver' 
                                 ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` 
                                 : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`;
@@ -259,7 +264,14 @@
                                 }) 
                             }).addTo(map);
                         }
-                    } else if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
+                    } else {
+                        // CLEANUP: Remove "digital footprint" if offline or criteria not met
+                        if (markers[id]) {
+                            map.removeLayer(markers[id]);
+                            delete markers[id];
+                        }
+                    }
+
                     if(userData.role === 'passenger' && data.role === 'driver' && data.isOnline && !data.activeTrip) {
                         renderDriverCard(id, data);
                     }
@@ -362,7 +374,13 @@
             btn.className = s ? "w-full py-12 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl" : "w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl";
         };
 
-        window.logout = () => signOut(auth).then(() => location.reload());
+        window.logout = async () => {
+            // Force offline status in DB before logging out
+            if (userUid) {
+                await updateDoc(doc(db, COLL, userUid), { isOnline: false });
+            }
+            signOut(auth).then(() => location.reload());
+        };
 
         function renderDriverCard(id, data) {
             const avg = data.tripCount > 0 ? (data.totalRating / data.tripCount).toFixed(1) : "5.0";
