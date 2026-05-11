@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IsulanTrike Pro - Dashboard Edition</title>
+    <title>IsulanTrike Elite - Pro Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -11,18 +11,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; touch-action: manipulation; }
-        #map { height: 50vh; width: 100%; z-index: 1; }
+        #map { height: 50vh; width: 100%; z-index: 1; background: #e2e8f0; transition: all 0.5s ease; }
         .glow-text { text-shadow: 0 0 15px rgba(16, 185, 129, 0.8); animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        .marker-driver { background: #10b981; border: 3px solid white; border-radius: 50%; width: 16px; height: 16px; box-shadow: 0 0 10px rgba(0,0,0,0.3); }
-        .marker-passenger { background: #3b82f6; border: 3px solid white; border-radius: 50%; width: 16px; height: 16px; box-shadow: 0 0 10px rgba(0,0,0,0.3); }
+        .marker-driver { background: #10b981; border: 3px solid white; border-radius: 50%; width: 18px; height: 18px; box-shadow: 0 0 10px rgba(0,0,0,0.3); }
+        .marker-passenger { background: #3b82f6; border: 3px solid white; border-radius: 50%; width: 18px; height: 18px; box-shadow: 0 0 10px rgba(0,0,0,0.3); }
         .nav-btn { display: flex; flex-direction: column; align-items: center; font-size: 10px; font-weight: 800; color: #94a3b8; }
         .nav-btn.active { color: #10b981; }
     </style>
 </head>
 <body class="bg-slate-50 flex flex-col h-screen">
 
-    <div id="auth-screen" class="fixed inset-0 z-[5000] bg-emerald-600 flex flex-col p-8 justify-center text-white">
+    <div id="auth-screen" class="fixed inset-0 z-[9000] bg-emerald-600 flex flex-col p-8 justify-center text-white">
         <div class="text-center mb-10">
             <i class="fa-solid fa-motorcycle text-6xl mb-4"></i>
             <h1 class="text-4xl font-black italic">IsulanTrike</h1>
@@ -30,24 +30,23 @@
         <div class="space-y-4 max-w-xs mx-auto w-full">
             <input id="auth-email" type="email" placeholder="Email" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold">
             <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold">
-            <button onclick="handleAuth('login')" class="w-full py-4 bg-white text-emerald-600 rounded-2xl font-black">Sign In</button>
+            <button onclick="handleAuth('login')" class="w-full py-4 bg-white text-emerald-600 rounded-2xl font-black shadow-lg">Sign In</button>
             <button onclick="handleAuth('register')" class="w-full py-4 bg-emerald-800 text-white border border-emerald-400 rounded-2xl font-black">Register</button>
         </div>
     </div>
 
-    <div id="driver-dashboard" class="hidden fixed inset-0 z-[6000] bg-slate-50 overflow-y-auto p-6">
+    <div id="driver-dashboard" class="hidden fixed inset-0 z-[8000] bg-slate-50 overflow-y-auto p-6">
         <div class="flex justify-between items-center mb-8">
             <h2 class="text-2xl font-black text-gray-800 italic">Driver Hub</h2>
             <button onclick="toggleDashboard(false)" class="w-10 h-10 bg-white shadow rounded-full flex items-center justify-center text-gray-400"><i class="fa-solid fa-xmark"></i></button>
         </div>
-
         <div class="grid grid-cols-2 gap-4 mb-8">
-            <div class="bg-emerald-600 p-5 rounded-[2rem] text-white">
+            <div class="bg-emerald-600 p-5 rounded-[2rem] text-white shadow-lg shadow-emerald-100">
                 <p class="text-[10px] font-bold opacity-80 uppercase mb-1">Total Income</p>
                 <h3 class="text-2xl font-black">₱<span id="stat-income">0</span></h3>
             </div>
             <div class="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm">
-                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Total Trips</p>
+                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Trips Done</p>
                 <h3 class="text-2xl font-black text-gray-800" id="stat-trips">0</h3>
             </div>
             <div class="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm">
@@ -59,37 +58,47 @@
                 <h3 class="text-2xl font-black text-gray-800" id="stat-declined">0</h3>
             </div>
         </div>
-
-        <div class="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4">
+        <div class="bg-white p-6 rounded-[2.5rem] shadow-sm space-y-4">
             <h4 class="font-black text-gray-800 mb-2">Profile Settings</h4>
-            <div>
-                <label class="text-[10px] font-black text-gray-400 uppercase ml-2">Full Name</label>
-                <input id="edit-name" type="text" class="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold text-sm">
-            </div>
-            <div>
-                <label class="text-[10px] font-black text-gray-400 uppercase ml-2">Plate Number</label>
-                <input id="edit-plate" type="text" class="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold text-sm" placeholder="e.g. ABC-1234">
-            </div>
-            <div>
-                <label class="text-[10px] font-black text-gray-400 uppercase ml-2">Contact Number</label>
-                <input id="edit-phone" type="text" class="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold text-sm" placeholder="0912...">
-            </div>
+            <input id="edit-name" type="text" placeholder="Name" class="w-full p-4 bg-gray-50 rounded-2xl font-bold text-sm">
+            <input id="edit-plate" type="text" placeholder="Plate Number" class="w-full p-4 bg-gray-50 rounded-2xl font-bold text-sm">
+            <input id="edit-phone" type="text" placeholder="Contact No." class="w-full p-4 bg-gray-50 rounded-2xl font-bold text-sm">
             <button onclick="updateProfile()" class="w-full py-4 bg-gray-800 text-white rounded-2xl font-black mt-4">Save Changes</button>
         </div>
     </div>
 
-    <div id="app-ui" class="hidden flex-col h-full relative">
-        <div id="map" class="half-map"></div>
+    <div id="rating-modal" class="hidden fixed inset-0 z-[8500] bg-black/80 backdrop-blur-md flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center">
+            <h3 class="text-2xl font-black mb-2 italic">You've Arrived!</h3>
+            <p class="text-gray-500 mb-6 font-bold">Fare Paid: ₱21.00</p>
+            <div class="flex justify-center gap-2 mb-8 text-3xl text-amber-400" id="star-box">
+                <i class="fa-solid fa-star" onclick="setStar(1)"></i><i class="fa-solid fa-star" onclick="setStar(2)"></i><i class="fa-solid fa-star" onclick="setStar(3)"></i><i class="fa-solid fa-star" onclick="setStar(4)"></i><i class="fa-solid fa-star" onclick="setStar(5)"></i>
+            </div>
+            <button onclick="finishTrip()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-lg">SUBMIT & CLOSE</button>
+        </div>
+    </div>
 
+    <div id="app-ui" class="hidden flex-col h-full relative">
+        <div id="map"></div>
+        
         <div id="status-overlay" class="hidden h-[50vh] bg-emerald-900 flex flex-col items-center justify-center text-white text-center p-8 z-[2000] border-t-4 border-emerald-400">
-            <h2 class="text-2xl font-black glow-text uppercase italic mb-2">Heading to Destination</h2>
-            <p class="text-[10px] font-bold tracking-widest uppercase opacity-70">Fare: ₱21.00</p>
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-3 h-3 bg-emerald-400 rounded-full animate-ping"></div>
+                <h2 class="text-2xl font-black glow-text uppercase italic">Heading to Destination</h2>
+            </div>
+            <p class="text-[10px] font-bold tracking-widest uppercase opacity-70 mb-4">Estimated Fare: ₱21.00</p>
+            <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-emerald-400 h-full animate-[progress_3s_infinite]" style="width: 40%"></div>
+            </div>
         </div>
 
         <div id="content-panel" class="flex-1 bg-white rounded-t-[2.5rem] -mt-8 z-[1001] shadow-2xl p-6 overflow-y-auto pb-24">
+            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+
             <div id="driver-panel" class="hidden">
                 <div id="trip-card" class="hidden mb-6 p-6 bg-emerald-50 border-2 border-emerald-100 rounded-[2rem]">
-                    <h4 id="trip-p-name" class="text-xl font-black text-gray-800">Passenger</h4>
+                    <p class="text-[10px] font-black text-emerald-600 uppercase mb-1 tracking-widest">New Ride Request</p>
+                    <h4 id="trip-p-name" class="text-xl font-black text-gray-800">Passenger Name</h4>
                     <p id="trip-p-dest" class="text-sm font-bold text-gray-500 mb-6 italic">...</p>
                     <div id="driver-actions" class="flex gap-2"></div>
                 </div>
@@ -97,12 +106,16 @@
             </div>
 
             <div id="passenger-panel" class="hidden">
-                <input id="dest-input" type="text" placeholder="Where to? (Fare: ₱21)" class="w-full p-5 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-emerald-500 outline-none font-bold mb-4 shadow-inner">
+                <div id="p-waiting-card" class="hidden mb-6 p-6 bg-blue-50 border-2 border-blue-100 rounded-[2rem] text-center">
+                    <p class="text-blue-600 font-black italic mb-2 tracking-widest uppercase text-[10px]">Driver is approaching</p>
+                    <p id="wait-driver-name" class="font-black text-xl">...</p>
+                </div>
+                <input id="dest-input" type="text" placeholder="Where are you going? (Fare: ₱21)" class="w-full p-5 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-emerald-500 outline-none font-bold mb-4">
                 <div id="driver-list" class="space-y-3"></div>
             </div>
         </div>
 
-        <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 flex justify-around items-center z-[7000]">
+        <div class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 flex justify-around items-center z-[7000]">
             <button onclick="toggleDashboard(false)" class="nav-btn active"><i class="fa-solid fa-map-location-dot text-xl mb-1"></i>Map</button>
             <button id="nav-dash" onclick="toggleDashboard(true)" class="nav-btn hidden"><i class="fa-solid fa-chart-pie text-xl mb-1"></i>Dashboard</button>
             <button onclick="logout()" class="nav-btn text-red-400"><i class="fa-solid fa-power-off text-xl mb-1"></i>Logout</button>
@@ -126,9 +139,9 @@
         const db = getFirestore(app);
         const COLL = "users";
 
-        let userUid, userData, map, markers = {};
+        let userUid, userData, map, markers = {}, currentRating = 5;
 
-        // AUTH
+        // AUTH & PROFILE
         window.handleAuth = async (t) => {
             const e = document.getElementById('auth-email').value;
             const p = document.getElementById('auth-pass').value;
@@ -137,9 +150,9 @@
                 else {
                     const role = confirm("Register as Driver?") ? "driver" : "passenger";
                     const cred = await createUserWithEmailAndPassword(auth, e, p);
-                    await setDoc(doc(db, COLL, cred.user.uid), {
-                        name: e.split('@')[0], role, isOnline: false, lat: 6.6294, lng: 124.605,
-                        income: 0, tripCount: 0, acceptedCount: 0, declinedCount: 0, plate: "", phone: ""
+                    await setDoc(doc(db, COLL, cred.user.uid), { 
+                        name: e.split('@')[0], role, isOnline: false, lat: 6.6294, lng: 124.605, 
+                        income: 0, tripCount: 0, acceptedCount: 0, declinedCount: 0, plate: "", phone: "", totalRating: 0 
                     });
                 }
             } catch (err) { alert(err.message); }
@@ -164,13 +177,18 @@
                 document.getElementById('edit-plate').value = userData.plate || "";
                 document.getElementById('edit-phone').value = userData.phone || "";
             }
-
+            
             map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 16);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+            navigator.geolocation.watchPosition(p => {
+                updateDoc(doc(db, COLL, userUid), { lat: p.coords.latitude, lng: p.coords.longitude });
+            }, null, { enableHighAccuracy: true });
+
             syncData();
         }
 
-        // DATABASE SYNC & DASHBOARD STATS
+        // REAL-TIME SYNC
         function syncData() {
             onSnapshot(collection(db, COLL), (snap) => {
                 const dList = document.getElementById('driver-list');
@@ -178,66 +196,140 @@
 
                 snap.forEach(d => {
                     const data = d.data();
-                    if(d.id === userUid) {
-                        userData = data;
+                    const id = d.id;
+
+                    if(id === userUid) { 
+                        userData = data; 
                         updateDashboardStats();
-                        handleStatusLogic();
-                        return;
+                        handleStatusLogic(); 
+                        return; 
                     }
-                    // Marker Update... (same as previous logic)
+
+                    // Marker logic
+                    if(data.lat && data.lng && (data.isOnline || data.role === 'passenger')) {
+                        if(markers[id]) markers[id].setLatLng([data.lat, data.lng]);
+                        else markers[id] = L.marker([data.lat, data.lng], { icon: L.divIcon({ className: data.role === 'driver' ? 'marker-driver' : 'marker-passenger' }) }).addTo(map);
+                    } else if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
+
+                    if(userData.role === 'passenger' && data.role === 'driver' && data.isOnline && !data.activeTrip) {
+                        renderDriverCard(id, data);
+                    }
                 });
             });
         }
 
-        function updateDashboardStats() {
+        // STATUS HANDSHAKE (INTERACTION SYSTEM)
+        function handleStatusLogic() {
+            const overlay = document.getElementById('status-overlay');
+            const tripCard = document.getElementById('trip-card');
+            const pWait = document.getElementById('p-waiting-card');
+            const dActions = document.getElementById('driver-actions');
+
+            overlay.classList.add('hidden');
+            tripCard.classList.add('hidden');
+            pWait.classList.add('hidden');
+
+            if (userData.activeTrip) {
+                const t = userData.activeTrip;
+                if (userData.role === 'driver') {
+                    tripCard.classList.remove('hidden');
+                    document.getElementById('trip-p-name').innerText = t.pName;
+                    document.getElementById('trip-p-dest').innerText = "To: " + t.dest;
+
+                    if (t.status === 'requested') {
+                        dActions.innerHTML = `
+                            <button onclick="updateStatus('accepted')" class="flex-1 py-4 bg-emerald-600 text-white rounded-xl font-black">ACCEPT</button>
+                            <button onclick="updateStatus('declined')" class="flex-1 py-4 bg-red-100 text-red-600 rounded-xl font-black">DECLINE</button>`;
+                    } else if (t.status === 'accepted') {
+                        dActions.innerHTML = `<button onclick="updateStatus('pickedup')" class="w-full py-4 bg-blue-600 text-white rounded-xl font-black tracking-widest">PICKUP PASSENGER</button>`;
+                    } else if (t.status === 'pickedup') {
+                        dActions.innerHTML = `<button onclick="updateStatus('arrived')" class="w-full py-4 bg-orange-600 text-white rounded-xl font-black tracking-widest">CONFIRM ARRIVAL</button>`;
+                    }
+                } 
+                if (userData.role === 'passenger') {
+                    if (t.status === 'declined') { alert("Driver declined. Finding another..."); resetTripData(); }
+                    else if (t.status === 'accepted') { pWait.classList.remove('hidden'); document.getElementById('wait-driver-name').innerText = t.dName; }
+                    else if (t.status === 'pickedup') { overlay.classList.remove('hidden'); }
+                    else if (t.status === 'arrived') { document.getElementById('rating-modal').classList.remove('hidden'); }
+                }
+            }
+        }
+
+        window.updateStatus = async (s) => {
+            const t = userData.activeTrip;
+            const up = { "activeTrip.status": s };
+            if(s === 'accepted') up.acceptedCount = increment(1);
+            if(s === 'declined') up.declinedCount = increment(1);
+            await updateDoc(doc(db, COLL, userUid), up);
+            await updateDoc(doc(db, COLL, t.pId || t.dId), up);
+        };
+
+        window.bookDriver = async (dId) => {
+            const dest = document.getElementById('dest-input').value;
+            if(!dest) return alert("Where are we going?");
+            const snap = await getDoc(doc(db, COLL, dId));
+            const trip = { status: 'requested', pId: userUid, pName: userData.name, dId: dId, dName: snap.data().name, dest };
+            await updateDoc(doc(db, COLL, dId), { activeTrip: trip });
+            await updateDoc(doc(db, COLL, userUid), { activeTrip: trip });
+        };
+
+        window.finishTrip = async () => {
+            const t = userData.activeTrip;
+            await updateDoc(doc(db, COLL, t.dId), { activeTrip: deleteField(), income: increment(21), tripCount: increment(1), totalRating: increment(currentRating) });
+            await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() });
+            document.getElementById('rating-modal').classList.add('hidden');
+        };
+
+        async function resetTripData() {
+            await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() });
+        }
+
+        // UI HELPERS
+        window.toggleDashboard = (s) => document.getElementById('driver-dashboard').classList.toggle('hidden', !s);
+        
+        window.updateDashboardStats = () => {
             if(userData.role === 'driver') {
                 document.getElementById('stat-income').innerText = userData.income || 0;
                 document.getElementById('stat-trips').innerText = userData.tripCount || 0;
                 document.getElementById('stat-accepted').innerText = userData.acceptedCount || 0;
                 document.getElementById('stat-declined').innerText = userData.declinedCount || 0;
             }
-        }
+        };
 
-        // PROFILE UPDATE
         window.updateProfile = async () => {
             const n = document.getElementById('edit-name').value;
-            const p = document.getElementById('edit-plate').value;
+            const pl = document.getElementById('edit-plate').value;
             const ph = document.getElementById('edit-phone').value;
-            await updateDoc(doc(db, COLL, userUid), { name: n, plate: p, phone: ph });
-            alert("Profile updated!");
+            await updateDoc(doc(db, COLL, userUid), { name: n, plate: pl, phone: ph });
+            alert("Profile Saved!");
             toggleDashboard(false);
         };
 
-        // STATUS HANDSHAKE (WITH INCOME & DECLINE TRACKING)
-        window.updateStatus = async (s) => {
-            const trip = userData.activeTrip;
-            const up = { "activeTrip.status": s };
-
-            if(s === 'accepted') up.acceptedCount = increment(1);
-            if(s === 'declined') up.declinedCount = increment(1);
-
-            await updateDoc(doc(db, COLL, userUid), up);
-            await updateDoc(doc(db, COLL, trip.pId || trip.dId), up);
+        window.setStar = (n) => {
+            currentRating = n;
+            const s = document.getElementById('star-box').children;
+            for(let i=0; i<5; i++) s[i].className = i < n ? 'fa-solid fa-star text-amber-400' : 'fa-solid fa-star text-gray-200';
         };
 
-        window.finishTrip = async () => {
-            const trip = userData.activeTrip;
-            // Add Income (21 PHP) and Trip Count
-            await updateDoc(doc(db, COLL, trip.dId), {
-                activeTrip: deleteField(),
-                income: increment(21),
-                tripCount: increment(1)
-            });
-            await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() });
-            location.reload();
-        };
-
-        window.toggleDashboard = (show) => {
-            document.getElementById('driver-dashboard').classList.toggle('hidden', !show);
+        window.toggleDuty = () => {
+            const s = !userData.isOnline;
+            updateDoc(doc(db, COLL, userUid), { isOnline: s });
+            const btn = document.getElementById('duty-btn');
+            btn.innerText = s ? "GO OFFLINE" : "GO ONLINE";
+            btn.className = s ? "w-full py-12 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl shadow-lg" : "w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl";
         };
 
         window.logout = () => signOut(auth).then(() => location.reload());
-        // ... include rest of booking & duty logic from previous code ...
+
+        function renderDriverCard(id, data) {
+            const avg = data.tripCount > 0 ? (data.totalRating / data.tripCount).toFixed(1) : "5.0";
+            document.getElementById('driver-list').innerHTML += `
+                <div class="p-4 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm">
+                    <div><p class="font-black text-gray-800 text-sm">${data.name}</p>
+                    <p class="text-[10px] font-bold text-amber-500"><i class="fa-solid fa-star"></i> ${avg} | ${data.plate || 'No Plate'}</p></div>
+                    <button onclick="bookDriver('${id}')" class="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black shadow-md">BOOK</button>
+                </div>`;
+        }
     </script>
 </body>
 </html>
