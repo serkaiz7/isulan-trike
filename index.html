@@ -44,40 +44,19 @@
         </div>
     </div>
 
-    <div id="driver-dashboard" class="hidden fixed inset-0 z-[8000] bg-slate-50 overflow-y-auto p-6">
-        <div class="flex justify-between items-center mb-8">
-            <h2 class="text-2xl font-black text-gray-800 italic">Sakai Hub</h2>
-            <button onclick="toggleDashboard(false)" class="w-10 h-10 bg-white shadow rounded-full flex items-center justify-center text-gray-400"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="grid grid-cols-2 gap-4 mb-8">
-            <div class="bg-emerald-600 p-5 rounded-[2rem] text-white shadow-lg">
-                <p class="text-[10px] font-bold opacity-80 uppercase mb-1">Total Income</p>
-                <h3 class="text-2xl font-black">₱<span id="stat-income">0</span></h3>
-            </div>
-            <div class="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm">
-                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Trips Done</p>
-                <h3 class="text-2xl font-black text-gray-800" id="stat-trips">0</h3>
-            </div>
-            <div class="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm">
-                <p class="text-[10px] font-bold text-emerald-500 uppercase mb-1">Accepted</p>
-                <h3 class="text-2xl font-black text-gray-800" id="stat-accepted">0</h3>
-            </div>
-            <div class="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm">
-                <p class="text-[10px] font-bold text-red-500 uppercase mb-1">Declined</p>
-                <h3 class="text-2xl font-black text-gray-800" id="stat-declined">0</h3>
-            </div>
-        </div>
-        <div class="bg-white p-6 rounded-[2.5rem] shadow-sm space-y-4">
-            <h4 class="font-black text-gray-800 mb-2">Profile Settings</h4>
-            <input id="edit-name" type="text" placeholder="Full Name" class="w-full p-4 bg-gray-50 rounded-2xl font-bold text-sm">
-            <input id="edit-plate" type="text" placeholder="Plate Number" class="w-full p-4 bg-gray-50 rounded-2xl font-bold text-sm">
-            <input id="edit-phone" type="text" placeholder="Contact No." class="w-full p-4 bg-gray-50 rounded-2xl font-bold text-sm">
-            <button onclick="updateProfile()" class="w-full py-4 bg-gray-800 text-white rounded-2xl font-black mt-4">Save Changes</button>
-        </div>
-    </div>
-
     <div id="app-ui" class="hidden flex-col h-full relative">
         <div id="map"></div>
+
+        <div id="p-notif-modal" class="hidden fixed inset-x-6 top-20 z-[8500] bg-white rounded-[2rem] p-6 shadow-2xl border-2 border-emerald-500 animate-bounce">
+            <div class="flex items-center gap-4">
+                <div class="bg-emerald-100 p-3 rounded-full text-emerald-600"><i class="fa-solid fa-check-circle text-xl"></i></div>
+                <div>
+                    <h5 class="font-black text-gray-800">Driver Accepted!</h5>
+                    <p class="text-xs font-bold text-gray-500">Your Sakai is on the way.</p>
+                </div>
+            </div>
+        </div>
+
         <div id="status-overlay" class="hidden h-[50vh] bg-emerald-900 flex flex-col items-center justify-center text-white text-center p-8 z-[2000] border-t-4 border-emerald-400">
             <div class="flex items-center gap-4 mb-4">
                 <div class="w-3 h-3 bg-emerald-400 rounded-full animate-ping"></div>
@@ -91,6 +70,7 @@
 
         <div id="content-panel" class="flex-1 bg-white rounded-t-[2.5rem] -mt-8 z-[1001] shadow-2xl p-6 overflow-y-auto pb-28">
             <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+            
             <div id="driver-panel" class="hidden">
                 <div id="trip-card" class="hidden mb-6 p-6 bg-emerald-50 border-2 border-emerald-100 rounded-[2.5rem]">
                     <h4 id="trip-p-name" class="text-xl font-black text-gray-800">Passenger</h4>
@@ -99,9 +79,11 @@
                 </div>
                 <button id="duty-btn" onclick="toggleDuty()" class="w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl transition-all">GO ONLINE</button>
             </div>
+
             <div id="passenger-panel" class="hidden">
                 <div id="p-waiting-card" class="hidden mb-6 p-6 bg-blue-50 border-2 border-blue-100 rounded-[2.5rem] text-center">
-                    <p id="wait-driver-name" class="font-black text-xl">Searching for your driver...</p>
+                    <p id="wait-driver-name" class="font-black text-xl mb-4">Searching for your driver...</p>
+                    <button onclick="cancelTrip()" class="px-6 py-2 bg-red-100 text-red-600 rounded-full text-xs font-black uppercase tracking-widest">Cancel Booking</button>
                 </div>
                 <input id="dest-input" type="text" placeholder="Where are you going? (₱21 Min)" class="w-full p-5 bg-gray-50 rounded-3xl border-2 border-transparent focus:border-emerald-500 outline-none font-bold mb-4 shadow-inner">
                 <div id="driver-list" class="space-y-3"></div>
@@ -129,7 +111,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
@@ -147,6 +129,7 @@
 
         let userUid, userData, map, markers = {}, currentRating = 5;
 
+        // AUTH Logic
         window.handleAuth = async (t) => {
             const e = document.getElementById('auth-email').value;
             const p = document.getElementById('auth-pass').value;
@@ -189,11 +172,7 @@
             }
 
             navigator.geolocation.watchPosition(p => {
-                if(userUid) updateDoc(doc(db, COLL, userUid), { 
-                    lat: p.coords.latitude, 
-                    lng: p.coords.longitude,
-                    lastActive: Date.now() // Heartbeat update
-                });
+                if(userUid) updateDoc(doc(db, COLL, userUid), { lat: p.coords.latitude, lng: p.coords.longitude, lastActive: Date.now() });
             }, null, { enableHighAccuracy: true });
 
             syncData();
@@ -212,9 +191,12 @@
                     const id = d.id;
                     activeIdsInDb.add(id);
 
-                    if(id === userUid) { userData = data; handleStatusLogic(); return; }
+                    if(id === userUid) { 
+                        userData = data; 
+                        handleStatusLogic(); 
+                        return; 
+                    }
 
-                    // GHOST PROTECTION: Must have updated in last 2 minutes
                     const isFresh = data.lastActive && (now - data.lastActive < 120000);
                     const shouldBeVisible = isFresh && data.lat && data.lng && (data.isOnline || data.role === 'passenger');
 
@@ -249,7 +231,11 @@
             const tripCard = document.getElementById('trip-card');
             const pWait = document.getElementById('p-waiting-card');
             const dActions = document.getElementById('driver-actions');
-            overlay.classList.add('hidden'); tripCard.classList.add('hidden'); pWait.classList.add('hidden');
+            const pNotif = document.getElementById('p-notif-modal');
+
+            overlay.classList.add('hidden'); 
+            tripCard.classList.add('hidden'); 
+            pWait.classList.add('hidden');
 
             if (userData.activeTrip) {
                 const t = userData.activeTrip;
@@ -262,12 +248,33 @@
                     else if (t.status === 'pickedup') dActions.innerHTML = `<button onclick="updateStatus('arrived')" class="w-full py-4 bg-orange-600 text-white rounded-xl font-black">CONFIRM ARRIVAL</button>`;
                 } 
                 if (userData.role === 'passenger') {
-                    if (t.status === 'accepted') { pWait.classList.remove('hidden'); document.getElementById('wait-driver-name').innerText = "Driver: " + t.dName; }
+                    if (t.status === 'requested') {
+                        pWait.classList.remove('hidden');
+                        document.getElementById('wait-driver-name').innerText = "Requesting your ride...";
+                    }
+                    else if (t.status === 'accepted') { 
+                        pWait.classList.remove('hidden'); 
+                        document.getElementById('wait-driver-name').innerText = "Driver " + t.dName + " is on the way!"; 
+                        // Show Notif Modal briefly
+                        if(pNotif.classList.contains('hidden')) {
+                            pNotif.classList.remove('hidden');
+                            setTimeout(() => pNotif.classList.add('hidden'), 5000);
+                        }
+                    }
                     else if (t.status === 'pickedup') overlay.classList.remove('hidden');
                     else if (t.status === 'arrived') document.getElementById('rating-modal').classList.remove('hidden');
                 }
             }
         }
+
+        window.cancelTrip = async () => {
+            const t = userData.activeTrip;
+            if(!t) return;
+            const targetId = userData.role === 'driver' ? t.pId : t.dId;
+            await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() });
+            if(targetId) await updateDoc(doc(db, COLL, targetId), { activeTrip: deleteField() });
+            alert("Trip Cancelled.");
+        };
 
         window.updateStatus = async (s) => {
             const t = userData.activeTrip; if(!t) return;
@@ -298,6 +305,7 @@
         };
 
         window.toggleDashboard = (s) => document.getElementById('driver-dashboard').classList.toggle('hidden', !s);
+        
         window.updateProfile = async () => {
             const n = document.getElementById('edit-name').value, pl = document.getElementById('edit-plate').value, ph = document.getElementById('edit-phone').value;
             await updateDoc(doc(db, COLL, userUid), { name: n, plate: pl, phone: ph });
