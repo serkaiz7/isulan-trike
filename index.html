@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sakai - Elite Transportation</title>
+    <title>Sakai - At Ease Transportation</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -36,6 +36,8 @@
         .role-card.active { border-color: #fbbf24; background: rgba(251, 191, 36, 0.15); transform: scale(1.05); }
         .history-card { transition: all 0.2s; }
         .history-card:active { transform: scale(0.97); }
+
+        #duty-btn.online { background: linear-gradient(to right, #10b981, #34d399); color: white; }
     </style>
 </head>
 <body class="bg-slate-50 flex flex-col h-screen">
@@ -50,7 +52,7 @@
         <div class="text-center mb-8">
             <i class="fa-solid fa-motorcycle text-6xl mb-3"></i>
             <h1 class="text-5xl font-black italic tracking-tighter">Sakai</h1>
-            <p class="text-emerald-200 mt-1">Elite Transportation</p>
+            <p class="text-emerald-200 mt-1">At Ease Transportation</p>
         </div>
         <div class="max-w-xs mx-auto w-full space-y-5">
             <div id="login-actions">
@@ -112,7 +114,8 @@
                     <p id="trip-p-dest" class="text-gray-500 mb-6"></p>
                     <div id="driver-actions" class="flex gap-3"></div>
                 </div>
-                <button id="duty-btn" onclick="toggleDuty()" class="w-full py-12 bg-gray-100 text-gray-700 rounded-3xl font-black text-3xl uppercase tracking-widest">GO ONLINE</button>
+                <button id="duty-btn" onclick="toggleDuty()" 
+                        class="w-full py-12 text-3xl uppercase tracking-widest font-black rounded-3xl transition-all">GO ONLINE</button>
             </div>
 
             <!-- Passenger Panel -->
@@ -136,7 +139,7 @@
         </div>
     </div>
 
-    <!-- DRIVER DASHBOARD (Enhanced with Edit Form) -->
+    <!-- DRIVER DASHBOARD -->
     <div id="driver-dashboard" class="hidden fixed inset-0 z-[8000] bg-slate-50 overflow-y-auto p-6 pb-32">
         <div class="flex justify-between items-center mb-8">
             <h2 class="text-3xl font-black">Driver Hub</h2>
@@ -154,7 +157,6 @@
             </div>
         </div>
 
-        <!-- Edit Profile Section -->
         <div class="bg-white rounded-3xl p-6 shadow-sm">
             <h4 class="font-black text-gray-800 mb-4">Update Your Details</h4>
             <input id="edit-name" type="text" placeholder="Alias Name" class="w-full p-4 bg-gray-50 rounded-2xl border mb-3">
@@ -174,7 +176,7 @@
         <div id="history-list" class="space-y-4"></div>
     </div>
 
-    <!-- Driver Info Modal -->
+    <!-- Modals -->
     <div id="driver-info-modal" class="hidden fixed inset-0 z-[9500] bg-black/60 flex items-end">
         <div class="bg-white w-full rounded-t-3xl p-8">
             <div id="info-content" class="text-center"></div>
@@ -182,7 +184,6 @@
         </div>
     </div>
 
-    <!-- Rating Modal -->
     <div id="rating-modal" class="hidden fixed inset-0 z-[9600] bg-black/80 flex items-center justify-center p-6">
         <div class="bg-white w-full max-w-sm rounded-3xl p-8 text-center">
             <h3 class="text-3xl font-black mb-2">How was your ride?</h3>
@@ -217,7 +218,7 @@
             document.getElementById('alert-body').innerText = body;
             document.getElementById('alert-icon').className = `fa-solid fa-${type === 'success' ? 'check' : 'xmark'}-circle text-3xl ${type === 'success' ? 'text-emerald-500' : 'text-red-500'}`;
             el.classList.remove('hidden');
-            setTimeout(() => el.classList.add('hidden'), 4500);
+            setTimeout(() => el.classList.add('hidden'), 5000);
         }
 
         window.showRegisterUI = () => { document.getElementById('login-actions').classList.add('hidden'); document.getElementById('reg-ui').classList.remove('hidden'); };
@@ -242,18 +243,9 @@
                     const alias = document.getElementById('reg-alias').value.trim() || "Rider";
                     const cred = await createUserWithEmailAndPassword(auth, e, p);
                     await setDoc(doc(db, "users", cred.user.uid), {
-                        name: alias,
-                        role: selectedRole,
-                        isOnline: false,
-                        lat: 6.6294,
-                        lng: 124.605,
-                        income: 0,
-                        tripCount: 0,
-                        totalRating: 0,
-                        plate: document.getElementById('reg-plate').value || "",
-                        mtop: document.getElementById('reg-mtop').value || "",
-                        phone: "",
-                        lastActive: Date.now()
+                        name: alias, role: selectedRole, isOnline: false,
+                        lat: 6.6294, lng: 124.605, income: 0, tripCount: 0,
+                        totalRating: 0, plate: "", mtop: "", phone: "", lastActive: Date.now()
                     });
                 }
             } catch (err) { alert(err.message); }
@@ -303,6 +295,7 @@
                     if (id === userUid) {
                         userData = data;
                         handleStatusLogic();
+                        updateDutyButton();
                         if (userData.role === 'driver') {
                             document.getElementById('stat-income').innerText = userData.income || 0;
                             document.getElementById('stat-trips').innerText = userData.tripCount || 0;
@@ -313,14 +306,12 @@
 
                     const isFresh = data.lastActive && (now - data.lastActive < 180000);
 
+                    // Marker logic (same as before)
                     if (isFresh && data.lat && data.lng && (data.isOnline || data.role === 'passenger' || (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId)))) {
                         if (markers[id]) markers[id].setLatLng([data.lat, data.lng]);
                         else {
                             markers[id] = L.marker([data.lat, data.lng], {
-                                icon: L.divIcon({
-                                    html: data.role === 'driver' ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`,
-                                    className: '', iconSize: [40, 40]
-                                })
+                                icon: L.divIcon({ html: data.role === 'driver' ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`, className: '', iconSize: [40, 40] })
                             }).addTo(map);
                         }
                     } else if (markers[id]) {
@@ -341,12 +332,12 @@
                     }
                 });
 
+                // Route logic (same)
                 if (userData.activeTrip && otherParty) {
                     const myLoc = L.latLng(userData.lat, userData.lng);
                     const theirLoc = L.latLng(otherParty.lat, otherParty.lng);
-                    if (!routingControl) {
-                        routingControl = L.Routing.control({ waypoints: [myLoc, theirLoc], createMarker: () => null, lineOptions: { styles: [{color: '#10b981', weight: 6}] }, show: false }).addTo(map);
-                    } else routingControl.setWaypoints([myLoc, theirLoc]);
+                    if (!routingControl) routingControl = L.Routing.control({ waypoints: [myLoc, theirLoc], createMarker: () => null, lineOptions: { styles: [{color: '#10b981', weight: 6}] }, show: false }).addTo(map);
+                    else routingControl.setWaypoints([myLoc, theirLoc]);
                 } else if (routingControl) {
                     map.removeControl(routingControl);
                     routingControl = null;
@@ -354,7 +345,19 @@
             });
         }
 
+        function updateDutyButton() {
+            const btn = document.getElementById('duty-btn');
+            if (userData.isOnline) {
+                btn.classList.add('online');
+                btn.innerHTML = '✅ YOU ARE ONLINE';
+            } else {
+                btn.classList.remove('online');
+                btn.innerHTML = 'GO ONLINE';
+            }
+        }
+
         function handleStatusLogic() {
+            // ... (same as previous version)
             const overlay = document.getElementById('status-overlay');
             const tripCard = document.getElementById('trip-card');
             const pWait = document.getElementById('p-waiting-card');
@@ -388,9 +391,38 @@
             }
         }
 
+        window.toggleDuty = () => {
+            const s = !userData.isOnline;
+            updateDoc(doc(db, "users", userUid), { isOnline: s });
+            showAlert(s ? "✅ ONLINE" : "⛔ OFFLINE", s ? "You are now accepting ride requests" : "You have gone offline");
+        };
+
+        window.cancelTrip = async () => {
+            const t = userData.activeTrip;
+            if (!t) return;
+
+            // Notify the other party
+            if (t.dId) {
+                await updateDoc(doc(db, "users", t.dId), { 
+                    notification: `Passenger ${userData.name} cancelled the ride request.` 
+                });
+            }
+
+            await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
+            if (t.dId) await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField() });
+            
+            showAlert("Ride Cancelled", "The driver has been notified.");
+        };
+
         window.updateStatus = async (s) => {
             const t = userData.activeTrip;
             if (!t) return;
+
+            if (s === 'declined') {
+                await updateDoc(doc(db, "users", t.pId), { 
+                    notification: `Driver ${userData.name} declined your request.` 
+                });
+            }
 
             if (s === 'arrived') {
                 await addDoc(collection(db, "users", t.pId, "history"), { driverId: t.dId, driverName: t.dName, destination: t.dest, time: Date.now(), fare: 21 });
@@ -407,6 +439,7 @@
             }
         };
 
+        // Rest of the functions (bookDriver, toggleDashboard, updateProfile, etc.) remain the same as previous version
         window.bookDriver = async (dId) => {
             const dest = document.getElementById('dest-input').value.trim();
             if (!dest) return showAlert("Missing Destination", "Please enter where you're going", "error");
@@ -418,19 +451,7 @@
             showAlert("Request Sent", "Waiting for driver response");
         };
 
-        window.cancelTrip = async () => {
-            const t = userData.activeTrip;
-            if (!t) return;
-            await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
-            if (t.dId) await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField() });
-            showAlert("Ride Cancelled", "You can book again anytime");
-        };
-
-        window.toggleDuty = () => {
-            const s = !userData.isOnline;
-            updateDoc(doc(db, "users", userUid), { isOnline: s });
-            showAlert(s ? "You are now Online" : "You are now Offline", "");
-        };
+        // ... (Include toggleDashboard, updateProfile, loadPassengerHistory, showDriverInfo, finishTripPassenger, setStar, logout, triggerSOS as in previous version)
 
         window.toggleDashboard = (show) => {
             if (userData.role === 'driver') {
@@ -522,7 +543,7 @@
             if (document.getElementById('star-box')) setStar(5);
         }, 1000);
 
-        console.log("%c✅ Sakai Elite - Updated", "color:#10b981;font-size:16px;font-weight:bold");
+        console.log("%c✅ Sakai Elite - Fully Updated with Notifications & Button Toggle", "color:#10b981;font-size:16px;font-weight:bold");
     </script>
 </body>
 </html>
