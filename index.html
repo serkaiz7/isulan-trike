@@ -119,20 +119,52 @@
         </div>
     </div>
 
-    <div id="driver-dashboard" class="hidden fixed inset-0 z-[8000] bg-slate-50 overflow-y-auto p-6">
+    <div id="driver-dashboard" class="hidden fixed inset-0 z-[8000] bg-slate-50 overflow-y-auto p-6 pb-32">
         <div class="flex justify-between items-center mb-8">
             <h2 class="text-2xl font-black text-gray-800 italic">Sakai Hub</h2>
             <button onclick="toggleDashboard(false)" class="w-10 h-10 bg-white shadow rounded-full flex items-center justify-center text-gray-400"><i class="fa-solid fa-xmark"></i></button>
         </div>
+        
         <div class="grid grid-cols-2 gap-4 mb-8">
             <div class="bg-emerald-600 p-5 rounded-[2rem] text-white shadow-lg"><p class="text-[10px] font-bold opacity-80 uppercase mb-1">Income</p><h3 class="text-2xl font-black">₱<span id="stat-income">0</span></h3></div>
             <div class="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Trips</p><h3 class="text-2xl font-black text-gray-800" id="stat-trips">0</h3></div>
         </div>
+
         <div class="bg-white p-6 rounded-[2.5rem] shadow-sm space-y-4">
-            <h4 class="font-black text-gray-800 mb-2">Profile</h4>
-            <input id="edit-name" type="text" class="w-full p-4 bg-gray-50 rounded-2xl font-bold">
-            <input id="edit-mtop" type="text" placeholder="MTOP" class="w-full p-4 bg-gray-50 rounded-2xl font-bold">
-            <button onclick="updateProfile()" class="w-full py-4 bg-gray-800 text-white rounded-2xl font-black mt-4">Save</button>
+            <h4 class="font-black text-gray-800 mb-2">Driver Profile Details</h4>
+            
+            <div class="space-y-1">
+                <label class="text-[10px] font-extrabold uppercase text-gray-400 ml-2">Alias Name</label>
+                <input id="edit-name" type="text" class="w-full p-4 bg-gray-50 rounded-2xl font-bold border-0 focus:ring-2 focus:ring-emerald-500">
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-[10px] font-extrabold uppercase text-gray-400 ml-2">Mobile Number (Optional)</label>
+                <input id="edit-phone" type="tel" placeholder="0912..." class="w-full p-4 bg-gray-50 rounded-2xl font-bold border-0 focus:ring-2 focus:ring-emerald-500">
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-[10px] font-extrabold uppercase text-gray-400 ml-2">Messenger Link (Optional)</label>
+                <input id="edit-messenger" type="text" placeholder="m.me/yourname" class="w-full p-4 bg-gray-50 rounded-2xl font-bold border-0 focus:ring-2 focus:ring-emerald-500">
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-[10px] font-extrabold uppercase text-gray-400 ml-2">Home Address (Optional)</label>
+                <input id="edit-address" type="text" placeholder="Barangay, Street" class="w-full p-4 bg-gray-50 rounded-2xl font-bold border-0 focus:ring-2 focus:ring-emerald-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label class="text-[10px] font-extrabold uppercase text-gray-400 ml-2">MTOP</label>
+                    <input id="edit-mtop" type="text" class="w-full p-4 bg-gray-50 rounded-2xl font-bold border-0 focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-extrabold uppercase text-gray-400 ml-2">Plate No.</label>
+                    <input id="edit-plate" type="text" class="w-full p-4 bg-gray-50 rounded-2xl font-bold border-0 focus:ring-2 focus:ring-emerald-500">
+                </div>
+            </div>
+
+            <button onclick="updateProfile()" class="w-full py-4 bg-gray-800 text-white rounded-2xl font-black mt-4 shadow-xl active:scale-95 transition-transform">Update Information</button>
         </div>
     </div>
 
@@ -194,7 +226,6 @@
         window.showLoginUI = () => {
             document.getElementById('login-actions').classList.remove('hidden'); 
             document.getElementById('reg-ui').classList.add('hidden');
-            // Reset selected role UI
             selectedRole = null;
             document.getElementById('role-p').classList.remove('active');
             document.getElementById('role-d').classList.remove('active');
@@ -230,7 +261,10 @@
                         tripCount: 0, 
                         totalRating: 0,
                         plate: document.getElementById('reg-plate').value || "", 
-                        mtop: document.getElementById('reg-mtop').value || "", 
+                        mtop: document.getElementById('reg-mtop').value || "",
+                        phone: "",
+                        messenger: "",
+                        address: "",
                         lastActive: Date.now() 
                     });
                 }
@@ -386,14 +420,36 @@
 
         window.toggleDashboard = (s) => { 
             document.getElementById('driver-dashboard').classList.toggle('hidden', !s); 
-            if(s) document.getElementById('edit-name').value = userData.name; 
+            if(s) {
+                document.getElementById('edit-name').value = userData.name || "";
+                document.getElementById('edit-phone').value = userData.phone || "";
+                document.getElementById('edit-messenger').value = userData.messenger || "";
+                document.getElementById('edit-address').value = userData.address || "";
+                document.getElementById('edit-mtop').value = userData.mtop || "";
+                document.getElementById('edit-plate').value = userData.plate || "";
+            }
         };
 
         window.updateProfile = async () => {
             const name = document.getElementById('edit-name').value;
+            const phone = document.getElementById('edit-phone').value;
+            const messenger = document.getElementById('edit-messenger').value;
+            const address = document.getElementById('edit-address').value;
             const mtop = document.getElementById('edit-mtop').value;
-            await updateDoc(doc(db, COLL, userUid), { name, mtop });
-            showAlert("Updated", "Profile information saved.", "success");
+            const plate = document.getElementById('edit-plate').value;
+
+            if(!name) return alert("Alias name is required.");
+
+            await updateDoc(doc(db, COLL, userUid), { 
+                name, 
+                phone, 
+                messenger, 
+                address, 
+                mtop, 
+                plate 
+            });
+
+            showAlert("Profile Updated", "Your information has been successfully saved.", "success");
             toggleDashboard(false);
         };
 
