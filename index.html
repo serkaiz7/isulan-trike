@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -25,7 +25,7 @@
         .nav-btn { display: flex; flex-direction: column; align-items: center; font-size: 10px; font-weight: 800; color: #94a3b8; }
         .nav-btn.active { color: #10b981; }
         .role-card.active { border-color: #fbbf24; background: rgba(251, 191, 36, 0.2); transform: scale(1.05); }
-        .leaflet-routing-machine-container { display: none !important; }
+        .leaflet-routing-container { display: none !important; }
     </style>
 </head>
 <body class="bg-slate-50 flex flex-col h-screen">
@@ -39,50 +39,25 @@
             <i class="fa-solid fa-motorcycle text-5xl mb-2"></i>
             <h1 class="text-4xl font-black italic tracking-tighter">Sakai</h1>
         </div>
-
         <div id="auth-forms" class="space-y-4 max-w-xs mx-auto w-full">
             <input id="auth-email" type="email" placeholder="Email" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold placeholder-white/50">
             <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold placeholder-white/50">
-            
             <div id="login-actions" class="space-y-3">
                 <button onclick="handleAuth('login')" class="w-full py-4 bg-white text-emerald-600 rounded-2xl font-black shadow-lg">Sign In</button>
                 <button onclick="showRegisterUI()" class="w-full py-4 bg-emerald-800 text-white border border-emerald-400 rounded-2xl font-black">Create Account</button>
             </div>
-
             <div id="reg-ui" class="hidden space-y-4 pt-4 border-t border-white/20">
-                <p class="text-center text-[10px] font-black uppercase tracking-widest opacity-70">Select Your Role</p>
                 <div class="grid grid-cols-2 gap-4">
                     <div onclick="selectRole('passenger')" id="role-p" class="role-card p-4 border-2 border-white/30 rounded-2xl text-center cursor-pointer"><i class="fa-solid fa-person-walking text-2xl mb-2"></i><p class="text-[10px] font-black uppercase">Passenger</p></div>
                     <div onclick="selectRole('driver')" id="role-d" class="role-card p-4 border-2 border-white/30 rounded-2xl text-center cursor-pointer"><i class="fa-solid fa-motorcycle text-2xl mb-2"></i><p class="text-[10px] font-black uppercase">Driver</p></div>
                 </div>
-                <input id="reg-alias" type="text" placeholder="Alias Name (Required)" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold placeholder-white/50">
+                <input id="reg-alias" type="text" placeholder="Alias Name" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold">
                 <div id="driver-fields" class="hidden space-y-4">
-                    <input id="reg-mtop" type="text" placeholder="MTOP Number" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold placeholder-white/50">
-                    <input id="reg-plate" type="text" placeholder="Plate Number" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold placeholder-white/50">
+                    <input id="reg-mtop" type="text" placeholder="MTOP" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold">
+                    <input id="reg-plate" type="text" placeholder="Plate" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold">
                 </div>
-                <div class="flex gap-2">
-                    <button onclick="location.reload()" class="w-1/3 py-4 bg-white/10 rounded-2xl font-black text-xs">Back</button>
-                    <button onclick="handleAuth('register')" class="w-2/3 py-4 bg-amber-400 text-emerald-900 rounded-2xl font-black shadow-lg">Complete</button>
-                </div>
+                <button onclick="handleAuth('register')" class="w-full py-4 bg-amber-400 text-emerald-900 rounded-2xl font-black shadow-lg">Complete</button>
             </div>
-        </div>
-    </div>
-
-    <div id="driver-dashboard" class="hidden fixed inset-0 z-[8000] bg-slate-50 overflow-y-auto p-6">
-        <div class="flex justify-between items-center mb-8">
-            <h2 class="text-2xl font-black text-gray-800 italic">Sakai Hub</h2>
-            <button onclick="toggleDashboard(false)" class="w-10 h-10 bg-white shadow rounded-full flex items-center justify-center text-gray-400"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="grid grid-cols-2 gap-4 mb-8">
-            <div class="bg-emerald-600 p-5 rounded-[2rem] text-white shadow-lg"><p class="text-[10px] font-bold opacity-80 uppercase mb-1">Income</p><h3 class="text-2xl font-black">₱<span id="stat-income">0</span></h3></div>
-            <div class="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Trips</p><h3 class="text-2xl font-black text-gray-800" id="stat-trips">0</h3></div>
-        </div>
-        <div class="bg-white p-6 rounded-[2.5rem] shadow-sm space-y-4">
-            <h4 class="font-black text-gray-800 mb-2">Edit Info</h4>
-            <input id="edit-name" type="text" placeholder="Alias Name" class="w-full p-4 bg-gray-50 rounded-2xl font-bold text-sm">
-            <input id="edit-mtop" type="text" placeholder="MTOP Number" class="w-full p-4 bg-gray-50 rounded-2xl font-bold text-sm">
-            <input id="edit-plate" type="text" placeholder="Plate Number" class="w-full p-4 bg-gray-50 rounded-2xl font-bold text-sm">
-            <button onclick="updateProfile()" class="w-full py-4 bg-gray-800 text-white rounded-2xl font-black mt-4">Save Changes</button>
         </div>
     </div>
 
@@ -99,7 +74,7 @@
             </div>
         </div>
 
-        <div id="status-overlay" class="hidden h-[50vh] bg-emerald-900 flex flex-col items-center justify-center text-white text-center p-8 z-[2000] border-t-4 border-emerald-400">
+        <div id="status-overlay" class="hidden h-[50vh] bg-emerald-900 flex flex-col items-center justify-center text-white text-center p-8 z-[2000]">
             <h2 class="text-2xl font-black glow-text uppercase italic mb-2">Ride in Progress</h2>
             <p class="text-[10px] font-bold tracking-widest uppercase opacity-70">Fare: ₱21.00</p>
         </div>
@@ -111,7 +86,7 @@
                     <p id="trip-p-dest" class="text-sm font-bold text-gray-500 mb-6 italic">...</p>
                     <div id="driver-actions" class="flex gap-2"></div>
                 </div>
-                <button id="duty-btn" onclick="toggleDuty()" class="w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl">GO ONLINE</button>
+                <button id="duty-btn" onclick="toggleDuty()" class="w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl uppercase tracking-tighter">Go Online</button>
             </div>
 
             <div id="passenger-panel" class="hidden">
@@ -128,6 +103,23 @@
             <button onclick="toggleDashboard(false)" class="nav-btn active"><i class="fa-solid fa-map-location-dot text-xl mb-1"></i>Map</button>
             <button id="nav-dash" onclick="toggleDashboard(true)" class="nav-btn hidden"><i class="fa-solid fa-chart-pie text-xl mb-1"></i>Hub</button>
             <button onclick="logout()" class="nav-btn text-red-400"><i class="fa-solid fa-power-off text-xl mb-1"></i>Logout</button>
+        </div>
+    </div>
+
+    <div id="driver-dashboard" class="hidden fixed inset-0 z-[8000] bg-slate-50 overflow-y-auto p-6">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl font-black text-gray-800 italic">Sakai Hub</h2>
+            <button onclick="toggleDashboard(false)" class="w-10 h-10 bg-white shadow rounded-full flex items-center justify-center text-gray-400"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-8">
+            <div class="bg-emerald-600 p-5 rounded-[2rem] text-white shadow-lg"><p class="text-[10px] font-bold opacity-80 uppercase mb-1">Income</p><h3 class="text-2xl font-black">₱<span id="stat-income">0</span></h3></div>
+            <div class="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Trips</p><h3 class="text-2xl font-black text-gray-800" id="stat-trips">0</h3></div>
+        </div>
+        <div class="bg-white p-6 rounded-[2.5rem] shadow-sm space-y-4">
+            <h4 class="font-black text-gray-800 mb-2">Profile</h4>
+            <input id="edit-name" type="text" class="w-full p-4 bg-gray-50 rounded-2xl font-bold">
+            <input id="edit-mtop" type="text" placeholder="MTOP" class="w-full p-4 bg-gray-50 rounded-2xl font-bold">
+            <button onclick="updateProfile()" class="w-full py-4 bg-gray-800 text-white rounded-2xl font-black mt-4">Save</button>
         </div>
     </div>
 
@@ -160,10 +152,8 @@
         const db = getFirestore(app);
         const COLL = "users";
 
-        let userUid, userData, map, markers = {}, currentRating = 5, lastTripState = null, selectedRole = null;
-        let routingControl = null;
+        let userUid, userData, map, markers = {}, currentRating = 5, lastTripState = null, selectedRole = null, routingControl = null;
 
-        // HELPER: Show Alert Popup
         window.showAlert = (title, body, type = 'success') => {
             const el = document.getElementById('alert-popup');
             const iconBg = document.getElementById('alert-icon-bg');
@@ -183,7 +173,6 @@
             setTimeout(() => el.classList.add('hidden'), 5000);
         };
 
-        // Auth/Registration Logic
         window.showRegisterUI = () => { document.getElementById('login-actions').classList.add('hidden'); document.getElementById('reg-ui').classList.remove('hidden'); };
         window.selectRole = (role) => { selectedRole = role; document.getElementById('role-p').className = role === 'passenger' ? 'role-card active p-4 border-2 rounded-2xl text-center' : 'role-card p-4 border-2 border-white/30 rounded-2xl text-center'; document.getElementById('role-d').className = role === 'driver' ? 'role-card active p-4 border-2 rounded-2xl text-center' : 'role-card p-4 border-2 border-white/30 rounded-2xl text-center'; document.getElementById('driver-fields').classList.toggle('hidden', role !== 'driver'); };
 
@@ -193,9 +182,8 @@
                 if(t === 'login') await signInWithEmailAndPassword(auth, e, p);
                 else {
                     const alias = document.getElementById('reg-alias').value;
-                    if(!selectedRole || !alias) return alert("Please fill all fields!");
                     const cred = await createUserWithEmailAndPassword(auth, e, p);
-                    await setDoc(doc(db, COLL, cred.user.uid), { name: alias, role: selectedRole, isOnline: false, lat: 6.6294, lng: 124.605, income: 0, tripCount: 0, acceptedCount: 0, declinedCount: 0, plate: document.getElementById('reg-plate').value || "", mtop: document.getElementById('reg-mtop').value || "", totalRating: 0, lastActive: Date.now() });
+                    await setDoc(doc(db, COLL, cred.user.uid), { name: alias, role: selectedRole, isOnline: false, lat: 6.6294, lng: 124.605, income: 0, tripCount: 0, plate: document.getElementById('reg-plate').value || "", mtop: document.getElementById('reg-mtop').value || "", lastActive: Date.now() });
                 }
             } catch (err) { alert(err.message); }
         };
@@ -223,26 +211,22 @@
                 const now = Date.now();
                 const dList = document.getElementById('driver-list');
                 if(userData.role === 'passenger') dList.innerHTML = '';
-                
                 let otherPartyData = null;
 
                 snap.forEach(d => {
                     const data = d.data(), id = d.id;
                     if(id === userUid) {
-                        // Notify driver only if passenger cancels after request/acceptance
-                        if (userData.role === 'driver' && userData.activeTrip && !data.activeTrip) {
-                            if (lastTripState === 'requested' || lastTripState === 'accepted') showAlert("Trip Cancelled", "The passenger cancelled the request.", "error");
-                            else if (lastTripState === 'arrived') showAlert("Success", "Trip completed and recorded.", "success");
+                        // Driver Notification for passenger cancellation
+                        if (userData.role === 'driver' && userData.activeTrip && !data.activeTrip && (lastTripState === 'requested' || lastTripState === 'accepted')) {
+                             showAlert("Trip Cancelled", "The passenger cancelled.", "error");
                         }
                         userData = data;
                         lastTripState = userData.activeTrip ? userData.activeTrip.status : null;
                         handleStatusLogic();
-                        if(userData.role === 'driver') updateDashboardStats();
+                        if(userData.role === 'driver') { document.getElementById('stat-income').innerText = userData.income || 0; document.getElementById('stat-trips').innerText = userData.tripCount || 0; }
                     }
 
-                    if (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId) && id !== userUid) {
-                        otherPartyData = data;
-                    }
+                    if (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId) && id !== userUid) otherPartyData = data;
 
                     const isFresh = data.lastActive && (now - data.lastActive < 120000);
                     if(isFresh && data.lat && data.lng && (data.isOnline || data.role === 'passenger')) {
@@ -250,34 +234,30 @@
                         else markers[id] = L.marker([data.lat, data.lng], { icon: L.divIcon({ className: '', html: data.role === 'driver' ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`, iconSize: [30, 30] }) }).addTo(map);
                     } else if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
 
-                    if(userData.role === 'passenger' && data.role === 'driver' && data.isOnline && isFresh && !data.activeTrip) renderDriverCard(id, data);
+                    if(userData.role === 'passenger' && data.role === 'driver' && data.isOnline && isFresh && !data.activeTrip) {
+                        const avg = data.tripCount > 0 ? (data.totalRating / data.tripCount).toFixed(1) : "5.0";
+                        dList.innerHTML += `<div class="p-4 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm"><div><p class="font-black text-gray-800 text-sm">${data.name}</p><p class="text-[10px] font-bold text-amber-500 uppercase"><i class="fa-solid fa-star"></i> ${avg} | MTOP: ${data.mtop || 'N/A'}</p></div><button onclick="bookDriver('${id}')" class="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black">BOOK</button></div>`;
+                    }
                 });
 
-                // Routing Path Logic
                 if (userData.activeTrip && (userData.activeTrip.status === 'accepted' || userData.activeTrip.status === 'pickedup')) {
                     if (otherPartyData && userData.lat && otherPartyData.lat) {
                         const myLoc = L.latLng(userData.lat, userData.lng), theirLoc = L.latLng(otherPartyData.lat, otherPartyData.lng);
-                        if (!routingControl) {
-                            routingControl = L.Routing.control({ waypoints: [myLoc, theirLoc], lineOptions: { styles: [{ color: '#10b981', weight: 6, opacity: 0.8 }] }, createMarker: () => null, addWaypoints: false }).addTo(map);
-                        } else { routingControl.setWaypoints([myLoc, theirLoc]); }
+                        if (!routingControl) routingControl = L.Routing.control({ waypoints: [myLoc, theirLoc], lineOptions: { styles: [{ color: '#10b981', weight: 6, opacity: 0.8 }] }, createMarker: () => null, addWaypoints: false }).addTo(map);
+                        else routingControl.setWaypoints([myLoc, theirLoc]);
                     }
                 } else if (routingControl) { map.removeControl(routingControl); routingControl = null; }
             });
         }
 
-        window.updateDashboardStats = () => { document.getElementById('stat-income').innerText = userData.income || 0; document.getElementById('stat-trips').innerText = userData.tripCount || 0; };
-        
         async function handleStatusLogic() {
             const overlay = document.getElementById('status-overlay'), tripCard = document.getElementById('trip-card'), pWait = document.getElementById('p-waiting-card'), dActions = document.getElementById('driver-actions');
             overlay.classList.add('hidden'); tripCard.classList.add('hidden'); pWait.classList.add('hidden');
             
             if (userData.activeTrip) {
                 const t = userData.activeTrip;
-
-                // PASSENGER NOTIFICATION FOR DECLINE (FIXED)
                 if (userData.role === 'passenger' && t.status === 'declined') {
-                    showAlert("Driver is Busy", "The driver declined your booking. Please try booking another Sakai.", "error");
-                    // Clear state after showing alert so they can search again
+                    showAlert("Driver is Busy", "The driver declined. Please try another Sakai.", "error");
                     await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() });
                     return;
                 }
@@ -290,9 +270,9 @@
                 } else {
                     pWait.classList.remove('hidden');
                     if (t.status === 'requested') document.getElementById('wait-driver-name').innerText = "Requesting Sakai...";
-                    else if (t.status === 'accepted') { 
-                        document.getElementById('wait-driver-name').innerText = "Driver " + t.dName + " is on the way!";
-                        if(lastTripState !== 'accepted') showAlert("Driver Accepted!", "Your Sakai is coming to get you.", "success");
+                    else if (t.status === 'accepted') {
+                        document.getElementById('wait-driver-name').innerText = "Driver " + t.dName + " is coming!";
+                        if(lastTripState !== 'accepted') showAlert("Driver Accepted!", "Your Sakai is on the way.", "success");
                     }
                     else if (t.status === 'pickedup') overlay.classList.remove('hidden');
                     else if (t.status === 'arrived') document.getElementById('rating-modal').classList.remove('hidden');
@@ -302,26 +282,29 @@
 
         window.updateStatus = async (s) => {
             const t = userData.activeTrip; if(!t) return;
-            if(s === 'declined') { 
-                // Mark status as declined on PASSENGER side first to trigger their logic
+            if(s === 'declined') {
                 await updateDoc(doc(db, COLL, t.pId), { "activeTrip.status": "declined" });
-                // Driver clears their own card immediately
-                await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField(), declinedCount: increment(1) });
-            } else { 
-                const up = { "activeTrip.status": s }; if(s === 'accepted') up.acceptedCount = increment(1); 
+                await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() });
+            } else if (s === 'arrived') {
+                // Show driver success notification immediately
+                showAlert("Success", "Income recorded and trip completed.", "success");
+                await updateDoc(doc(db, COLL, userUid), { "activeTrip.status": "arrived" });
+                await updateDoc(doc(db, COLL, t.pId), { "activeTrip.status": "arrived" });
+            } else {
+                const up = { "activeTrip.status": s };
                 await updateDoc(doc(db, COLL, userUid), up); await updateDoc(doc(db, COLL, t.pId), up); 
             }
         };
 
         window.bookDriver = async (dId) => {
-            const dest = document.getElementById('dest-input').value; if(!dest) return alert("Please enter destination.");
+            const dest = document.getElementById('dest-input').value; if(!dest) return alert("Enter destination.");
             const snap = await getDoc(doc(db, COLL, dId));
             const trip = { status: 'requested', pId: userUid, pName: userData.name, dId: dId, dName: snap.data().name, dest };
             await updateDoc(doc(db, COLL, dId), { activeTrip: trip }); await updateDoc(doc(db, COLL, userUid), { activeTrip: trip });
         };
 
         window.cancelTrip = async () => {
-            const t = userData.activeTrip; if(!t || !confirm("Cancel your ride?")) return;
+            const t = userData.activeTrip; if(!t || !confirm("Cancel ride?")) return;
             const targetId = userData.role === 'driver' ? t.pId : t.dId;
             await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() }); if(targetId) await updateDoc(doc(db, COLL, targetId), { activeTrip: deleteField() });
         };
@@ -333,24 +316,10 @@
             document.getElementById('rating-modal').classList.add('hidden');
         };
 
-        window.toggleDashboard = (s) => { 
-            document.getElementById('driver-dashboard').classList.toggle('hidden', !s); 
-            if(s) { 
-                document.getElementById('edit-name').value = userData.name; 
-                document.getElementById('edit-mtop').value = userData.mtop || ''; 
-                document.getElementById('edit-plate').value = userData.plate || ''; 
-            } 
-        };
-        
-        window.updateProfile = async () => { await updateDoc(doc(db, COLL, userUid), { name: document.getElementById('edit-name').value, plate: document.getElementById('edit-plate').value, mtop: document.getElementById('edit-mtop').value }); alert("Profile Updated!"); toggleDashboard(false); };
-        window.setStar = (n) => { currentRating = n; const s = document.getElementById('star-box').children; for(let i=0; i<5; i++) s[i].className = i < n ? 'fa-solid fa-star text-amber-400' : 'fa-solid fa-star text-gray-200'; };
-        window.toggleDuty = () => { const s = !userData.isOnline; updateDoc(doc(db, COLL, userUid), { isOnline: s }); const btn = document.getElementById('duty-btn'); btn.innerText = s ? "GO OFFLINE" : "GO ONLINE"; btn.className = s ? "w-full py-12 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl" : "w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl"; };
+        window.toggleDuty = () => { const s = !userData.isOnline; updateDoc(doc(db, COLL, userUid), { isOnline: s }); const btn = document.getElementById('duty-btn'); btn.innerText = s ? "Go Offline" : "Go Online"; btn.className = s ? "w-full py-12 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl uppercase tracking-tighter" : "w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl uppercase tracking-tighter"; };
+        window.toggleDashboard = (s) => { document.getElementById('driver-dashboard').classList.toggle('hidden', !s); if(s) document.getElementById('edit-name').value = userData.name; };
         window.logout = async () => { if (userUid) await updateDoc(doc(db, COLL, userUid), { isOnline: false }); signOut(auth).then(() => location.reload()); };
-
-        function renderDriverCard(id, data) {
-            const avg = data.tripCount > 0 ? (data.totalRating / data.tripCount).toFixed(1) : "5.0";
-            document.getElementById('driver-list').innerHTML += `<div class="p-4 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm"><div><p class="font-black text-gray-800 text-sm">${data.name}</p><p class="text-[10px] font-bold text-amber-500 uppercase"><i class="fa-solid fa-star"></i> ${avg} | MTOP: ${data.mtop || 'N/A'}</p></div><button onclick="bookDriver('${id}')" class="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black">BOOK</button></div>`;
-        }
+        window.setStar = (n) => { currentRating = n; const s = document.getElementById('star-box').children; for(let i=0; i<5; i++) s[i].className = i < n ? 'fa-solid fa-star text-amber-400' : 'fa-solid fa-star text-gray-200'; };
     </script>
 </body>
 </html>
