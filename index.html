@@ -36,9 +36,6 @@
         .role-card.active { border-color: #fbbf24; background: rgba(251, 191, 36, 0.15); transform: scale(1.05); }
         .history-card { transition: all 0.2s; }
         .history-card:active { transform: scale(0.97); }
-
-        .toast { animation: slideUp 0.4s ease forwards; }
-        @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
 <body class="bg-slate-50 flex flex-col h-screen">
@@ -123,15 +120,10 @@
                 <div class="mb-6">
                     <input id="dest-input" type="text" placeholder="Where to? (Min ₱21)" class="w-full p-5 bg-gray-100 rounded-3xl border-2 border-transparent focus:border-emerald-500 outline-none font-medium text-lg">
                 </div>
-                
-                <!-- Saved Locations -->
-                <div id="saved-locations" class="flex gap-3 mb-6 overflow-x-auto pb-3"></div>
-
                 <div id="p-waiting-card" class="hidden mb-6 p-6 bg-blue-50 border-2 border-blue-200 rounded-3xl text-center">
                     <p id="wait-driver-name" class="font-black text-xl mb-4"></p>
                     <button onclick="cancelTrip()" class="px-8 py-3 bg-red-100 text-red-600 rounded-full text-sm font-black">CANCEL RIDE</button>
                 </div>
-                
                 <div id="driver-list" class="space-y-4"></div>
             </div>
         </div>
@@ -144,12 +136,13 @@
         </div>
     </div>
 
-    <!-- DASHBOARDS -->
+    <!-- DRIVER DASHBOARD (Enhanced with Edit Form) -->
     <div id="driver-dashboard" class="hidden fixed inset-0 z-[8000] bg-slate-50 overflow-y-auto p-6 pb-32">
         <div class="flex justify-between items-center mb-8">
             <h2 class="text-3xl font-black">Driver Hub</h2>
-            <button onclick="toggleDashboard(false)" class="text-3xl">✕</button>
+            <button onclick="toggleDashboard(false)" class="text-3xl text-gray-400">✕</button>
         </div>
+        
         <div class="grid grid-cols-2 gap-4 mb-8">
             <div class="bg-emerald-600 p-6 rounded-3xl text-white">
                 <p class="text-sm opacity-75">Total Earnings</p>
@@ -160,12 +153,23 @@
                 <p class="text-4xl font-black mt-2" id="stat-trips">0</p>
             </div>
         </div>
+
+        <!-- Edit Profile Section -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm">
+            <h4 class="font-black text-gray-800 mb-4">Update Your Details</h4>
+            <input id="edit-name" type="text" placeholder="Alias Name" class="w-full p-4 bg-gray-50 rounded-2xl border mb-3">
+            <input id="edit-phone" type="tel" placeholder="Mobile Number" class="w-full p-4 bg-gray-50 rounded-2xl border mb-3">
+            <input id="edit-mtop" type="text" placeholder="MTOP Number" class="w-full p-4 bg-gray-50 rounded-2xl border mb-3">
+            <input id="edit-plate" type="text" placeholder="Plate Number" class="w-full p-4 bg-gray-50 rounded-2xl border mb-6">
+            <button onclick="updateProfile()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black">SAVE CHANGES</button>
+        </div>
     </div>
 
+    <!-- PASSENGER DASHBOARD -->
     <div id="passenger-dashboard" class="hidden fixed inset-0 z-[8000] bg-slate-50 overflow-y-auto p-6 pb-32">
         <div class="flex justify-between items-center mb-8">
             <h2 class="text-3xl font-black">My Rides</h2>
-            <button onclick="toggleDashboard(false)" class="text-3xl">✕</button>
+            <button onclick="toggleDashboard(false)" class="text-3xl text-gray-400">✕</button>
         </div>
         <div id="history-list" class="space-y-4"></div>
     </div>
@@ -248,6 +252,7 @@
                         totalRating: 0,
                         plate: document.getElementById('reg-plate').value || "",
                         mtop: document.getElementById('reg-mtop').value || "",
+                        phone: "",
                         lastActive: Date.now()
                     });
                 }
@@ -283,22 +288,7 @@
             }, null, { enableHighAccuracy: true });
 
             syncData();
-            if (userData.role === 'passenger') renderSavedLocations();
         }
-
-        function renderSavedLocations() {
-            const html = `
-                <div onclick="quickDestination('Home')" class="bg-white px-6 py-3 rounded-2xl shadow-sm border text-sm font-medium whitespace-nowrap cursor-pointer">🏠 Home</div>
-                <div onclick="quickDestination('Office')" class="bg-white px-6 py-3 rounded-2xl shadow-sm border text-sm font-medium whitespace-nowrap cursor-pointer">💼 Office</div>
-                <div onclick="quickDestination('Market')" class="bg-white px-6 py-3 rounded-2xl shadow-sm border text-sm font-medium whitespace-nowrap cursor-pointer">🛍️ Market</div>
-            `;
-            document.getElementById('saved-locations').innerHTML = html;
-        }
-
-        window.quickDestination = (place) => {
-            document.getElementById('dest-input').value = place;
-            showAlert("Quick Select", `Going to ${place}`);
-        };
 
         function syncData() {
             onSnapshot(collection(db, "users"), (snap) => {
@@ -351,7 +341,6 @@
                     }
                 });
 
-                // Route
                 if (userData.activeTrip && otherParty) {
                     const myLoc = L.latLng(userData.lat, userData.lng);
                     const theirLoc = L.latLng(otherParty.lat, otherParty.lng);
@@ -446,10 +435,28 @@
         window.toggleDashboard = (show) => {
             if (userData.role === 'driver') {
                 document.getElementById('driver-dashboard').classList.toggle('hidden', !show);
+                if (show) loadDriverProfile();
             } else {
                 document.getElementById('passenger-dashboard').classList.toggle('hidden', !show);
                 if (show) loadPassengerHistory();
             }
+        };
+
+        function loadDriverProfile() {
+            document.getElementById('edit-name').value = userData.name || '';
+            document.getElementById('edit-phone').value = userData.phone || '';
+            document.getElementById('edit-mtop').value = userData.mtop || '';
+            document.getElementById('edit-plate').value = userData.plate || '';
+        }
+
+        window.updateProfile = async () => {
+            await updateDoc(doc(db, "users", userUid), {
+                name: document.getElementById('edit-name').value.trim(),
+                phone: document.getElementById('edit-phone').value.trim(),
+                mtop: document.getElementById('edit-mtop').value.trim(),
+                plate: document.getElementById('edit-plate').value.trim()
+            });
+            showAlert("Profile Updated", "Your details have been saved successfully", "success");
         };
 
         async function loadPassengerHistory() {
@@ -476,6 +483,7 @@
                 <h3 class="text-2xl font-black">${d.name}</h3>
                 <p class="text-amber-500">MTOP: ${d.mtop || 'N/A'}</p>
                 <p>Plate: ${d.plate || 'N/A'}</p>
+                <p class="mt-2">Phone: ${d.phone || 'N/A'}</p>
             `;
             document.getElementById('driver-info-modal').classList.remove('hidden');
         };
@@ -510,12 +518,11 @@
             signOut(auth).then(() => location.reload());
         };
 
-        // Initialize stars
         setTimeout(() => {
             if (document.getElementById('star-box')) setStar(5);
         }, 1000);
 
-        console.log("%c✅ Sakai Elite - Fully Upgraded", "color:#10b981;font-size:16px;font-weight:bold");
+        console.log("%c✅ Sakai Elite - Updated", "color:#10b981;font-size:16px;font-weight:bold");
     </script>
 </body>
 </html>
