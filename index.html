@@ -57,6 +57,16 @@
             </div>
         </div>
 
+        <div id="d-cancel-notif" class="hidden fixed inset-x-6 top-20 z-[8500] bg-white rounded-[2rem] p-6 shadow-2xl border-2 border-red-500">
+            <div class="flex items-center gap-4">
+                <div class="bg-red-100 p-3 rounded-full text-red-600"><i class="fa-solid fa-circle-exclamation text-xl"></i></div>
+                <div>
+                    <h5 class="font-black text-gray-800 uppercase">Booking Cancelled</h5>
+                    <p class="text-xs font-bold text-gray-500">The passenger changed their mind.</p>
+                </div>
+            </div>
+        </div>
+
         <div id="status-overlay" class="hidden h-[50vh] bg-emerald-900 flex flex-col items-center justify-center text-white text-center p-8 z-[2000] border-t-4 border-emerald-400">
             <div class="flex items-center gap-4 mb-4">
                 <div class="w-3 h-3 bg-emerald-400 rounded-full animate-ping"></div>
@@ -83,7 +93,7 @@
             <div id="passenger-panel" class="hidden">
                 <div id="p-waiting-card" class="hidden mb-6 p-6 bg-blue-50 border-2 border-blue-100 rounded-[2.5rem] text-center">
                     <p id="wait-driver-name" class="font-black text-xl mb-4">Searching for your driver...</p>
-                    <button onclick="cancelTrip()" class="px-6 py-2 bg-red-100 text-red-600 rounded-full text-xs font-black uppercase tracking-widest">Cancel Booking</button>
+                    <button onclick="cancelTrip()" class="px-6 py-2 bg-red-100 text-red-600 rounded-full text-xs font-black uppercase tracking-widest hover:bg-red-200 transition-colors">Cancel Booking</button>
                 </div>
                 <input id="dest-input" type="text" placeholder="Where are you going? (₱21 Min)" class="w-full p-5 bg-gray-50 rounded-3xl border-2 border-transparent focus:border-emerald-500 outline-none font-bold mb-4 shadow-inner">
                 <div id="driver-list" class="space-y-3"></div>
@@ -128,6 +138,7 @@
         const COLL = "users";
 
         let userUid, userData, map, markers = {}, currentRating = 5;
+        let wasInTrip = false; // Internal flag for driver cancellation alert
 
         // AUTH Logic
         window.handleAuth = async (t) => {
@@ -192,7 +203,13 @@
                     activeIdsInDb.add(id);
 
                     if(id === userUid) { 
+                        // DRIVER CANCELLATION LOGIC
+                        if (userData.role === 'driver' && wasInTrip && !data.activeTrip) {
+                            showDriverCancelNotif();
+                        }
+                        
                         userData = data; 
+                        wasInTrip = !!userData.activeTrip;
                         handleStatusLogic(); 
                         return; 
                     }
@@ -255,7 +272,6 @@
                     else if (t.status === 'accepted') { 
                         pWait.classList.remove('hidden'); 
                         document.getElementById('wait-driver-name').innerText = "Driver " + t.dName + " is on the way!"; 
-                        // Show Notif Modal briefly
                         if(pNotif.classList.contains('hidden')) {
                             pNotif.classList.remove('hidden');
                             setTimeout(() => pNotif.classList.add('hidden'), 5000);
@@ -267,13 +283,22 @@
             }
         }
 
+        function showDriverCancelNotif() {
+            const dNotif = document.getElementById('d-cancel-notif');
+            dNotif.classList.remove('hidden');
+            setTimeout(() => dNotif.classList.add('hidden'), 6000);
+        }
+
         window.cancelTrip = async () => {
             const t = userData.activeTrip;
             if(!t) return;
+            if(!confirm("Are you sure you want to cancel your ride?")) return;
+
             const targetId = userData.role === 'driver' ? t.pId : t.dId;
+            // Clear current user
             await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() });
+            // Clear partner user
             if(targetId) await updateDoc(doc(db, COLL, targetId), { activeTrip: deleteField() });
-            alert("Trip Cancelled.");
         };
 
         window.updateStatus = async (s) => {
