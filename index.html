@@ -40,44 +40,26 @@
             <i class="fa-solid fa-motorcycle text-5xl mb-2"></i>
             <h1 class="text-4xl font-black italic tracking-tighter">Sakai</h1>
         </div>
-        
         <div id="auth-forms" class="space-y-4 max-w-xs mx-auto w-full">
-            <div id="main-login-ui" class="space-y-4">
-                <input id="auth-email" type="email" placeholder="Email" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold placeholder-white/50">
-                <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold placeholder-white/50">
-                
+            <input id="auth-email" type="email" placeholder="Email" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold placeholder-white/50">
+            <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold placeholder-white/50">
+            <div id="login-actions" class="space-y-3">
                 <button onclick="handleAuth('login')" class="w-full py-4 bg-white text-emerald-600 rounded-2xl font-black shadow-lg">Sign In</button>
-                
-                <div class="flex items-center gap-2 my-2 opacity-50">
-                    <div class="flex-1 h-[1px] bg-white"></div>
-                    <span class="text-[10px] font-bold">OR</span>
-                    <div class="flex-1 h-[1px] bg-white"></div>
-                </div>
-
-                <button onclick="handleGoogleAuth()" class="w-full py-4 bg-emerald-700 text-white border border-emerald-400 rounded-2xl font-black flex items-center justify-center gap-3">
-                    <i class="fa-brands fa-google"></i> Continue with Google
-                </button>
-
-                <p class="text-center text-xs font-bold mt-4">
-                    New here? <span onclick="showRegisterUI()" class="text-amber-400 cursor-pointer">Create Account</span>
-                </p>
+                <button onclick="showRegisterUI()" class="w-full py-4 bg-emerald-800 text-white border border-emerald-400 rounded-2xl font-black">Create Account</button>
             </div>
-
-            <div id="reg-ui" class="hidden space-y-4 pt-4">
-                <p class="text-center font-black uppercase text-xs tracking-widest mb-2">Select Your Role</p>
+            <div id="reg-ui" class="hidden space-y-4 pt-4 border-t border-white/20">
                 <div class="grid grid-cols-2 gap-4">
                     <div onclick="selectRole('passenger')" id="role-p" class="role-card p-4 border-2 border-white/30 rounded-2xl text-center cursor-pointer"><i class="fa-solid fa-person-walking text-2xl mb-2"></i><p class="text-[10px] font-black uppercase">Passenger</p></div>
                     <div onclick="selectRole('driver')" id="role-d" class="role-card p-4 border-2 border-white/30 rounded-2xl text-center cursor-pointer"><i class="fa-solid fa-motorcycle text-2xl mb-2"></i><p class="text-[10px] font-black uppercase">Driver</p></div>
                 </div>
-                
-                <div id="reg-details" class="space-y-4">
-                    <input id="reg-alias" type="text" placeholder="Display Name" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold">
-                    <div id="driver-fields" class="hidden space-y-4">
-                        <input id="reg-mtop" type="text" placeholder="MTOP (Driver Only)" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold">
-                        <input id="reg-plate" type="text" placeholder="Plate No." class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold">
-                    </div>
-                    <button id="finish-reg-btn" onclick="handleAuth('register')" class="w-full py-4 bg-amber-400 text-emerald-900 rounded-2xl font-black shadow-lg">Complete Registration</button>
-                    <button onclick="showLoginUI()" class="w-full py-2 bg-transparent text-white/70 rounded-2xl font-bold text-xs">Cancel</button>
+                <input id="reg-alias" type="text" placeholder="Alias Name" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold">
+                <div id="driver-fields" class="hidden space-y-4">
+                    <input id="reg-mtop" type="text" placeholder="MTOP" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold">
+                    <input id="reg-plate" type="text" placeholder="Plate" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold">
+                </div>
+                <div class="space-y-3">
+                    <button onclick="handleAuth('register')" class="w-full py-4 bg-amber-400 text-emerald-900 rounded-2xl font-black shadow-lg">Complete Registration</button>
+                    <button onclick="showLoginUI()" class="w-full py-3 bg-transparent text-white/70 rounded-2xl font-bold text-sm">Back to Login</button>
                 </div>
             </div>
         </div>
@@ -155,6 +137,21 @@
         <div id="history-list" class="space-y-3"></div>
     </div>
 
+    <div id="driver-info-modal" class="hidden fixed inset-0 z-[9500] bg-black/60 backdrop-blur-sm flex items-end justify-center">
+        <div class="bg-white w-full rounded-t-[3rem] p-8">
+            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+            <div id="info-content" class="text-center mb-6">
+                <h3 id="info-name" class="text-2xl font-black text-gray-800">...</h3>
+                <p id="info-mtop" class="text-sm font-bold text-amber-500 uppercase">MTOP: ...</p>
+                <div class="mt-4 space-y-2">
+                    <p class="text-sm">Plate: <span id="info-plate" class="font-bold">...</span></p>
+                    <p class="text-sm">Contact: <span id="info-phone" class="font-bold">...</span></p>
+                </div>
+            </div>
+            <button onclick="document.getElementById('driver-info-modal').classList.add('hidden')" class="w-full py-4 bg-gray-100 text-gray-500 rounded-2xl font-black">Close</button>
+        </div>
+    </div>
+
     <div id="rating-modal" class="hidden fixed inset-0 z-[8500] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 text-center">
         <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8">
             <h3 class="text-2xl font-black mb-2 italic">Arrived!</h3>
@@ -168,7 +165,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField, increment, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { 
@@ -184,107 +181,47 @@
         const db = getFirestore(app);
         const COLL = "users";
 
-        let userUid, userData, map, markers = {}, currentRating = 5, selectedRole = null, routingControl = null;
+        let userUid, userData, map, markers = {}, currentRating = 5, lastTripState = null, selectedRole = null, routingControl = null;
 
-        // UI Handlers
-        window.showRegisterUI = () => { 
-            document.getElementById('main-login-ui').classList.add('hidden'); 
-            document.getElementById('reg-ui').classList.remove('hidden'); 
-        };
-        window.showLoginUI = () => { 
-            document.getElementById('main-login-ui').classList.remove('hidden'); 
-            document.getElementById('reg-ui').classList.add('hidden'); 
-        };
-        window.selectRole = (role) => { 
-            selectedRole = role; 
-            document.getElementById('role-p').classList.toggle('active', role==='passenger'); 
-            document.getElementById('role-d').classList.toggle('active', role==='driver'); 
-            document.getElementById('driver-fields').classList.toggle('hidden', role !== 'driver'); 
+        window.showAlert = (title, body, type = 'success') => {
+            const el = document.getElementById('alert-popup');
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-body').innerText = body;
+            el.style.borderColor = type === 'success' ? '#10b981' : '#ef4444';
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 5000);
         };
 
-        // Auth Handlers
-        window.handleAuth = async (type) => {
-            const email = document.getElementById('auth-email').value;
-            const pass = document.getElementById('auth-pass').value;
-            
+        window.showRegisterUI = () => { document.getElementById('login-actions').classList.add('hidden'); document.getElementById('reg-ui').classList.remove('hidden'); };
+        window.showLoginUI = () => { document.getElementById('login-actions').classList.remove('hidden'); document.getElementById('reg-ui').classList.add('hidden'); };
+        window.selectRole = (role) => { selectedRole = role; document.getElementById('role-p').classList.toggle('active', role==='passenger'); document.getElementById('role-d').classList.toggle('active', role==='driver'); document.getElementById('driver-fields').classList.toggle('hidden', role !== 'driver'); };
+
+        window.handleAuth = async (t) => {
+            const e = document.getElementById('auth-email').value, p = document.getElementById('auth-pass').value;
             try {
-                if(type === 'login') {
-                    await signInWithEmailAndPassword(auth, email, pass);
-                } else {
-                    if(!selectedRole) return alert("Please select a role first!");
+                if(t === 'login') await signInWithEmailAndPassword(auth, e, p);
+                else {
                     const alias = document.getElementById('reg-alias').value;
-                    const cred = await createUserWithEmailAndPassword(auth, email, pass);
-                    await finalizeUserRecord(cred.user.uid, alias);
+                    const cred = await createUserWithEmailAndPassword(auth, e, p);
+                    await setDoc(doc(db, COLL, cred.user.uid), { name: alias, role: selectedRole, isOnline: false, lat: 6.6294, lng: 124.605, income: 0, tripCount: 0, totalRating: 0, plate: document.getElementById('reg-plate').value||"", mtop: document.getElementById('reg-mtop').value||"", lastActive: Date.now() });
                 }
             } catch (err) { alert(err.message); }
         };
 
-        window.handleGoogleAuth = async () => {
-            const provider = new GoogleAuthProvider();
-            try {
-                const result = await signInWithPopup(auth, provider);
-                const snap = await getDoc(doc(db, COLL, result.user.uid));
-                
-                if (!snap.exists()) {
-                    // New Google User - Force Role Selection UI
-                    userUid = result.user.uid;
-                    document.getElementById('main-login-ui').classList.add('hidden');
-                    document.getElementById('reg-ui').classList.remove('hidden');
-                    document.getElementById('reg-alias').value = result.user.displayName;
-                    // Change button behavior for Google completion
-                    document.getElementById('finish-reg-btn').onclick = () => finalizeUserRecord(result.user.uid, document.getElementById('reg-alias').value);
-                }
-            } catch (err) { alert("Google Sign-In failed."); }
-        };
-
-        async function finalizeUserRecord(uid, name) {
-            if(!selectedRole) return alert("Select a role (Passenger/Driver)");
-            await setDoc(doc(db, COLL, uid), { 
-                name: name || "User", 
-                role: selectedRole, 
-                isOnline: false, 
-                lat: 6.6294, 
-                lng: 124.605, 
-                income: 0, 
-                tripCount: 0, 
-                totalRating: 0, 
-                plate: document.getElementById('reg-plate').value||"", 
-                mtop: document.getElementById('reg-mtop').value||"", 
-                lastActive: Date.now() 
-            });
-            location.reload();
-        }
-
-        // Core App Logic
         onAuthStateChanged(auth, async (u) => {
-            if (u) { 
-                userUid = u.uid; 
-                const snap = await getDoc(doc(db, COLL, userUid)); 
-                if (snap.exists()) { 
-                    userData = snap.data(); 
-                    initApp(); 
-                } 
-            } else { 
-                document.getElementById('auth-screen').classList.remove('hidden'); 
-                document.getElementById('app-ui').classList.add('hidden'); 
-            }
+            if (u) { userUid = u.uid; const snap = await getDoc(doc(db, COLL, userUid)); if (snap.exists()) { userData = snap.data(); initApp(); } else signOut(auth); }
+            else { document.getElementById('auth-screen').classList.remove('hidden'); document.getElementById('app-ui').classList.add('hidden'); }
         });
 
         function initApp() {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-ui').classList.replace('hidden', 'flex');
             document.getElementById(userData.role + '-panel').classList.remove('hidden');
-            if(!map) { 
-                map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 16); 
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map); 
-            }
-            navigator.geolocation.watchPosition(p => { 
-                if(userUid) updateDoc(doc(db, COLL, userUid), { lat: p.coords.latitude, lng: p.coords.longitude, lastActive: Date.now() }); 
-            }, null, { enableHighAccuracy: true });
+            if(!map) { map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 16); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map); }
+            navigator.geolocation.watchPosition(p => { if(userUid) updateDoc(doc(db, COLL, userUid), { lat: p.coords.latitude, lng: p.coords.longitude, lastActive: Date.now() }); }, null, { enableHighAccuracy: true });
             syncData();
         }
 
-        // (Remaining syncData, updateStatus, bookDriver etc. functions remain exactly as in your provided code)
         function syncData() {
             onSnapshot(collection(db, COLL), (snap) => {
                 const now = Date.now(), dList = document.getElementById('driver-list');
@@ -341,10 +278,14 @@
         window.updateStatus = async (s) => {
             const t = userData.activeTrip; if(!t) return;
             if(s === 'arrived') {
+                // DRIVER COMPLETES TRIP IMMEDIATELY
                 const historyData = { driverId: t.dId, driverName: t.dName, destination: t.dest, time: Date.now() };
                 await addDoc(collection(db, COLL, t.pId, "history"), historyData);
+                // Update Driver: Add money, increment trips, and DELETE activeTrip
                 await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField(), income: increment(21), tripCount: increment(1) });
+                // Update Passenger: Set status to arrived so they see rating modal
                 await updateDoc(doc(db, COLL, t.pId), { "activeTrip.status": "arrived" });
+                showAlert("Trip Ended", "You are available for new rides.", "success");
             } else if (s === 'declined') {
                 await updateDoc(doc(db, COLL, t.pId), { activeTrip: deleteField() });
                 await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() });
@@ -356,7 +297,9 @@
 
         window.finishTripPassenger = async () => {
             const t = userData.activeTrip;
+            // Update the driver's total rating globally
             if (t && t.dId) await updateDoc(doc(db, COLL, t.dId), { totalRating: increment(currentRating) });
+            // Clear passenger's active trip
             await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() });
             document.getElementById('rating-modal').classList.add('hidden');
         };
@@ -385,20 +328,29 @@
             const snap = await getDocs(q);
             snap.forEach(d => {
                 const h = d.data();
-                list.innerHTML += `<div class="history-card bg-white p-4 rounded-3xl border border-gray-100 mb-2 shadow-sm"><h5 class="font-black text-gray-800">${h.driverName}</h5><p class="text-[10px] font-bold text-gray-400 uppercase">${h.destination}</p></div>`;
+                list.innerHTML += `<div onclick="showDriverInfo('${h.driverId}')" class="history-card bg-white p-4 rounded-3xl border border-gray-100 mb-2 shadow-sm"><h5 class="font-black text-gray-800">${h.driverName}</h5><p class="text-[10px] font-bold text-gray-400 uppercase">${h.destination}</p></div>`;
             });
         }
 
+        window.showDriverInfo = async (id) => {
+            const snap = await getDoc(doc(db, COLL, id));
+            if(snap.exists()) {
+                const d = snap.data();
+                document.getElementById('info-name').innerText = d.name;
+                document.getElementById('info-mtop').innerText = "MTOP: " + d.mtop;
+                document.getElementById('info-plate').innerText = d.plate || "N/A";
+                document.getElementById('info-phone').innerText = d.phone || "N/A";
+                document.getElementById('driver-info-modal').classList.remove('hidden');
+            }
+        };
+
+        window.updateProfile = async () => {
+            await updateDoc(doc(db, COLL, userUid), { name: document.getElementById('edit-name').value, phone: document.getElementById('edit-phone').value, messenger: document.getElementById('edit-messenger').value });
+            showAlert("Saved", "Profile updated."); toggleDashboard(false);
+        };
+
         window.logout = async () => { if (userUid) await updateDoc(doc(db, COLL, userUid), { isOnline: false }); signOut(auth).then(() => location.reload()); };
         window.setStar = (n) => { currentRating = n; const s = document.getElementById('star-box').children; for(let i=0; i<5; i++) s[i].className = i < n ? 'fa-solid fa-star text-amber-400' : 'fa-solid fa-star text-gray-200'; };
-        window.showAlert = (title, body, type = 'success') => {
-            const el = document.getElementById('alert-popup');
-            document.getElementById('alert-title').innerText = title;
-            document.getElementById('alert-body').innerText = body;
-            el.style.borderColor = type === 'success' ? '#10b981' : '#ef4444';
-            el.classList.remove('hidden');
-            setTimeout(() => el.classList.add('hidden'), 5000);
-        };
     </script>
 </body>
 </html>
