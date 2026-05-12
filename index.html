@@ -218,7 +218,7 @@
                     if(id === userUid) {
                         // Driver Notification for passenger cancellation
                         if (userData.role === 'driver' && userData.activeTrip && !data.activeTrip && (lastTripState === 'requested' || lastTripState === 'accepted')) {
-                             showAlert("Trip Cancelled", "The passenger cancelled.", "error");
+                             showAlert("Trip Cancelled", "error");
                         }
                         userData = data;
                         lastTripState = userData.activeTrip ? userData.activeTrip.status : null;
