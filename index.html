@@ -25,7 +25,6 @@
         .nav-btn { display: flex; flex-direction: column; align-items: center; font-size: 10px; font-weight: 800; color: #94a3b8; }
         .nav-btn.active { color: #10b981; }
         .role-card.active { border-color: #fbbf24; background: rgba(251, 191, 36, 0.2); transform: scale(1.05); }
-        /* Hides the routing instructions text panel for a clean map view */
         .leaflet-routing-container { display: none !important; }
     </style>
 </head>
@@ -90,17 +89,13 @@
     <div id="app-ui" class="hidden flex-col h-full relative">
         <div id="map"></div>
 
-        <div id="p-notif-modal" class="hidden fixed inset-x-6 top-20 z-[8500] bg-white rounded-[2rem] p-6 shadow-2xl border-2 border-emerald-500 animate-bounce">
+        <div id="alert-popup" class="hidden fixed inset-x-6 top-20 z-[8500] bg-white rounded-[2rem] p-6 shadow-2xl border-2 transition-all duration-300">
             <div class="flex items-center gap-4">
-                <div class="bg-emerald-100 p-3 rounded-full text-emerald-600"><i class="fa-solid fa-check-circle text-xl"></i></div>
-                <div><h5 class="font-black text-gray-800">Driver Accepted!</h5><p class="text-xs font-bold text-gray-500">Your Sakai is coming.</p></div>
-            </div>
-        </div>
-
-        <div id="d-cancel-notif" class="hidden fixed inset-x-6 top-20 z-[8500] bg-white rounded-[2rem] p-6 shadow-2xl border-2 border-red-500">
-            <div class="flex items-center gap-4">
-                <div class="bg-red-100 p-3 rounded-full text-red-600"><i class="fa-solid fa-circle-exclamation text-xl"></i></div>
-                <div><h5 class="font-black text-gray-800 uppercase" id="d-notif-title">Cancelled</h5><p class="text-xs font-bold text-gray-500" id="d-notif-body">...</p></div>
+                <div id="alert-icon-bg" class="p-3 rounded-full"><i id="alert-icon" class="fa-solid text-xl"></i></div>
+                <div>
+                    <h5 id="alert-title" class="font-black text-gray-800 uppercase text-sm"></h5>
+                    <p id="alert-body" class="text-xs font-bold text-gray-500"></p>
+                </div>
             </div>
         </div>
 
@@ -168,7 +163,30 @@
         let userUid, userData, map, markers = {}, currentRating = 5, lastTripState = null, selectedRole = null;
         let routingControl = null;
 
-        // Auth/UI Controls
+        // UI NOTIFICATION HELPER
+        window.showAlert = (title, body, type = 'success') => {
+            const el = document.getElementById('alert-popup');
+            const iconBg = document.getElementById('alert-icon-bg');
+            const icon = document.getElementById('alert-icon');
+            
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-body').innerText = body;
+
+            if (type === 'success') {
+                el.style.borderColor = '#10b981';
+                iconBg.className = "p-3 rounded-full bg-emerald-100 text-emerald-600";
+                icon.className = "fa-solid fa-check-circle text-xl";
+            } else {
+                el.style.borderColor = '#ef4444';
+                iconBg.className = "p-3 rounded-full bg-red-100 text-red-600";
+                icon.className = "fa-solid fa-circle-xmark text-xl";
+            }
+
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 5000);
+        };
+
+        // Auth Logic
         window.showRegisterUI = () => { document.getElementById('login-actions').classList.add('hidden'); document.getElementById('reg-ui').classList.remove('hidden'); };
         window.selectRole = (role) => { selectedRole = role; document.getElementById('role-p').className = role === 'passenger' ? 'role-card active p-4 border-2 rounded-2xl text-center' : 'role-card p-4 border-2 border-white/30 rounded-2xl text-center'; document.getElementById('role-d').className = role === 'driver' ? 'role-card active p-4 border-2 rounded-2xl text-center' : 'role-card p-4 border-2 border-white/30 rounded-2xl text-center'; document.getElementById('driver-fields').classList.toggle('hidden', role !== 'driver'); };
 
@@ -214,9 +232,10 @@
                 snap.forEach(d => {
                     const data = d.data(), id = d.id;
                     if(id === userUid) {
+                        // Logic to detect if a trip was removed or updated
                         if (userData.role === 'driver' && userData.activeTrip && !data.activeTrip) {
-                            if (lastTripState === 'requested' || lastTripState === 'accepted') showDriverAlert("Cancelled", "Passenger changed their mind.", "border-red-500");
-                            else if (lastTripState === 'arrived') showDriverAlert("Success!", "Income recorded.", "border-emerald-500");
+                            if (lastTripState === 'requested' || lastTripState === 'accepted') showAlert("Trip Cancelled", "The passenger cancelled the request.", "error");
+                            else if (lastTripState === 'arrived') showAlert("Trip Finished", "Payment has been recorded.", "success");
                         }
                         userData = data;
                         lastTripState = userData.activeTrip ? userData.activeTrip.status : null;
@@ -224,7 +243,6 @@
                         if(userData.role === 'driver') updateDashboardStats();
                     }
 
-                    // Identify the other party (Passenger if you are Driver, or vice-versa)
                     if (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId) && id !== userUid) {
                         otherPartyData = data;
                     }
@@ -238,39 +256,36 @@
                     if(userData.role === 'passenger' && data.role === 'driver' && data.isOnline && isFresh && !data.activeTrip) renderDriverCard(id, data);
                 });
 
-                // Dual-Sided Real-time Routing Logic
+                // Routing Line
                 if (userData.activeTrip && (userData.activeTrip.status === 'accepted' || userData.activeTrip.status === 'pickedup')) {
                     if (otherPartyData && userData.lat && otherPartyData.lat) {
                         const myLoc = L.latLng(userData.lat, userData.lng);
                         const theirLoc = L.latLng(otherPartyData.lat, otherPartyData.lng);
-
                         if (!routingControl) {
-                            routingControl = L.Routing.control({
-                                waypoints: [myLoc, theirLoc],
-                                lineOptions: { styles: [{ color: '#10b981', weight: 6, opacity: 0.8 }] },
-                                createMarker: () => null,
-                                addWaypoints: false,
-                                routeWhileDragging: false
-                            }).addTo(map);
-                        } else {
-                            routingControl.setWaypoints([myLoc, theirLoc]);
-                        }
+                            routingControl = L.Routing.control({ waypoints: [myLoc, theirLoc], lineOptions: { styles: [{ color: '#10b981', weight: 6, opacity: 0.8 }] }, createMarker: () => null, addWaypoints: false }).addTo(map);
+                        } else { routingControl.setWaypoints([myLoc, theirLoc]); }
                     }
-                } else if (routingControl) {
-                    map.removeControl(routingControl);
-                    routingControl = null;
-                }
+                } else if (routingControl) { map.removeControl(routingControl); routingControl = null; }
             });
         }
 
-        window.showDriverAlert = (t, b, c) => { const el = document.getElementById('d-cancel-notif'); document.getElementById('d-notif-title').innerText = t; document.getElementById('d-notif-body').innerText = b; el.className = `fixed inset-x-6 top-20 z-[8500] bg-white rounded-[2rem] p-6 shadow-2xl border-2 ${c}`; el.classList.remove('hidden'); setTimeout(() => el.classList.add('hidden'), 5000); };
         window.updateDashboardStats = () => { document.getElementById('stat-income').innerText = userData.income || 0; document.getElementById('stat-trips').innerText = userData.tripCount || 0; };
         
-        function handleStatusLogic() {
-            const overlay = document.getElementById('status-overlay'), tripCard = document.getElementById('trip-card'), pWait = document.getElementById('p-waiting-card'), dActions = document.getElementById('driver-actions'), pNotif = document.getElementById('p-notif-modal');
+        async function handleStatusLogic() {
+            const overlay = document.getElementById('status-overlay'), tripCard = document.getElementById('trip-card'), pWait = document.getElementById('p-waiting-card'), dActions = document.getElementById('driver-actions');
             overlay.classList.add('hidden'); tripCard.classList.add('hidden'); pWait.classList.add('hidden');
+            
             if (userData.activeTrip) {
                 const t = userData.activeTrip;
+                
+                // PASSENGER NOTIFICATION FOR DECLINE
+                if (userData.role === 'passenger' && t.status === 'declined') {
+                    showAlert("Driver Busy", "The driver declined your booking. Please try another.", "error");
+                    // Clear the record so they can book again
+                    await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() });
+                    return;
+                }
+
                 if (userData.role === 'driver') {
                     tripCard.classList.remove('hidden'); document.getElementById('trip-p-name').innerText = t.pName; document.getElementById('trip-p-dest').innerText = "To: " + t.dest;
                     if (t.status === 'requested') dActions.innerHTML = `<button onclick="updateStatus('accepted')" class="flex-1 py-4 bg-emerald-600 text-white rounded-xl font-black">ACCEPT</button><button onclick="updateStatus('declined')" class="flex-1 py-4 bg-red-100 text-red-600 rounded-xl font-black">DECLINE</button>`;
@@ -279,7 +294,11 @@
                 } else {
                     pWait.classList.remove('hidden');
                     if (t.status === 'requested') document.getElementById('wait-driver-name').innerText = "Requesting...";
-                    else if (t.status === 'accepted') { document.getElementById('wait-driver-name').innerText = "Driver " + t.dName + " is coming!"; if(pNotif.classList.contains('hidden')) { pNotif.classList.remove('hidden'); setTimeout(() => pNotif.classList.add('hidden'), 5000); } }
+                    else if (t.status === 'accepted') { 
+                        document.getElementById('wait-driver-name').innerText = "Driver " + t.dName + " is coming!"; 
+                        // Show success notif to passenger once
+                        if(lastTripState !== 'accepted') showAlert("Driver Accepted!", "The driver is on the way.", "success");
+                    }
                     else if (t.status === 'pickedup') overlay.classList.remove('hidden');
                     else if (t.status === 'arrived') document.getElementById('rating-modal').classList.remove('hidden');
                 }
@@ -288,8 +307,14 @@
 
         window.updateStatus = async (s) => {
             const t = userData.activeTrip; if(!t) return;
-            if(s === 'declined') { await updateDoc(doc(db, COLL, userUid), { declinedCount: increment(1), activeTrip: deleteField() }); await updateDoc(doc(db, COLL, t.pId), { activeTrip: deleteField() }); }
-            else { const up = { "activeTrip.status": s }; if(s === 'accepted') up.acceptedCount = increment(1); await updateDoc(doc(db, COLL, userUid), up); await updateDoc(doc(db, COLL, t.pId), up); }
+            if(s === 'declined') { 
+                // Set status to declined first so passenger app can catch it
+                await updateDoc(doc(db, COLL, t.pId), { "activeTrip.status": "declined" });
+                await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField(), declinedCount: increment(1) });
+            } else { 
+                const up = { "activeTrip.status": s }; if(s === 'accepted') up.acceptedCount = increment(1); 
+                await updateDoc(doc(db, COLL, userUid), up); await updateDoc(doc(db, COLL, t.pId), up); 
+            }
         };
 
         window.bookDriver = async (dId) => {
