@@ -214,7 +214,6 @@
                     userData = snap.data();
                     initApp();
                 } else {
-                    // Handle case where user is logged in but their doc was deleted
                     signOut(auth);
                 }
             } else {
@@ -246,13 +245,12 @@
                 const dList = document.getElementById('driver-list');
                 if(userData.role === 'passenger') dList.innerHTML = '';
                 
-                // Track IDs present in this snapshot to clean up "ghosts"
-                const activeIds = new Set();
+                const activeIdsInDb = new Set();
 
                 snap.forEach(d => {
                     const data = d.data();
                     const id = d.id;
-                    activeIds.add(id);
+                    activeIdsInDb.add(id);
 
                     if(id === userUid) { 
                         userData = data; 
@@ -260,7 +258,7 @@
                         return; 
                     }
 
-                    // Show if they have coordinates AND (are Online OR are a Passenger)
+                    // Visibility logic: must have location AND (be Online OR a Passenger)
                     const shouldBeVisible = data.lat && data.lng && (data.isOnline || data.role === 'passenger');
 
                     if(shouldBeVisible) {
@@ -280,7 +278,7 @@
                             }).addTo(map);
                         }
                     } else {
-                        // User is in DB but set to offline: Remove footprint
+                        // User exists in DB but is offline: Clear icon
                         if (markers[id]) {
                             map.removeLayer(markers[id]);
                             delete markers[id];
@@ -292,9 +290,9 @@
                     }
                 });
 
-                // GHOST CLEANUP: Remove markers for IDs that are NO LONGER in the database
+                // CLEANUP: Automatically remove markers for IDs deleted from Firebase Console
                 Object.keys(markers).forEach(markerId => {
-                    if (!activeIds.has(markerId)) {
+                    if (!activeIdsInDb.has(markerId)) {
                         map.removeLayer(markers[markerId]);
                         delete markers[markerId];
                     }
@@ -389,7 +387,7 @@
         };
 
         window.logout = async () => {
-            // Force offline before logout
+            // Force offline in DB first so your icon disappears for others
             if (userUid) {
                 try { await updateDoc(doc(db, COLL, userUid), { isOnline: false }); } catch(e){}
             }
