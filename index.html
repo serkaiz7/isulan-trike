@@ -26,6 +26,8 @@
         .nav-btn.active { color: #10b981; }
         .role-card.active { border-color: #fbbf24; background: rgba(251, 191, 36, 0.2); transform: scale(1.05); }
         .leaflet-routing-container { display: none !important; }
+        .history-card { transition: all 0.2s; }
+        .history-card:active { transform: scale(0.98); background-color: #f8fafc; }
     </style>
 </head>
 <body class="bg-slate-50 flex flex-col h-screen">
@@ -114,57 +116,70 @@
 
         <div class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-gray-100 p-4 flex justify-around items-center z-[7000]">
             <button onclick="toggleDashboard(false)" class="nav-btn active"><i class="fa-solid fa-map-location-dot text-xl mb-1"></i>Map</button>
-            <button id="nav-dash" onclick="toggleDashboard(true)" class="nav-btn hidden"><i class="fa-solid fa-chart-pie text-xl mb-1"></i>Hub</button>
+            <button onclick="toggleDashboard(true)" class="nav-btn"><i class="fa-solid fa-chart-pie text-xl mb-1"></i>Hub</button>
             <button onclick="logout()" class="nav-btn text-red-400"><i class="fa-solid fa-power-off text-xl mb-1"></i>Logout</button>
         </div>
     </div>
 
     <div id="driver-dashboard" class="hidden fixed inset-0 z-[8000] bg-slate-50 overflow-y-auto p-6 pb-32">
         <div class="flex justify-between items-center mb-8">
-            <h2 class="text-2xl font-black text-gray-800 italic">Sakai Hub</h2>
+            <h2 class="text-2xl font-black text-gray-800 italic">Driver Hub</h2>
             <button onclick="toggleDashboard(false)" class="w-10 h-10 bg-white shadow rounded-full flex items-center justify-center text-gray-400"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        
         <div class="grid grid-cols-2 gap-4 mb-8">
             <div class="bg-emerald-600 p-5 rounded-[2rem] text-white shadow-lg"><p class="text-[10px] font-bold opacity-80 uppercase mb-1">Income</p><h3 class="text-2xl font-black">₱<span id="stat-income">0</span></h3></div>
             <div class="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Trips</p><h3 class="text-2xl font-black text-gray-800" id="stat-trips">0</h3></div>
         </div>
-
         <div class="bg-white p-6 rounded-[2.5rem] shadow-sm space-y-4">
-            <h4 class="font-black text-gray-800 mb-2">Driver Profile Details</h4>
-            
-            <div class="space-y-1">
-                <label class="text-[10px] font-extrabold uppercase text-gray-400 ml-2">Alias Name</label>
-                <input id="edit-name" type="text" class="w-full p-4 bg-gray-50 rounded-2xl font-bold border-0 focus:ring-2 focus:ring-emerald-500">
-            </div>
-
-            <div class="space-y-1">
-                <label class="text-[10px] font-extrabold uppercase text-gray-400 ml-2">Mobile Number (Optional)</label>
-                <input id="edit-phone" type="tel" placeholder="0912..." class="w-full p-4 bg-gray-50 rounded-2xl font-bold border-0 focus:ring-2 focus:ring-emerald-500">
-            </div>
-
-            <div class="space-y-1">
-                <label class="text-[10px] font-extrabold uppercase text-gray-400 ml-2">Messenger Link (Optional)</label>
-                <input id="edit-messenger" type="text" placeholder="m.me/yourname" class="w-full p-4 bg-gray-50 rounded-2xl font-bold border-0 focus:ring-2 focus:ring-emerald-500">
-            </div>
-
-            <div class="space-y-1">
-                <label class="text-[10px] font-extrabold uppercase text-gray-400 ml-2">Home Address (Optional)</label>
-                <input id="edit-address" type="text" placeholder="Barangay, Street" class="w-full p-4 bg-gray-50 rounded-2xl font-bold border-0 focus:ring-2 focus:ring-emerald-500">
-            </div>
-
+            <h4 class="font-black text-gray-800 mb-2">Profile Details</h4>
+            <input id="edit-name" type="text" placeholder="Alias Name" class="w-full p-4 bg-gray-50 rounded-2xl font-bold border-0">
+            <input id="edit-phone" type="tel" placeholder="Mobile Number" class="w-full p-4 bg-gray-50 rounded-2xl font-bold border-0">
+            <input id="edit-messenger" type="text" placeholder="Messenger Link" class="w-full p-4 bg-gray-50 rounded-2xl font-bold border-0">
+            <input id="edit-address" type="text" placeholder="Address" class="w-full p-4 bg-gray-50 rounded-2xl font-bold border-0">
             <div class="grid grid-cols-2 gap-4">
-                <div class="space-y-1">
-                    <label class="text-[10px] font-extrabold uppercase text-gray-400 ml-2">MTOP</label>
-                    <input id="edit-mtop" type="text" class="w-full p-4 bg-gray-50 rounded-2xl font-bold border-0 focus:ring-2 focus:ring-emerald-500">
+                <input id="edit-mtop" type="text" placeholder="MTOP" class="w-full p-4 bg-gray-50 rounded-2xl font-bold border-0">
+                <input id="edit-plate" type="text" placeholder="Plate" class="w-full p-4 bg-gray-50 rounded-2xl font-bold border-0">
+            </div>
+            <button onclick="updateProfile()" class="w-full py-4 bg-gray-800 text-white rounded-2xl font-black shadow-xl">Save Changes</button>
+        </div>
+    </div>
+
+    <div id="passenger-dashboard" class="hidden fixed inset-0 z-[8000] bg-slate-50 overflow-y-auto p-6 pb-32">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl font-black text-gray-800 italic">My Sakai Hub</h2>
+            <button onclick="toggleDashboard(false)" class="w-10 h-10 bg-white shadow rounded-full flex items-center justify-center text-gray-400"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        
+        <h4 class="font-black text-gray-400 uppercase text-[10px] tracking-widest mb-4">Ride History</h4>
+        <div id="history-list" class="space-y-3">
+            </div>
+    </div>
+
+    <div id="driver-info-modal" class="hidden fixed inset-0 z-[9500] bg-black/60 backdrop-blur-sm flex items-end justify-center">
+        <div class="bg-white w-full rounded-t-[3rem] p-8 animate-bounce-in">
+            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+            <div class="text-center mb-6">
+                <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 text-3xl">
+                    <i class="fa-solid fa-user-tie"></i>
                 </div>
-                <div class="space-y-1">
-                    <label class="text-[10px] font-extrabold uppercase text-gray-400 ml-2">Plate No.</label>
-                    <input id="edit-plate" type="text" class="w-full p-4 bg-gray-50 rounded-2xl font-bold border-0 focus:ring-2 focus:ring-emerald-500">
+                <h3 id="info-name" class="text-2xl font-black text-gray-800">...</h3>
+                <p id="info-mtop" class="text-sm font-bold text-amber-500 uppercase tracking-widest">MTOP: ...</p>
+            </div>
+            <div class="space-y-3 mb-8">
+                <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
+                    <i class="fa-solid fa-id-card text-gray-400 w-5"></i>
+                    <div><p class="text-[10px] font-black text-gray-400 uppercase">Plate Number</p><p id="info-plate" class="font-bold text-gray-700">...</p></div>
+                </div>
+                <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
+                    <i class="fa-solid fa-phone text-gray-400 w-5"></i>
+                    <div><p class="text-[10px] font-black text-gray-400 uppercase">Contact</p><p id="info-phone" class="font-bold text-gray-700">...</p></div>
+                </div>
+                <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
+                    <i class="fa-brands fa-facebook-messenger text-gray-400 w-5"></i>
+                    <div><p class="text-[10px] font-black text-gray-400 uppercase">Messenger</p><p id="info-messenger" class="font-bold text-gray-700">...</p></div>
                 </div>
             </div>
-
-            <button onclick="updateProfile()" class="w-full py-4 bg-gray-800 text-white rounded-2xl font-black mt-4 shadow-xl active:scale-95 transition-transform">Update Information</button>
+            <button onclick="document.getElementById('driver-info-modal').classList.add('hidden')" class="w-full py-4 bg-gray-100 text-gray-500 rounded-2xl font-black">Close Profile</button>
         </div>
     </div>
 
@@ -181,7 +196,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField, increment, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
@@ -241,56 +256,31 @@
 
         window.handleAuth = async (t) => {
             const e = document.getElementById('auth-email').value, p = document.getElementById('auth-pass').value;
-            if(!e || !p) return alert("Please fill in email and password.");
-            
+            if(!e || !p) return alert("Fill in email and password.");
             try {
                 if(t === 'login') await signInWithEmailAndPassword(auth, e, p);
                 else {
                     const alias = document.getElementById('reg-alias').value;
-                    if(!selectedRole) return alert("Please select a role.");
-                    if(!alias) return alert("Please enter an alias.");
-                    
+                    if(!selectedRole || !alias) return alert("Missing role or alias.");
                     const cred = await createUserWithEmailAndPassword(auth, e, p);
                     await setDoc(doc(db, COLL, cred.user.uid), { 
-                        name: alias, 
-                        role: selectedRole, 
-                        isOnline: false, 
-                        lat: 6.6294, 
-                        lng: 124.605, 
-                        income: 0, 
-                        tripCount: 0, 
-                        totalRating: 0,
-                        plate: document.getElementById('reg-plate').value || "", 
-                        mtop: document.getElementById('reg-mtop').value || "",
-                        phone: "",
-                        messenger: "",
-                        address: "",
-                        lastActive: Date.now() 
+                        name: alias, role: selectedRole, isOnline: false, lat: 6.6294, lng: 124.605, 
+                        income: 0, tripCount: 0, totalRating: 0, plate: document.getElementById('reg-plate').value || "", 
+                        mtop: document.getElementById('reg-mtop').value || "", phone: "", messenger: "", address: "", lastActive: Date.now() 
                     });
                 }
             } catch (err) { alert(err.message); }
         };
 
         onAuthStateChanged(auth, async (u) => {
-            if (u) { 
-                userUid = u.uid; 
-                const snap = await getDoc(doc(db, COLL, userUid)); 
-                if (snap.exists()) { 
-                    userData = snap.data(); 
-                    initApp(); 
-                } else signOut(auth); 
-            }
-            else { 
-                document.getElementById('auth-screen').classList.remove('hidden'); 
-                document.getElementById('app-ui').classList.add('hidden'); 
-            }
+            if (u) { userUid = u.uid; const snap = await getDoc(doc(db, COLL, userUid)); if (snap.exists()) { userData = snap.data(); initApp(); } else signOut(auth); }
+            else { document.getElementById('auth-screen').classList.remove('hidden'); document.getElementById('app-ui').classList.add('hidden'); }
         });
 
         function initApp() {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-ui').classList.replace('hidden', 'flex');
             document.getElementById(userData.role + '-panel').classList.remove('hidden');
-            if(userData.role === 'driver') document.getElementById('nav-dash').classList.remove('hidden');
             if(!map) {
                 map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 16);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
@@ -301,28 +291,20 @@
 
         function syncData() {
             onSnapshot(collection(db, COLL), (snap) => {
-                const now = Date.now();
-                const dList = document.getElementById('driver-list');
+                const now = Date.now(), dList = document.getElementById('driver-list');
                 if(userData.role === 'passenger') dList.innerHTML = '';
                 let otherPartyData = null;
 
                 snap.forEach(d => {
                     const data = d.data(), id = d.id;
                     if(id === userUid) {
-                        if (userData.role === 'driver' && userData.activeTrip && !data.activeTrip && (lastTripState === 'requested' || lastTripState === 'accepted')) {
-                             showAlert("Trip Cancelled", "error");
-                        }
+                        if (userData.role === 'driver' && userData.activeTrip && !data.activeTrip && (lastTripState === 'requested' || lastTripState === 'accepted')) showAlert("Trip Cancelled", "error");
                         userData = data;
                         lastTripState = userData.activeTrip ? userData.activeTrip.status : null;
                         handleStatusLogic();
-                        if(userData.role === 'driver') { 
-                            document.getElementById('stat-income').innerText = userData.income || 0; 
-                            document.getElementById('stat-trips').innerText = userData.tripCount || 0; 
-                        }
+                        if(userData.role === 'driver') { document.getElementById('stat-income').innerText = userData.income || 0; document.getElementById('stat-trips').innerText = userData.tripCount || 0; }
                     }
-
                     if (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId) && id !== userUid) otherPartyData = data;
-
                     const isFresh = data.lastActive && (now - data.lastActive < 120000);
                     if(isFresh && data.lat && data.lng && (data.isOnline || data.role === 'passenger' || (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId)))) {
                         if(markers[id]) markers[id].setLatLng([data.lat, data.lng]);
@@ -348,15 +330,9 @@
         async function handleStatusLogic() {
             const overlay = document.getElementById('status-overlay'), tripCard = document.getElementById('trip-card'), pWait = document.getElementById('p-waiting-card'), dActions = document.getElementById('driver-actions');
             overlay.classList.add('hidden'); tripCard.classList.add('hidden'); pWait.classList.add('hidden');
-            
             if (userData.activeTrip) {
                 const t = userData.activeTrip;
-                if (userData.role === 'passenger' && t.status === 'declined') {
-                    showAlert("Driver is Busy", "The driver declined. Please try another Sakai.", "error");
-                    await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() });
-                    return;
-                }
-
+                if (userData.role === 'passenger' && t.status === 'declined') { showAlert("Driver is Busy", "Driver declined.", "error"); await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() }); return; }
                 if (userData.role === 'driver') {
                     tripCard.classList.remove('hidden'); document.getElementById('trip-p-name').innerText = t.pName; document.getElementById('trip-p-dest').innerText = "To: " + t.dest;
                     if (t.status === 'requested') dActions.innerHTML = `<button onclick="updateStatus('accepted')" class="flex-1 py-4 bg-emerald-600 text-white rounded-xl font-black">ACCEPT</button><button onclick="updateStatus('declined')" class="flex-1 py-4 bg-red-100 text-red-600 rounded-xl font-black">DECLINE</button>`;
@@ -365,10 +341,7 @@
                 } else {
                     pWait.classList.remove('hidden');
                     if (t.status === 'requested') document.getElementById('wait-driver-name').innerText = "Requesting Sakai...";
-                    else if (t.status === 'accepted') {
-                        document.getElementById('wait-driver-name').innerText = "Driver " + t.dName + " is coming!";
-                        if(lastTripState !== 'accepted') showAlert("Driver Accepted!", "Your Sakai is on the way.", "success");
-                    }
+                    else if (t.status === 'accepted') { document.getElementById('wait-driver-name').innerText = "Driver " + t.dName + " is coming!"; if(lastTripState !== 'accepted') showAlert("Driver Accepted!", "Your Sakai is on the way.", "success"); }
                     else if (t.status === 'pickedup') overlay.classList.remove('hidden');
                     else if (t.status === 'arrived') document.getElementById('rating-modal').classList.remove('hidden');
                 }
@@ -377,23 +350,15 @@
 
         window.updateStatus = async (s) => {
             const t = userData.activeTrip; if(!t) return;
-            if(s === 'declined') {
-                await updateDoc(doc(db, COLL, t.pId), { "activeTrip.status": "declined" });
-                await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() });
-            } else if (s === 'arrived') {
-                showAlert("Success", "Income recorded and trip completed.", "success");
-                await updateDoc(doc(db, COLL, userUid), { "activeTrip.status": "arrived" });
-                await updateDoc(doc(db, COLL, t.pId), { "activeTrip.status": "arrived" });
-            } else {
-                const up = { "activeTrip.status": s };
-                await updateDoc(doc(db, COLL, userUid), up); await updateDoc(doc(db, COLL, t.pId), up); 
-            }
+            if(s === 'declined') { await updateDoc(doc(db, COLL, t.pId), { "activeTrip.status": "declined" }); await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() }); }
+            else if (s === 'arrived') { showAlert("Success", "Income recorded and trip completed.", "success"); await updateDoc(doc(db, COLL, userUid), { "activeTrip.status": "arrived" }); await updateDoc(doc(db, COLL, t.pId), { "activeTrip.status": "arrived" }); }
+            else { const up = { "activeTrip.status": s }; await updateDoc(doc(db, COLL, userUid), up); await updateDoc(doc(db, COLL, t.pId), up); }
         };
 
         window.bookDriver = async (dId) => {
             const dest = document.getElementById('dest-input').value; if(!dest) return alert("Enter destination.");
             const snap = await getDoc(doc(db, COLL, dId));
-            const trip = { status: 'requested', pId: userUid, pName: userData.name, dId: dId, dName: snap.data().name, dest };
+            const trip = { status: 'requested', pId: userUid, pName: userData.name, dId: dId, dName: snap.data().name, dest, timestamp: Date.now() };
             await updateDoc(doc(db, COLL, dId), { activeTrip: trip }); await updateDoc(doc(db, COLL, userUid), { activeTrip: trip });
         };
 
@@ -405,64 +370,74 @@
 
         window.finishTrip = async () => {
             const t = userData.activeTrip;
+            const historyData = { driverId: t.dId, driverName: t.dName, destination: t.dest, time: Date.now() };
+            await addDoc(collection(db, COLL, userUid, "history"), historyData);
             await updateDoc(doc(db, COLL, t.dId), { activeTrip: deleteField(), income: increment(21), tripCount: increment(1), totalRating: increment(currentRating) });
             await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() });
             document.getElementById('rating-modal').classList.add('hidden');
         };
 
         window.toggleDuty = () => { 
-            const s = !userData.isOnline; 
-            updateDoc(doc(db, COLL, userUid), { isOnline: s }); 
-            const btn = document.getElementById('duty-btn'); 
-            btn.innerText = s ? "Go Offline" : "Go Online"; 
+            const s = !userData.isOnline; updateDoc(doc(db, COLL, userUid), { isOnline: s }); 
+            const btn = document.getElementById('duty-btn'); btn.innerText = s ? "Go Offline" : "Go Online"; 
             btn.className = s ? "w-full py-12 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl uppercase tracking-tighter" : "w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl uppercase tracking-tighter"; 
         };
 
-        window.toggleDashboard = (s) => { 
-            document.getElementById('driver-dashboard').classList.toggle('hidden', !s); 
-            if(s) {
-                document.getElementById('edit-name').value = userData.name || "";
-                document.getElementById('edit-phone').value = userData.phone || "";
-                document.getElementById('edit-messenger').value = userData.messenger || "";
-                document.getElementById('edit-address').value = userData.address || "";
-                document.getElementById('edit-mtop').value = userData.mtop || "";
-                document.getElementById('edit-plate').value = userData.plate || "";
+        window.toggleDashboard = async (s) => {
+            if(userData.role === 'driver') {
+                document.getElementById('driver-dashboard').classList.toggle('hidden', !s);
+                if(s) { document.getElementById('edit-name').value = userData.name || ""; document.getElementById('edit-phone').value = userData.phone || ""; document.getElementById('edit-messenger').value = userData.messenger || ""; document.getElementById('edit-address').value = userData.address || ""; document.getElementById('edit-mtop').value = userData.mtop || ""; document.getElementById('edit-plate').value = userData.plate || ""; }
+            } else {
+                document.getElementById('passenger-dashboard').classList.toggle('hidden', !s);
+                if(s) loadPassengerHistory();
             }
+        };
+
+        async function loadPassengerHistory() {
+            const list = document.getElementById('history-list'); list.innerHTML = '<p class="text-center text-gray-400 py-10 font-bold">Loading records...</p>';
+            const q = query(collection(db, COLL, userUid, "history"), orderBy("time", "desc"), limit(20));
+            const snap = await getDocs(q);
+            list.innerHTML = '';
+            if(snap.empty) list.innerHTML = '<p class="text-center text-gray-400 py-10">No rides yet.</p>';
+            snap.forEach(d => {
+                const h = d.data();
+                const date = new Date(h.time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                list.innerHTML += `
+                    <div onclick="showDriverInfo('${h.driverId}')" class="history-card bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex justify-between items-center">
+                        <div class="flex-1">
+                            <h5 class="font-black text-gray-800">${h.driverName}</h5>
+                            <p class="text-[11px] font-bold text-gray-400"><i class="fa-solid fa-location-dot mr-1"></i>${h.destination}</p>
+                            <p class="text-[10px] font-bold text-emerald-500 uppercase mt-1">${date}</p>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-gray-200 text-xs"></i>
+                    </div>`;
+            });
+        }
+
+        window.showDriverInfo = async (dId) => {
+            const snap = await getDoc(doc(db, COLL, dId));
+            if(!snap.exists()) return;
+            const d = snap.data();
+            document.getElementById('info-name').innerText = d.name;
+            document.getElementById('info-mtop').innerText = "MTOP: " + (d.mtop || "N/A");
+            document.getElementById('info-plate').innerText = d.plate || "N/A";
+            document.getElementById('info-phone').innerText = d.phone || "Not provided";
+            document.getElementById('info-messenger').innerText = d.messenger || "Not provided";
+            document.getElementById('driver-info-modal').classList.remove('hidden');
         };
 
         window.updateProfile = async () => {
             const name = document.getElementById('edit-name').value;
-            const phone = document.getElementById('edit-phone').value;
-            const messenger = document.getElementById('edit-messenger').value;
-            const address = document.getElementById('edit-address').value;
-            const mtop = document.getElementById('edit-mtop').value;
-            const plate = document.getElementById('edit-plate').value;
-
-            if(!name) return alert("Alias name is required.");
-
+            if(!name) return alert("Alias is required.");
             await updateDoc(doc(db, COLL, userUid), { 
-                name, 
-                phone, 
-                messenger, 
-                address, 
-                mtop, 
-                plate 
+                name, phone: document.getElementById('edit-phone').value, messenger: document.getElementById('edit-messenger').value, 
+                address: document.getElementById('edit-address').value, mtop: document.getElementById('edit-mtop').value, plate: document.getElementById('edit-plate').value 
             });
-
-            showAlert("Profile Updated", "Your information has been successfully saved.", "success");
-            toggleDashboard(false);
+            showAlert("Updated", "Profile saved.", "success"); toggleDashboard(false);
         };
 
-        window.logout = async () => { 
-            if (userUid) await updateDoc(doc(db, COLL, userUid), { isOnline: false }); 
-            signOut(auth).then(() => location.reload()); 
-        };
-
-        window.setStar = (n) => { 
-            currentRating = n; 
-            const s = document.getElementById('star-box').children; 
-            for(let i=0; i<5; i++) s[i].className = i < n ? 'fa-solid fa-star text-amber-400' : 'fa-solid fa-star text-gray-200'; 
-        };
+        window.logout = async () => { if (userUid) await updateDoc(doc(db, COLL, userUid), { isOnline: false }); signOut(auth).then(() => location.reload()); };
+        window.setStar = (n) => { currentRating = n; const s = document.getElementById('star-box').children; for(let i=0; i<5; i++) s[i].className = i < n ? 'fa-solid fa-star text-amber-400' : 'fa-solid fa-star text-gray-200'; };
     </script>
 </body>
 </html>
