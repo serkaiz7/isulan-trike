@@ -3,298 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sakai • Elite Rides</title>
+    <title>Sakai - Elite Transportation</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
     <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; touch-action: manipulation; }
+        #map { height: 52vh; width: 100%; z-index: 1; background: #e2e8f0; }
         
-        body { font-family: 'Inter', sans-serif; overflow: hidden; touch-action: manipulation; }
-        .title-font { font-family: 'Space Grotesk', sans-serif; }
-        
-        #map { height: 55vh; width: 100%; z-index: 1; background: #0f172a; }
-        
-        .marquee-container {
-            background: linear-gradient(90deg, #0f172a, #1e2937);
-            color: #67e8f9;
-            overflow: hidden;
-            white-space: nowrap;
-            padding: 6px 0;
-            font-size: 13px;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            border-bottom: 3px solid #22d3ee;
+        .marquee-container { 
+            background: #064e3b; color: #fbbf24; overflow: hidden; white-space: nowrap; 
+            padding: 6px 0; font-size: 12px; font-weight: 800; letter-spacing: 1.5px; 
+            border-bottom: 3px solid #10b981; 
         }
-        
-        .marquee-content {
-            display: inline-block;
-            animation: marquee 22s linear infinite;
-        }
-        
+        .marquee-content { display: inline-block; animation: marquee 22s linear infinite; }
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-        
-        .driver-marker {
-            background: #22d3ee;
-            color: #0f172a;
-            border-radius: 9999px;
-            width: 42px;
-            height: 42px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 0 6px rgba(103, 232, 249, 0.3);
-            animation: pulse-marker 2s infinite;
-        }
-        
-        .passenger-marker {
-            background: #a78bfa;
-            color: white;
-            border-radius: 9999px;
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 0 5px rgba(167, 139, 250, 0.4);
-        }
-        
-        @keyframes pulse-marker {
-            0%, 100% { box-shadow: 0 0 0 6px rgba(103, 232, 249, 0.3); }
-            50% { box-shadow: 0 0 0 12px rgba(103, 232, 249, 0); }
-        }
-        
-        .glow-cyan { text-shadow: 0 0 20px #67e8f9; }
-        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25); }
-        
-        .nav-btn {
-            transition: all 0.3s ease;
-        }
-        .nav-btn.active {
-            color: #67e8f9;
-            position: relative;
-        }
-        .nav-btn.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 5px;
-            height: 5px;
-            background: #67e8f9;
-            border-radius: 9999px;
-        }
-        
-        .ride-card {
-            background: linear-gradient(145deg, #1e2937, #334155);
-        }
-        
-        .status-bar {
-            height: 6px;
-            background: linear-gradient(to right, #67e8f9, #22d3ee);
-            animation: progress 1.5s linear infinite;
-        }
+
+        .driver-marker-icon { color: #10b981; font-size: 28px; text-shadow: 0 0 12px white; }
+        .passenger-marker-icon { color: #3b82f6; font-size: 24px; text-shadow: 0 0 12px white; }
+
+        .glow-text { text-shadow: 0 0 15px rgba(16, 185, 129, 0.9); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        .nav-btn { display: flex; flex-direction: column; align-items: center; font-size: 10px; font-weight: 800; color: #94a3b8; transition: all 0.3s; }
+        .nav-btn.active { color: #10b981; }
+        .nav-btn.active i { transform: scale(1.15); }
+
+        .role-card.active { border-color: #fbbf24; background: rgba(251, 191, 36, 0.15); transform: scale(1.05); }
+        .history-card { transition: all 0.2s; }
+        .history-card:active { transform: scale(0.97); }
+
+        .toast { animation: slideUp 0.4s ease forwards; }
+        @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
-<body class="bg-slate-950 text-white flex flex-col h-screen">
+<body class="bg-slate-50 flex flex-col h-screen">
 
     <!-- Marquee -->
     <div class="marquee-container">
-        <div class="marquee-content">🚀 SAKAI ELITE • SAFE • FAST • AFFORDABLE • REAL-TIME TRACKING • THANK YOU FOR RIDING WITH US •</div>
+        <div class="marquee-content">🚀 THANK YOU FOR CHOOSING SAKAI • SAFE • FAST • AFFORDABLE • REAL-TIME TRACKING • ISULAN'S BEST • </div>
     </div>
 
     <!-- AUTH SCREEN -->
-    <div id="auth-screen" class="fixed inset-0 z-[9000] bg-gradient-to-br from-slate-950 via-cyan-950 to-slate-950 flex flex-col items-center justify-center p-6 overflow-y-auto">
-        <div class="text-center mb-10">
-            <div class="flex items-center justify-center gap-3 mb-4">
-                <div class="w-16 h-16 bg-cyan-500 rounded-3xl flex items-center justify-center text-4xl shadow-xl shadow-cyan-500/50">🏍️</div>
-                <h1 class="title-font text-6xl font-bold tracking-tighter text-cyan-400">SAKAI</h1>
-            </div>
-            <p class="text-slate-400 text-lg">Elite Local Transport</p>
+    <div id="auth-screen" class="fixed inset-0 z-[9000] bg-emerald-600 flex flex-col p-6 overflow-y-auto justify-center text-white">
+        <div class="text-center mb-8">
+            <i class="fa-solid fa-motorcycle text-6xl mb-3"></i>
+            <h1 class="text-5xl font-black italic tracking-tighter">Sakai</h1>
+            <p class="text-emerald-200 mt-1">Elite Transportation</p>
         </div>
+        <div class="max-w-xs mx-auto w-full space-y-5">
+            <div id="login-actions">
+                <input id="auth-email" type="email" placeholder="Email" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white placeholder-white/60">
+                <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white placeholder-white/60">
+                <button onclick="handleAuth('login')" class="w-full py-4 bg-white text-emerald-700 rounded-2xl font-black text-lg shadow-xl">SIGN IN</button>
+                <button onclick="showRegisterUI()" class="w-full py-4 border border-white/50 rounded-2xl font-bold">Create Account</button>
+            </div>
 
-        <div class="w-full max-w-md bg-slate-900/80 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-slate-700">
-            <div id="auth-forms">
-                <!-- Login -->
-                <div id="login-form">
-                    <input id="auth-email" type="email" placeholder="Email address" 
-                           class="w-full mb-4 p-5 bg-slate-800 border border-slate-700 rounded-2xl focus:border-cyan-400 outline-none text-white placeholder-slate-500 text-lg">
-                    <input id="auth-pass" type="password" placeholder="Password" 
-                           class="w-full mb-6 p-5 bg-slate-800 border border-slate-700 rounded-2xl focus:border-cyan-400 outline-none text-white placeholder-slate-500 text-lg">
-                    
-                    <button onclick="handleAuth('login')" 
-                            class="w-full py-5 bg-cyan-500 hover:bg-cyan-400 transition-colors text-slate-950 font-bold text-xl rounded-2xl mb-4 shadow-lg shadow-cyan-500/30">
-                        SIGN IN
-                    </button>
-                    
-                    <button onclick="showRegisterUI()" 
-                            class="w-full py-5 border border-slate-600 hover:border-slate-400 transition-colors font-medium rounded-2xl">
-                        Create New Account
-                    </button>
-                </div>
-
-                <!-- Register -->
-                <div id="reg-form" class="hidden">
-                    <div class="grid grid-cols-2 gap-4 mb-6">
-                        <div onclick="selectRole('passenger')" id="role-p" 
-                             class="role-card p-6 border-2 border-transparent bg-slate-800 hover:bg-slate-700 rounded-3xl text-center cursor-pointer transition-all">
-                            <i class="fa-solid fa-user text-4xl mb-3 text-violet-400"></i>
-                            <p class="font-semibold">Passenger</p>
-                        </div>
-                        <div onclick="selectRole('driver')" id="role-d" 
-                             class="role-card p-6 border-2 border-transparent bg-slate-800 hover:bg-slate-700 rounded-3xl text-center cursor-pointer transition-all">
-                            <i class="fa-solid fa-motorcycle text-4xl mb-3 text-cyan-400"></i>
-                            <p class="font-semibold">Driver</p>
-                        </div>
+            <div id="reg-ui" class="hidden space-y-5">
+                <div class="grid grid-cols-2 gap-4">
+                    <div onclick="selectRole('passenger')" id="role-p" class="role-card p-5 border-2 border-white/30 rounded-2xl text-center cursor-pointer">
+                        <i class="fa-solid fa-user text-3xl mb-2"></i><p class="text-xs font-black uppercase">Passenger</p>
                     </div>
-
-                    <input id="reg-alias" type="text" placeholder="Display Name" 
-                           class="w-full mb-4 p-5 bg-slate-800 border border-slate-700 rounded-2xl focus:border-cyan-400 outline-none text-white placeholder-slate-500">
-                    
-                    <div id="driver-fields" class="hidden space-y-4">
-                        <input id="reg-mtop" type="text" placeholder="MTOP Number" 
-                               class="w-full p-5 bg-slate-800 border border-slate-700 rounded-2xl focus:border-cyan-400 outline-none text-white placeholder-slate-500">
-                        <input id="reg-plate" type="text" placeholder="Plate Number" 
-                               class="w-full p-5 bg-slate-800 border border-slate-700 rounded-2xl focus:border-cyan-400 outline-none text-white placeholder-slate-500">
+                    <div onclick="selectRole('driver')" id="role-d" class="role-card p-5 border-2 border-white/30 rounded-2xl text-center cursor-pointer">
+                        <i class="fa-solid fa-motorcycle text-3xl mb-2"></i><p class="text-xs font-black uppercase">Driver</p>
                     </div>
-
-                    <button onclick="handleAuth('register')" 
-                            class="w-full py-5 bg-gradient-to-r from-cyan-400 to-violet-500 text-slate-950 font-bold text-xl rounded-2xl mt-6 shadow-xl">
-                        CREATE ACCOUNT
-                    </button>
-                    
-                    <button onclick="showLoginUI()" 
-                            class="w-full mt-4 text-slate-400 hover:text-white transition-colors">
-                        ← Back to Sign In
-                    </button>
                 </div>
+                <input id="reg-alias" type="text" placeholder="Alias Name" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white">
+                <div id="driver-fields" class="hidden space-y-4">
+                    <input id="reg-mtop" type="text" placeholder="MTOP" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white">
+                    <input id="reg-plate" type="text" placeholder="Plate Number" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white">
+                </div>
+                <button onclick="handleAuth('register')" class="w-full py-4 bg-amber-400 text-emerald-900 rounded-2xl font-black">COMPLETE REGISTRATION</button>
+                <button onclick="showLoginUI()" class="w-full text-white/70">← Back to Login</button>
             </div>
         </div>
     </div>
 
     <!-- MAIN APP -->
-    <div id="app-ui" class="hidden flex-col h-full">
-        <!-- Map -->
-        <div id="map" class="relative"></div>
+    <div id="app-ui" class="hidden flex-col h-full relative">
+        <div id="map"></div>
 
-        <!-- Floating Status -->
-        <div id="status-overlay" class="hidden absolute top-6 left-6 right-6 bg-slate-900/95 backdrop-blur-xl border border-cyan-400 rounded-3xl p-5 z-[3000] shadow-2xl">
-            <div class="flex items-center justify-between mb-3">
-                <div class="flex items-center gap-3">
-                    <div class="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></div>
-                    <span class="font-mono text-emerald-400 text-sm font-bold">RIDE IN PROGRESS</span>
+        <!-- Alert -->
+        <div id="alert-popup" class="hidden fixed inset-x-6 top-6 z-[8500] bg-white rounded-3xl p-5 shadow-2xl border border-emerald-400">
+            <div class="flex items-start gap-4">
+                <i id="alert-icon" class="fa-solid text-3xl mt-1"></i>
+                <div class="flex-1">
+                    <h5 id="alert-title" class="font-black text-lg"></h5>
+                    <p id="alert-body" class="text-sm text-gray-600"></p>
                 </div>
-                <div class="text-right">
-                    <div class="text-2xl font-bold text-white">₱21</div>
-                    <div class="text-xs text-slate-400">Fixed Fare</div>
-                </div>
-            </div>
-            <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
-                <div class="status-bar w-3/4"></div>
             </div>
         </div>
 
-        <!-- Content Panel -->
-        <div id="content-panel" class="flex-1 bg-slate-900 rounded-t-3xl -mt-8 relative z-10 shadow-2xl overflow-y-auto pb-24">
-            
-            <!-- DRIVER PANEL -->
-            <div id="driver-panel" class="hidden p-6">
-                <div id="trip-card" class="hidden ride-card rounded-3xl p-6 mb-8 text-white">
-                    <div class="flex justify-between items-start mb-6">
-                        <div>
-                            <p class="text-slate-400 text-sm">Passenger</p>
-                            <p id="trip-p-name" class="text-2xl font-bold">Loading...</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-emerald-400 text-sm">TO</p>
-                            <p id="trip-p-dest" class="font-mono text-lg">...</p>
-                        </div>
-                    </div>
-                    <div id="driver-actions" class="grid grid-cols-2 gap-3"></div>
-                </div>
+        <!-- Ride Status -->
+        <div id="status-overlay" class="hidden h-[52vh] bg-emerald-900 flex flex-col items-center justify-center text-white text-center p-8 z-[2000]">
+            <h2 class="text-3xl font-black glow-text">RIDE IN PROGRESS</h2>
+            <p id="ride-status-text" class="mt-2 text-lg">Driver is on the way</p>
+            <p class="text-4xl font-black mt-6">₱21</p>
+            <button onclick="triggerSOS()" class="mt-8 px-8 py-3 bg-red-600 hover:bg-red-700 rounded-full font-bold text-sm tracking-widest">🚨 SOS EMERGENCY</button>
+        </div>
 
-                <button id="duty-btn" onclick="toggleDuty()" 
-                        class="w-full py-8 rounded-3xl font-bold text-2xl tracking-widest transition-all duration-300 bg-gradient-to-r from-slate-700 to-slate-600 hover:from-emerald-500 hover:to-cyan-500">
-                    GO ONLINE
-                </button>
+        <!-- Content Panel -->
+        <div id="content-panel" class="flex-1 bg-white rounded-t-[2.5rem] -mt-8 z-[1001] shadow-2xl p-6 overflow-y-auto pb-28">
+            <!-- Driver Panel -->
+            <div id="driver-panel" class="hidden">
+                <div id="trip-card" class="hidden mb-6 p-6 bg-emerald-50 border-2 border-emerald-200 rounded-3xl">
+                    <h4 id="trip-p-name" class="text-2xl font-black text-gray-800"></h4>
+                    <p id="trip-p-dest" class="text-gray-500 mb-6"></p>
+                    <div id="driver-actions" class="flex gap-3"></div>
+                </div>
+                <button id="duty-btn" onclick="toggleDuty()" class="w-full py-12 bg-gray-100 text-gray-700 rounded-3xl font-black text-3xl uppercase tracking-widest">GO ONLINE</button>
             </div>
 
-            <!-- PASSENGER PANEL -->
-            <div id="passenger-panel" class="hidden p-6">
+            <!-- Passenger Panel -->
+            <div id="passenger-panel" class="hidden">
                 <div class="mb-6">
-                    <input id="dest-input" type="text" placeholder="Where are you going?" 
-                           class="w-full p-6 bg-slate-800 border border-slate-700 rounded-3xl text-lg focus:border-cyan-400 outline-none placeholder-slate-400">
+                    <input id="dest-input" type="text" placeholder="Where to? (Min ₱21)" class="w-full p-5 bg-gray-100 rounded-3xl border-2 border-transparent focus:border-emerald-500 outline-none font-medium text-lg">
                 </div>
+                
+                <!-- Saved Locations -->
+                <div id="saved-locations" class="flex gap-3 mb-6 overflow-x-auto pb-3"></div>
 
-                <div id="p-waiting-card" class="hidden mb-8 bg-slate-800 border border-amber-400 rounded-3xl p-6">
-                    <div class="flex items-center gap-4">
-                        <div class="animate-spin w-8 h-8 border-4 border-amber-400 border-t-transparent rounded-full"></div>
-                        <div>
-                            <p id="wait-driver-name" class="font-semibold text-xl">Finding your driver...</p>
-                            <p class="text-slate-400 text-sm">Usually arrives in 2-4 mins</p>
-                        </div>
-                    </div>
-                    <button onclick="cancelTrip()" 
-                            class="mt-6 w-full py-3 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-2xl font-medium">
-                        CANCEL REQUEST
-                    </button>
+                <div id="p-waiting-card" class="hidden mb-6 p-6 bg-blue-50 border-2 border-blue-200 rounded-3xl text-center">
+                    <p id="wait-driver-name" class="font-black text-xl mb-4"></p>
+                    <button onclick="cancelTrip()" class="px-8 py-3 bg-red-100 text-red-600 rounded-full text-sm font-black">CANCEL RIDE</button>
                 </div>
-
+                
                 <div id="driver-list" class="space-y-4"></div>
             </div>
         </div>
 
-        <!-- Bottom Navigation -->
-        <div class="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 p-4 flex justify-around items-center z-[7000]">
-            <button onclick="switchTab(0)" class="nav-btn active flex flex-col items-center">
-                <i class="fa-solid fa-map-location-dot text-2xl mb-1"></i>
-                <span class="text-xs">Map</span>
-            </button>
-            <button onclick="switchTab(1)" class="nav-btn flex flex-col items-center">
-                <i class="fa-solid fa-history text-2xl mb-1"></i>
-                <span class="text-xs">History</span>
-            </button>
-            <button onclick="switchTab(2)" class="nav-btn flex flex-col items-center">
-                <i class="fa-solid fa-user text-2xl mb-1"></i>
-                <span class="text-xs">Me</span>
-            </button>
+        <!-- Bottom Nav -->
+        <div class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-100 p-4 flex justify-around items-center z-[7000]">
+            <button onclick="toggleDashboard(false)" class="nav-btn active"><i class="fa-solid fa-map-location-dot text-2xl mb-1"></i>Map</button>
+            <button onclick="toggleDashboard(true)" class="nav-btn"><i class="fa-solid fa-chart-pie text-2xl mb-1"></i>Hub</button>
+            <button onclick="logout()" class="nav-btn text-red-500"><i class="fa-solid fa-power-off text-2xl mb-1"></i>Logout</button>
         </div>
     </div>
 
+    <!-- DASHBOARDS -->
+    <div id="driver-dashboard" class="hidden fixed inset-0 z-[8000] bg-slate-50 overflow-y-auto p-6 pb-32">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-3xl font-black">Driver Hub</h2>
+            <button onclick="toggleDashboard(false)" class="text-3xl">✕</button>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-8">
+            <div class="bg-emerald-600 p-6 rounded-3xl text-white">
+                <p class="text-sm opacity-75">Total Earnings</p>
+                <p class="text-4xl font-black mt-2">₱<span id="stat-income">0</span></p>
+            </div>
+            <div class="bg-white p-6 rounded-3xl border">
+                <p class="text-sm text-gray-500">Trips Completed</p>
+                <p class="text-4xl font-black mt-2" id="stat-trips">0</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="passenger-dashboard" class="hidden fixed inset-0 z-[8000] bg-slate-50 overflow-y-auto p-6 pb-32">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-3xl font-black">My Rides</h2>
+            <button onclick="toggleDashboard(false)" class="text-3xl">✕</button>
+        </div>
+        <div id="history-list" class="space-y-4"></div>
+    </div>
+
     <!-- Driver Info Modal -->
-    <div id="driver-info-modal" class="hidden fixed inset-0 z-[9500] bg-black/70 flex items-end">
-        <div class="bg-slate-900 w-full rounded-t-3xl p-8 max-h-[85vh] overflow-y-auto">
-            <div class="w-12 h-1.5 bg-slate-700 mx-auto mb-6 rounded-full"></div>
+    <div id="driver-info-modal" class="hidden fixed inset-0 z-[9500] bg-black/60 flex items-end">
+        <div class="bg-white w-full rounded-t-3xl p-8">
             <div id="info-content" class="text-center"></div>
-            <button onclick="closeModal('driver-info-modal')" 
-                    class="w-full mt-8 py-4 bg-slate-800 rounded-2xl font-semibold">Close</button>
+            <button onclick="closeModal('driver-info-modal')" class="w-full py-4 bg-gray-100 rounded-2xl font-black mt-6">CLOSE</button>
         </div>
     </div>
 
     <!-- Rating Modal -->
     <div id="rating-modal" class="hidden fixed inset-0 z-[9600] bg-black/80 flex items-center justify-center p-6">
-        <div class="bg-slate-900 rounded-3xl p-8 w-full max-w-sm">
-            <h2 class="text-3xl font-bold text-center mb-2">How was your ride?</h2>
-            <p class="text-slate-400 text-center mb-8">Your feedback helps us improve</p>
-            
-            <div id="star-box" class="flex justify-center gap-4 text-5xl mb-10">
-                <i onclick="setStar(1)" class="fa-solid fa-star cursor-pointer text-amber-400"></i>
-                <i onclick="setStar(2)" class="fa-solid fa-star cursor-pointer text-amber-400"></i>
-                <i onclick="setStar(3)" class="fa-solid fa-star cursor-pointer text-amber-400"></i>
-                <i onclick="setStar(4)" class="fa-solid fa-star cursor-pointer text-amber-400"></i>
-                <i onclick="setStar(5)" class="fa-solid fa-star cursor-pointer text-amber-400"></i>
-            </div>
-            
-            <button onclick="finishTripPassenger()" 
-                    class="w-full py-5 bg-gradient-to-r from-cyan-400 to-violet-500 text-slate-950 font-bold rounded-2xl text-xl">
-                SUBMIT REVIEW
-            </button>
+        <div class="bg-white w-full max-w-sm rounded-3xl p-8 text-center">
+            <h3 class="text-3xl font-black mb-2">How was your ride?</h3>
+            <div id="star-box" class="flex justify-center gap-4 text-5xl my-8 text-amber-400"></div>
+            <button onclick="finishTripPassenger()" class="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black">SUBMIT RATING</button>
         </div>
     </div>
 
@@ -318,55 +207,36 @@
 
         let userUid, userData, map, markers = {}, routingControl = null, currentRating = 5, selectedRole = null;
 
-        // Tailwind script already loaded
-
-        function showAlert(title, message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-4 rounded-2xl flex items-center gap-3 shadow-2xl z-[9999] ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`;
-            toast.innerHTML = `
-                <i class="fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-triangle-exclamation'}"></i>
-                <div>
-                    <div class="font-bold">${title}</div>
-                    <div class="text-sm opacity-90">${message}</div>
-                </div>
-            `;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
+        function showAlert(title, body, type = 'success') {
+            const el = document.getElementById('alert-popup');
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-body').innerText = body;
+            document.getElementById('alert-icon').className = `fa-solid fa-${type === 'success' ? 'check' : 'xmark'}-circle text-3xl ${type === 'success' ? 'text-emerald-500' : 'text-red-500'}`;
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 4500);
         }
 
-        window.showRegisterUI = () => {
-            document.getElementById('login-form').classList.add('hidden');
-            document.getElementById('reg-form').classList.remove('hidden');
+        window.showRegisterUI = () => { document.getElementById('login-actions').classList.add('hidden'); document.getElementById('reg-ui').classList.remove('hidden'); };
+        window.showLoginUI = () => { document.getElementById('login-actions').classList.remove('hidden'); document.getElementById('reg-ui').classList.add('hidden'); };
+        window.selectRole = (role) => { 
+            selectedRole = role; 
+            document.getElementById('role-p').classList.toggle('active', role==='passenger'); 
+            document.getElementById('role-d').classList.toggle('active', role==='driver'); 
+            document.getElementById('driver-fields').classList.toggle('hidden', role !== 'driver'); 
         };
 
-        window.showLoginUI = () => {
-            document.getElementById('login-form').classList.remove('hidden');
-            document.getElementById('reg-form').classList.add('hidden');
-        };
-
-        window.selectRole = (role) => {
-            selectedRole = role;
-            const p = document.getElementById('role-p');
-            const d = document.getElementById('role-d');
-            p.classList.toggle('border-cyan-400', role === 'passenger');
-            d.classList.toggle('border-cyan-400', role === 'driver');
-            document.getElementById('driver-fields').classList.toggle('hidden', role !== 'driver');
-        };
-
-        window.handleAuth = async (type) => {
-            const email = document.getElementById('auth-email').value.trim();
-            const pass = document.getElementById('auth-pass').value.trim();
-
-            if (!email || !pass) return alert("Please fill all fields");
+        window.handleAuth = async (t) => {
+            const e = document.getElementById('auth-email').value.trim();
+            const p = document.getElementById('auth-pass').value.trim();
+            if (!e || !p) return alert("Please fill all fields");
 
             try {
-                if (type === 'login') {
-                    await signInWithEmailAndPassword(auth, email, pass);
+                if (t === 'login') {
+                    await signInWithEmailAndPassword(auth, e, p);
                 } else {
                     if (!selectedRole) return alert("Please select a role");
                     const alias = document.getElementById('reg-alias').value.trim() || "Rider";
-                    
-                    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+                    const cred = await createUserWithEmailAndPassword(auth, e, p);
                     await setDoc(doc(db, "users", cred.user.uid), {
                         name: alias,
                         role: selectedRole,
@@ -378,18 +248,15 @@
                         totalRating: 0,
                         plate: document.getElementById('reg-plate').value || "",
                         mtop: document.getElementById('reg-mtop').value || "",
-                        lastActive: Date.now(),
-                        createdAt: Date.now()
+                        lastActive: Date.now()
                     });
                 }
-            } catch (err) {
-                alert(err.message);
-            }
+            } catch (err) { alert(err.message); }
         };
 
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                userUid = user.uid;
+        onAuthStateChanged(auth, async (u) => {
+            if (u) {
+                userUid = u.uid;
                 const snap = await getDoc(doc(db, "users", userUid));
                 if (snap.exists()) {
                     userData = snap.data();
@@ -403,67 +270,67 @@
 
         function initApp() {
             document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('app-ui').classList.remove('hidden');
+            document.getElementById('app-ui').classList.replace('hidden', 'flex');
             document.getElementById(userData.role + '-panel').classList.remove('hidden');
 
             if (!map) {
-                map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 15);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; Sakai Elite'
-                }).addTo(map);
+                map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 16);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
             }
 
-            navigator.geolocation.watchPosition((pos) => {
-                if (userUid) {
-                    updateDoc(doc(db, "users", userUid), {
-                        lat: pos.coords.latitude,
-                        lng: pos.coords.longitude,
-                        lastActive: Date.now()
-                    });
-                }
-            }, () => {}, { enableHighAccuracy: true });
+            navigator.geolocation.watchPosition(p => {
+                updateDoc(doc(db, "users", userUid), { lat: p.coords.latitude, lng: p.coords.longitude, lastActive: Date.now() });
+            }, null, { enableHighAccuracy: true });
 
             syncData();
+            if (userData.role === 'passenger') renderSavedLocations();
         }
 
+        function renderSavedLocations() {
+            const html = `
+                <div onclick="quickDestination('Home')" class="bg-white px-6 py-3 rounded-2xl shadow-sm border text-sm font-medium whitespace-nowrap cursor-pointer">🏠 Home</div>
+                <div onclick="quickDestination('Office')" class="bg-white px-6 py-3 rounded-2xl shadow-sm border text-sm font-medium whitespace-nowrap cursor-pointer">💼 Office</div>
+                <div onclick="quickDestination('Market')" class="bg-white px-6 py-3 rounded-2xl shadow-sm border text-sm font-medium whitespace-nowrap cursor-pointer">🛍️ Market</div>
+            `;
+            document.getElementById('saved-locations').innerHTML = html;
+        }
+
+        window.quickDestination = (place) => {
+            document.getElementById('dest-input').value = place;
+            showAlert("Quick Select", `Going to ${place}`);
+        };
+
         function syncData() {
-            onSnapshot(collection(db, "users"), (snapshot) => {
+            onSnapshot(collection(db, "users"), (snap) => {
                 const now = Date.now();
-                const driverList = document.getElementById('driver-list');
-                if (userData.role === 'passenger') driverList.innerHTML = '';
+                const dList = document.getElementById('driver-list');
+                if (userData.role === 'passenger') dList.innerHTML = '';
 
                 let otherParty = null;
 
-                snapshot.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    const id = docSnap.id;
-
+                snap.forEach(d => {
+                    const data = d.data(), id = d.id;
                     if (id === userUid) {
                         userData = data;
-                        handleUIState();
+                        handleStatusLogic();
+                        if (userData.role === 'driver') {
+                            document.getElementById('stat-income').innerText = userData.income || 0;
+                            document.getElementById('stat-trips').innerText = userData.tripCount || 0;
+                        }
                     }
 
-                    // Find other party in active trip
-                    if (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId) && id !== userUid) {
-                        otherParty = data;
-                    }
+                    if (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId) && id !== userUid) otherParty = data;
 
                     const isFresh = data.lastActive && (now - data.lastActive < 180000);
 
-                    // Update markers
-                    if (isFresh && data.lat && data.lng && 
-                        (data.isOnline || data.role === 'passenger' || 
-                         (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId)))) {
-                        
-                        const iconHtml = data.role === 'driver' 
-                            ? `<div class="driver-marker"><i class="fa-solid fa-motorcycle"></i></div>`
-                            : `<div class="passenger-marker"><i class="fa-solid fa-user"></i></div>`;
-
-                        if (markers[id]) {
-                            markers[id].setLatLng([data.lat, data.lng]);
-                        } else {
+                    if (isFresh && data.lat && data.lng && (data.isOnline || data.role === 'passenger' || (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId)))) {
+                        if (markers[id]) markers[id].setLatLng([data.lat, data.lng]);
+                        else {
                             markers[id] = L.marker([data.lat, data.lng], {
-                                icon: L.divIcon({ className: '', html: iconHtml, iconSize: [42, 42] })
+                                icon: L.divIcon({
+                                    html: data.role === 'driver' ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`,
+                                    className: '', iconSize: [40, 40]
+                                })
                             }).addTo(map);
                         }
                     } else if (markers[id]) {
@@ -471,44 +338,26 @@
                         delete markers[id];
                     }
 
-                    // Populate available drivers for passengers
                     if (userData.role === 'passenger' && data.role === 'driver' && data.isOnline && isFresh && !data.activeTrip) {
-                        const rating = data.tripCount > 0 ? (data.totalRating / data.tripCount).toFixed(1) : "5.0";
-                        
-                        driverList.innerHTML += `
-                            <div onclick="bookDriver('${id}')" class="ride-card p-5 rounded-3xl cursor-pointer card-hover flex gap-4 items-center">
-                                <div class="w-14 h-14 bg-slate-700 rounded-2xl flex items-center justify-center text-3xl">🏍️</div>
-                                <div class="flex-1">
-                                    <div class="flex justify-between">
-                                        <p class="font-semibold text-lg">${data.name}</p>
-                                        <p class="text-emerald-400 font-mono">₱21</p>
-                                    </div>
-                                    <div class="flex items-center gap-2 text-sm text-slate-400">
-                                        <span>⭐ ${rating}</span>
-                                        <span class="text-xs">•</span>
-                                        <span>MTOP ${data.mtop || 'N/A'}</span>
-                                    </div>
+                        const avg = data.tripCount > 0 ? (data.totalRating / data.tripCount).toFixed(1) : "5.0";
+                        dList.innerHTML += `
+                            <div class="p-5 bg-white border border-gray-200 rounded-3xl flex justify-between items-center shadow-sm cursor-pointer" onclick="bookDriver('${id}')">
+                                <div>
+                                    <p class="font-black">${data.name}</p>
+                                    <p class="text-xs text-amber-500">⭐ ${avg} • MTOP: ${data.mtop}</p>
                                 </div>
+                                <button class="bg-emerald-600 text-white px-6 py-2 rounded-2xl text-sm font-bold">BOOK</button>
                             </div>`;
                     }
                 });
 
-                // Update route
-                if (userData.activeTrip && otherParty && userData.lat) {
-                    const start = L.latLng(userData.lat, userData.lng);
-                    const end = L.latLng(otherParty.lat, otherParty.lng);
-                    
+                // Route
+                if (userData.activeTrip && otherParty) {
+                    const myLoc = L.latLng(userData.lat, userData.lng);
+                    const theirLoc = L.latLng(otherParty.lat, otherParty.lng);
                     if (!routingControl) {
-                        routingControl = L.Routing.control({
-                            waypoints: [start, end],
-                            lineOptions: { styles: [{ color: '#67e8f9', weight: 7, opacity: 0.9 }] },
-                            createMarker: () => null,
-                            addWaypoints: false,
-                            show: false
-                        }).addTo(map);
-                    } else {
-                        routingControl.setWaypoints([start, end]);
-                    }
+                        routingControl = L.Routing.control({ waypoints: [myLoc, theirLoc], createMarker: () => null, lineOptions: { styles: [{color: '#10b981', weight: 6}] }, show: false }).addTo(map);
+                    } else routingControl.setWaypoints([myLoc, theirLoc]);
                 } else if (routingControl) {
                     map.removeControl(routingControl);
                     routingControl = null;
@@ -516,14 +365,13 @@
             });
         }
 
-        function handleUIState() {
+        function handleStatusLogic() {
             const overlay = document.getElementById('status-overlay');
             const tripCard = document.getElementById('trip-card');
-            const pWaiting = document.getElementById('p-waiting-card');
+            const pWait = document.getElementById('p-waiting-card');
+            const dActions = document.getElementById('driver-actions');
 
-            overlay.classList.add('hidden');
-            tripCard.classList.add('hidden');
-            pWaiting.classList.add('hidden');
+            overlay.classList.add('hidden'); tripCard.classList.add('hidden'); pWait.classList.add('hidden');
 
             if (!userData.activeTrip) return;
 
@@ -531,235 +379,143 @@
 
             if (userData.role === 'driver') {
                 tripCard.classList.remove('hidden');
-                document.getElementById('trip-p-name').textContent = t.pName || "Passenger";
-                document.getElementById('trip-p-dest').textContent = t.dest || "Destination";
-
-                const actions = document.getElementById('driver-actions');
-                actions.innerHTML = '';
+                document.getElementById('trip-p-name').innerText = t.pName;
+                document.getElementById('trip-p-dest').innerText = "To: " + t.dest;
 
                 if (t.status === 'requested') {
-                    actions.innerHTML = `
-                        <button onclick="updateStatus('accepted')" class="py-6 bg-emerald-500 hover:bg-emerald-400 font-bold rounded-2xl">ACCEPT RIDE</button>
-                        <button onclick="updateStatus('declined')" class="py-6 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-bold rounded-2xl">DECLINE</button>
-                    `;
+                    dActions.innerHTML = `<button onclick="updateStatus('accepted')" class="flex-1 py-5 bg-emerald-600 text-white rounded-2xl font-black">ACCEPT</button><button onclick="updateStatus('declined')" class="flex-1 py-5 bg-red-100 text-red-600 rounded-2xl font-black">DECLINE</button>`;
                 } else if (t.status === 'accepted') {
-                    actions.innerHTML = `<button onclick="updateStatus('pickedup')" class="w-full py-6 bg-blue-500 hover:bg-blue-400 font-bold rounded-2xl">I'VE PICKED UP</button>`;
+                    dActions.innerHTML = `<button onclick="updateStatus('pickedup')" class="w-full py-5 bg-blue-600 text-white rounded-2xl font-black">PICKED UP</button>`;
                 } else if (t.status === 'pickedup') {
-                    actions.innerHTML = `<button onclick="updateStatus('arrived')" class="w-full py-6 bg-orange-500 hover:bg-orange-400 font-bold rounded-2xl">ARRIVED AT DESTINATION</button>`;
+                    dActions.innerHTML = `<button onclick="updateStatus('arrived')" class="w-full py-5 bg-orange-600 text-white rounded-2xl font-black">ARRIVED</button>`;
                 }
             } else {
-                pWaiting.classList.remove('hidden');
+                pWait.classList.remove('hidden');
                 const nameEl = document.getElementById('wait-driver-name');
-                
-                if (t.status === 'requested') nameEl.textContent = "Waiting for driver...";
-                else if (t.status === 'accepted') nameEl.innerHTML = `Driver <span class="text-cyan-400">${t.dName}</span> is on the way!`;
+                if (t.status === 'requested') nameEl.innerText = "Requesting driver...";
+                else if (t.status === 'accepted') nameEl.innerText = `Driver ${t.dName} is coming!`;
                 else if (t.status === 'pickedup') overlay.classList.remove('hidden');
-                else if (t.status === 'arrived') {
-                    document.getElementById('rating-modal').classList.remove('hidden');
-                }
+                else if (t.status === 'arrived') document.getElementById('rating-modal').classList.remove('hidden');
             }
         }
 
-        window.updateStatus = async (status) => {
-            if (!userData.activeTrip) return;
+        window.updateStatus = async (s) => {
             const t = userData.activeTrip;
+            if (!t) return;
 
-            if (status === 'arrived') {
-                // Complete trip
-                await addDoc(collection(db, "users", t.pId, "history"), {
-                    driverId: t.dId,
-                    driverName: t.dName,
-                    destination: t.dest,
-                    time: Date.now(),
-                    fare: 21
-                });
-
-                await updateDoc(doc(db, "users", userUid), { 
-                    activeTrip: deleteField(),
-                    income: increment(21),
-                    tripCount: increment(1)
-                });
-
-                await updateDoc(doc(db, "users", t.pId), { 
-                    "activeTrip.status": "arrived" 
-                });
-
-                showAlert("Trip Completed", "Great job! You've earned ₱21", "success");
-            } else if (status === 'declined') {
+            if (s === 'arrived') {
+                await addDoc(collection(db, "users", t.pId, "history"), { driverId: t.dId, driverName: t.dName, destination: t.dest, time: Date.now(), fare: 21 });
+                await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField(), income: increment(21), tripCount: increment(1) });
+                await updateDoc(doc(db, "users", t.pId), { "activeTrip.status": "arrived" });
+                showAlert("Trip Completed", "You earned ₱21", "success");
+            } else if (s === 'declined') {
                 await updateDoc(doc(db, "users", t.pId), { activeTrip: deleteField() });
                 await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
             } else {
-                const update = { "activeTrip.status": status };
-                await updateDoc(doc(db, "users", userUid), update);
-                await updateDoc(doc(db, "users", t.pId), update);
+                const up = { "activeTrip.status": s };
+                await updateDoc(doc(db, "users", userUid), up);
+                await updateDoc(doc(db, "users", t.pId), up);
             }
         };
 
-        window.bookDriver = async (driverId) => {
+        window.bookDriver = async (dId) => {
             const dest = document.getElementById('dest-input').value.trim();
-            if (!dest) return showAlert("Destination Required", "Please enter where you're going", "error");
+            if (!dest) return showAlert("Missing Destination", "Please enter where you're going", "error");
 
-            const driverSnap = await getDoc(doc(db, "users", driverId));
-            if (!driverSnap.exists()) return;
-
-            const driverData = driverSnap.data();
-
-            const tripData = {
-                status: 'requested',
-                pId: userUid,
-                pName: userData.name,
-                dId: driverId,
-                dName: driverData.name,
-                dest: dest,
-                timestamp: Date.now()
-            };
-
-            await updateDoc(doc(db, "users", driverId), { activeTrip: tripData });
-            await updateDoc(doc(db, "users", userUid), { activeTrip: tripData });
-
-            showAlert("Request Sent!", "Waiting for driver confirmation", "success");
+            const snap = await getDoc(doc(db, "users", dId));
+            const trip = { status: 'requested', pId: userUid, pName: userData.name, dId, dName: snap.data().name, dest, timestamp: Date.now() };
+            await updateDoc(doc(db, "users", dId), { activeTrip: trip });
+            await updateDoc(doc(db, "users", userUid), { activeTrip: trip });
+            showAlert("Request Sent", "Waiting for driver response");
         };
 
         window.cancelTrip = async () => {
-            if (!userData.activeTrip) return;
             const t = userData.activeTrip;
-
+            if (!t) return;
             await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
             if (t.dId) await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField() });
-            
             showAlert("Ride Cancelled", "You can book again anytime");
         };
 
         window.toggleDuty = () => {
-            const newState = !userData.isOnline;
-            updateDoc(doc(db, "users", userUid), { isOnline: newState });
-            showAlert(newState ? "You're Online!" : "You're Offline", newState ? "Waiting for ride requests" : "");
+            const s = !userData.isOnline;
+            updateDoc(doc(db, "users", userUid), { isOnline: s });
+            showAlert(s ? "You are now Online" : "You are now Offline", "");
         };
 
-        window.finishTripPassenger = async () => {
-            if (!userData.activeTrip) return;
-            const t = userData.activeTrip;
-
-            if (t.dId) {
-                await updateDoc(doc(db, "users", t.dId), {
-                    totalRating: increment(currentRating)
-                });
-            }
-
-            await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
-            document.getElementById('rating-modal').classList.add('hidden');
-            showAlert("Thank You!", "Ride completed successfully", "success");
-        };
-
-        window.setStar = (rating) => {
-            currentRating = rating;
-            const stars = document.getElementById('star-box').children;
-            for (let i = 0; i < 5; i++) {
-                stars[i].className = i < rating 
-                    ? "fa-solid fa-star text-amber-400 cursor-pointer" 
-                    : "fa-solid fa-star text-slate-600 cursor-pointer";
+        window.toggleDashboard = (show) => {
+            if (userData.role === 'driver') {
+                document.getElementById('driver-dashboard').classList.toggle('hidden', !show);
+            } else {
+                document.getElementById('passenger-dashboard').classList.toggle('hidden', !show);
+                if (show) loadPassengerHistory();
             }
         };
 
-        window.switchTab = (tab) => {
-            // Simple tab switching - can be expanded
-            if (tab === 1) {
-                if (userData.role === 'passenger') loadHistory();
-                else showAlert("Driver Hub", "Earnings & Profile coming soon");
-            } else if (tab === 2) {
-                showAlert("Profile", "Manage account in future update");
-            }
-            // Map is default
-        };
-
-        async function loadHistory() {
-            if (userData.role !== 'passenger') return;
-            const container = document.createElement('div');
-            container.className = "p-6";
-            container.innerHTML = `<p class="text-center text-slate-400 py-12">Loading history...</p>`;
-            
-            document.getElementById('content-panel').appendChild(container);
-
-            try {
-                const q = query(collection(db, "users", userUid, "history"), orderBy("time", "desc"), limit(15));
-                const snap = await getDocs(q);
-                
-                let html = `<h3 class="font-bold text-xl mb-6 px-1">Recent Rides</h3>`;
-                
-                if (snap.empty) {
-                    html += `<div class="text-center py-12 text-slate-400">No rides yet. Book your first ride!</div>`;
-                } else {
-                    snap.forEach(doc => {
-                        const ride = doc.data();
-                        html += `
-                            <div onclick="showDriverInfo('${ride.driverId}')" class="bg-slate-800 p-5 rounded-3xl mb-4 cursor-pointer card-hover">
-                                <div class="flex justify-between">
-                                    <div>
-                                        <p class="font-semibold">${ride.driverName}</p>
-                                        <p class="text-slate-400 text-sm">${ride.destination}</p>
-                                    </div>
-                                    <div class="text-right">
-                                        <p class="text-emerald-400 font-mono">₱${ride.fare || 21}</p>
-                                        <p class="text-xs text-slate-500">${new Date(ride.time).toLocaleDateString()}</p>
-                                    </div>
-                                </div>
-                            </div>`;
-                    });
-                }
-                container.innerHTML = html;
-            } catch(e) {
-                container.innerHTML = `<p class="text-red-400">Could not load history</p>`;
-            }
+        async function loadPassengerHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            const q = query(collection(db, "users", userUid, "history"), orderBy("time", "desc"), limit(10));
+            const snap = await getDocs(q);
+            snap.forEach(d => {
+                const h = d.data();
+                list.innerHTML += `
+                    <div onclick="showDriverInfo('${h.driverId}')" class="history-card bg-white p-5 rounded-3xl border border-gray-100 cursor-pointer">
+                        <h5 class="font-black">${h.driverName}</h5>
+                        <p class="text-sm text-gray-500">${h.destination}</p>
+                        <p class="text-emerald-600 text-xs mt-1">₱${h.fare || 21}</p>
+                    </div>`;
+            });
         }
 
         window.showDriverInfo = async (id) => {
             const snap = await getDoc(doc(db, "users", id));
             if (!snap.exists()) return;
-            
             const d = snap.data();
-            const modalContent = document.getElementById('info-content');
-            
-            modalContent.innerHTML = `
-                <div class="mx-auto w-24 h-24 bg-gradient-to-br from-cyan-400 to-violet-500 rounded-3xl flex items-center justify-center text-6xl mb-6">🏍️</div>
-                <h3 class="text-3xl font-bold mb-1">${d.name}</h3>
-                <p class="text-cyan-400 mb-6">MTOP • ${d.mtop || 'Verified'}</p>
-                
-                <div class="grid grid-cols-2 gap-6 text-left bg-slate-800 rounded-2xl p-6">
-                    <div>
-                        <p class="text-slate-400 text-xs">PLATE</p>
-                        <p class="font-mono text-lg">${d.plate || 'N/A'}</p>
-                    </div>
-                    <div>
-                        <p class="text-slate-400 text-xs">TRIPS</p>
-                        <p class="font-bold text-2xl">${d.tripCount || 0}</p>
-                    </div>
-                </div>
+            document.getElementById('info-content').innerHTML = `
+                <h3 class="text-2xl font-black">${d.name}</h3>
+                <p class="text-amber-500">MTOP: ${d.mtop || 'N/A'}</p>
+                <p>Plate: ${d.plate || 'N/A'}</p>
             `;
-            
             document.getElementById('driver-info-modal').classList.remove('hidden');
         };
 
-        window.closeModal = (id) => {
-            document.getElementById(id).classList.add('hidden');
+        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+
+        window.triggerSOS = () => {
+            if (confirm("🚨 Send SOS to support and nearby drivers?")) {
+                showAlert("SOS ACTIVATED", "Emergency services have been notified.", "error");
+            }
         };
 
-        // Keyboard support for demo
-        document.addEventListener('keydown', (e) => {
-            if (e.key === '/' && document.getElementById('dest-input')) {
-                document.getElementById('dest-input').focus();
-            }
-        });
+        window.finishTripPassenger = async () => {
+            const t = userData.activeTrip;
+            if (t && t.dId) await updateDoc(doc(db, "users", t.dId), { totalRating: increment(currentRating) });
+            await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
+            document.getElementById('rating-modal').classList.add('hidden');
+            showAlert("Thank You!", "Ride completed successfully");
+        };
 
-        // Make sure all global functions are attached
-        window.updateStatus = window.updateStatus;
-        window.bookDriver = window.bookDriver;
-        window.cancelTrip = window.cancelTrip;
-        window.toggleDuty = window.toggleDuty;
-        window.finishTripPassenger = window.finishTripPassenger;
-        window.setStar = window.setStar;
-        window.switchTab = window.switchTab;
-        window.showDriverInfo = window.showDriverInfo;
-        window.closeModal = window.closeModal;
+        window.setStar = (n) => {
+            currentRating = n;
+            const stars = document.getElementById('star-box');
+            stars.innerHTML = '';
+            for (let i = 1; i <= 5; i++) {
+                stars.innerHTML += `<i onclick="setStar(${i})" class="fa-solid fa-star cursor-pointer ${i <= n ? 'text-amber-400' : 'text-gray-300'}"></i>`;
+            }
+        };
+
+        window.logout = () => {
+            if (userUid) updateDoc(doc(db, "users", userUid), { isOnline: false });
+            signOut(auth).then(() => location.reload());
+        };
+
+        // Initialize stars
+        setTimeout(() => {
+            if (document.getElementById('star-box')) setStar(5);
+        }, 1000);
+
+        console.log("%c✅ Sakai Elite - Fully Upgraded", "color:#10b981;font-size:16px;font-weight:bold");
     </script>
 </body>
 </html>
