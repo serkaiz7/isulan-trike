@@ -27,7 +27,7 @@
 <body class="bg-slate-50 flex flex-col h-screen">
 
     <div class="marquee-container">
-        <div class="marquee-content">THANK YOU FOR CHOOSING SAKAI • ENJOY A SAFE AND COMFORTABLE RIDE • LOWEST RATES IN ISULAN • SAKAI: THE FUTURE OF LOCAL TRANSPORT • THANK YOU FOR CHOOSING SAKAI • </div>
+        <div class="marquee-content">THANK YOU FOR CHOOSING SAKAI • ENJOY A SAFE AND COMFORTABLE RIDE • LOWEST RATES IN ISULAN • SAKAI: THE FUTURE OF LOCAL TRANSPORT • </div>
     </div>
 
     <div id="auth-screen" class="fixed inset-0 z-[9000] bg-emerald-600 flex flex-col p-8 justify-center text-white">
@@ -88,7 +88,7 @@
         <div id="d-cancel-notif" class="hidden fixed inset-x-6 top-20 z-[8500] bg-white rounded-[2rem] p-6 shadow-2xl border-2 border-red-500">
             <div class="flex items-center gap-4">
                 <div class="bg-red-100 p-3 rounded-full text-red-600"><i class="fa-solid fa-circle-exclamation text-xl"></i></div>
-                <div><h5 class="font-black text-gray-800 uppercase">Booking Cancelled</h5><p class="text-xs font-bold text-gray-500">The passenger changed their mind.</p></div>
+                <div><h5 class="font-black text-gray-800 uppercase" id="d-notif-title">Booking Cancelled</h5><p class="text-xs font-bold text-gray-500" id="d-notif-body">The passenger changed their mind.</p></div>
             </div>
         </div>
 
@@ -98,9 +98,6 @@
                 <h2 class="text-2xl font-black glow-text uppercase italic">Heading to Destination</h2>
             </div>
             <p class="text-[10px] font-bold tracking-widest uppercase opacity-70 mb-4">Fixed Fare: ₱21.00</p>
-            <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden relative">
-                <div class="absolute inset-0 bg-emerald-400/30 animate-[progress_2s_infinite]" style="width: 30%"></div>
-            </div>
         </div>
 
         <div id="content-panel" class="flex-1 bg-white rounded-t-[2.5rem] -mt-8 z-[1001] shadow-2xl p-6 overflow-y-auto pb-28">
@@ -127,7 +124,7 @@
 
         <div class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-gray-100 p-4 flex justify-around items-center z-[7000]">
             <button onclick="toggleDashboard(false)" class="nav-btn active"><i class="fa-solid fa-map-location-dot text-xl mb-1"></i>Map</button>
-            <button id="nav-dash" onclick="toggleDashboard(true)" class="nav-btn hidden"><i class="fa-solid fa-chart-pie text-xl mb-1"></i>Dashboard</button>
+            <button id="nav-dash" onclick="toggleDashboard(true)" class="nav-btn hidden"><i class="fa-solid fa-chart-pie text-xl mb-1"></i>Hub</button>
             <button onclick="logout()" class="nav-btn text-red-400"><i class="fa-solid fa-power-off text-xl mb-1"></i>Logout</button>
         </div>
     </div>
@@ -161,7 +158,8 @@
         const db = getFirestore(app);
         const COLL = "users";
 
-        let userUid, userData, map, markers = {}, currentRating = 5, wasInTrip = false;
+        let userUid, userData, map, markers = {}, currentRating = 5;
+        let lastTripState = null; // Track trip state to differentiate Cancel vs Success
 
         window.handleAuth = async (t) => {
             const e = document.getElementById('auth-email').value;
@@ -197,13 +195,7 @@
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-ui').classList.replace('hidden', 'flex');
             document.getElementById(userData.role + '-panel').classList.remove('hidden');
-            if(userData.role === 'driver') {
-                document.getElementById('nav-dash').classList.remove('hidden');
-                // Pre-fill dashboard profile inputs
-                document.getElementById('edit-name').value = userData.name || '';
-                document.getElementById('edit-plate').value = userData.plate || '';
-                document.getElementById('edit-phone').value = userData.phone || '';
-            }
+            if(userData.role === 'driver') document.getElementById('nav-dash').classList.remove('hidden');
             
             if(!map) {
                 map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 16);
@@ -221,19 +213,24 @@
             onSnapshot(collection(db, COLL), (snap) => {
                 const dList = document.getElementById('driver-list');
                 if(userData.role === 'passenger') dList.innerHTML = '';
-                
-                const activeIdsInDb = new Set();
                 const now = Date.now();
 
                 snap.forEach(d => {
                     const data = d.data();
                     const id = d.id;
-                    activeIdsInDb.add(id);
 
                     if(id === userUid) { 
-                        if (userData.role === 'driver' && wasInTrip && !data.activeTrip) showDriverCancelNotif();
+                        // SMART CANCELLATION CHECK
+                        if (userData.role === 'driver' && userData.activeTrip && !data.activeTrip) {
+                            if (lastTripState === 'requested' || lastTripState === 'accepted') {
+                                showDriverAlert("Booking Cancelled", "The passenger changed their mind.", "border-red-500", "text-red-600");
+                            } else if (lastTripState === 'arrived') {
+                                showDriverAlert("Trip Completed", "Payment received and record saved!", "border-emerald-500", "text-emerald-600");
+                            }
+                        }
+                        
                         userData = data; 
-                        wasInTrip = !!userData.activeTrip;
+                        lastTripState = userData.activeTrip ? userData.activeTrip.status : null;
                         handleStatusLogic(); 
                         if(userData.role === 'driver') updateDashboardStats();
                         return; 
@@ -243,29 +240,24 @@
                     const shouldBeVisible = isFresh && data.lat && data.lng && (data.isOnline || data.role === 'passenger');
 
                     if(shouldBeVisible) {
-                        if(markers[id]) {
-                            markers[id].setLatLng([data.lat, data.lng]);
-                        } else {
-                            const iconHtml = data.role === 'driver' 
-                                ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` 
-                                : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`;
-                            markers[id] = L.marker([data.lat, data.lng], { 
-                                icon: L.divIcon({ className: '', html: iconHtml, iconSize: [30, 30] }) 
-                            }).addTo(map);
-                        }
-                    } else {
-                        if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
-                    }
+                        if(markers[id]) markers[id].setLatLng([data.lat, data.lng]);
+                        else markers[id] = L.marker([data.lat, data.lng], { 
+                            icon: L.divIcon({ className: '', html: data.role === 'driver' ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`, iconSize: [30, 30] }) 
+                        }).addTo(map);
+                    } else if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
 
-                    if(userData.role === 'passenger' && data.role === 'driver' && data.isOnline && isFresh && !data.activeTrip) {
-                        renderDriverCard(id, data);
-                    }
-                });
-
-                Object.keys(markers).forEach(mId => {
-                    if (!activeIdsInDb.has(mId)) { map.removeLayer(markers[mId]); delete markers[mId]; }
+                    if(userData.role === 'passenger' && data.role === 'driver' && data.isOnline && isFresh && !data.activeTrip) renderDriverCard(id, data);
                 });
             });
+        }
+
+        function showDriverAlert(title, body, border, iconColor) {
+            const el = document.getElementById('d-cancel-notif');
+            document.getElementById('d-notif-title').innerText = title;
+            document.getElementById('d-notif-body').innerText = body;
+            el.className = `fixed inset-x-6 top-20 z-[8500] bg-white rounded-[2rem] p-6 shadow-2xl border-2 ${border}`;
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 6000);
         }
 
         function updateDashboardStats() {
@@ -307,12 +299,6 @@
             }
         }
 
-        function showDriverCancelNotif() {
-            const dNotif = document.getElementById('d-cancel-notif');
-            dNotif.classList.remove('hidden');
-            setTimeout(() => dNotif.classList.add('hidden'), 6000);
-        }
-
         window.cancelTrip = async () => {
             const t = userData.activeTrip;
             if(!t || !confirm("Cancel ride?")) return;
@@ -351,13 +337,18 @@
 
         window.toggleDashboard = (s) => {
             document.getElementById('driver-dashboard').classList.toggle('hidden', !s);
-            if(s) updateDashboardStats();
+            if(s) {
+                document.getElementById('edit-name').value = userData.name || '';
+                document.getElementById('edit-plate').value = userData.plate || '';
+                document.getElementById('edit-phone').value = userData.phone || '';
+                updateDashboardStats();
+            }
         };
         
         window.updateProfile = async () => {
             const n = document.getElementById('edit-name').value, pl = document.getElementById('edit-plate').value, ph = document.getElementById('edit-phone').value;
             await updateDoc(doc(db, COLL, userUid), { name: n, plate: pl, phone: ph });
-            alert("Profile Saved!"); toggleDashboard(false);
+            alert("Profile Updated!"); toggleDashboard(false);
         };
 
         window.setStar = (n) => {
