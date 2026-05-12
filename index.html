@@ -42,21 +42,34 @@
         <div id="auth-forms" class="space-y-4 max-w-xs mx-auto w-full">
             <input id="auth-email" type="email" placeholder="Email" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold placeholder-white/50">
             <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold placeholder-white/50">
+            
             <div id="login-actions" class="space-y-3">
                 <button onclick="handleAuth('login')" class="w-full py-4 bg-white text-emerald-600 rounded-2xl font-black shadow-lg">Sign In</button>
                 <button onclick="showRegisterUI()" class="w-full py-4 bg-emerald-800 text-white border border-emerald-400 rounded-2xl font-black">Create Account</button>
             </div>
+
             <div id="reg-ui" class="hidden space-y-4 pt-4 border-t border-white/20">
                 <div class="grid grid-cols-2 gap-4">
-                    <div onclick="selectRole('passenger')" id="role-p" class="role-card p-4 border-2 border-white/30 rounded-2xl text-center cursor-pointer"><i class="fa-solid fa-person-walking text-2xl mb-2"></i><p class="text-[10px] font-black uppercase">Passenger</p></div>
-                    <div onclick="selectRole('driver')" id="role-d" class="role-card p-4 border-2 border-white/30 rounded-2xl text-center cursor-pointer"><i class="fa-solid fa-motorcycle text-2xl mb-2"></i><p class="text-[10px] font-black uppercase">Driver</p></div>
+                    <div onclick="selectRole('passenger')" id="role-p" class="role-card p-4 border-2 border-white/30 rounded-2xl text-center cursor-pointer">
+                        <i class="fa-solid fa-person-walking text-2xl mb-2"></i>
+                        <p class="text-[10px] font-black uppercase">Passenger</p>
+                    </div>
+                    <div onclick="selectRole('driver')" id="role-d" class="role-card p-4 border-2 border-white/30 rounded-2xl text-center cursor-pointer">
+                        <i class="fa-solid fa-motorcycle text-2xl mb-2"></i>
+                        <p class="text-[10px] font-black uppercase">Driver</p>
+                    </div>
                 </div>
                 <input id="reg-alias" type="text" placeholder="Alias Name" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold">
                 <div id="driver-fields" class="hidden space-y-4">
                     <input id="reg-mtop" type="text" placeholder="MTOP" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold">
                     <input id="reg-plate" type="text" placeholder="Plate" class="w-full p-4 bg-white/20 border border-white/30 rounded-2xl outline-none text-white font-bold">
                 </div>
-                <button onclick="handleAuth('register')" class="w-full py-4 bg-amber-400 text-emerald-900 rounded-2xl font-black shadow-lg">Complete</button>
+                <div class="space-y-3">
+                    <button onclick="handleAuth('register')" class="w-full py-4 bg-amber-400 text-emerald-900 rounded-2xl font-black shadow-lg">Complete Registration</button>
+                    <button onclick="showLoginUI()" class="w-full py-3 bg-transparent text-white/70 rounded-2xl font-bold text-sm">
+                        <i class="fa-solid fa-arrow-left mr-2"></i>Back to Login
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -173,24 +186,70 @@
             setTimeout(() => el.classList.add('hidden'), 5000);
         };
 
-        window.showRegisterUI = () => { document.getElementById('login-actions').classList.add('hidden'); document.getElementById('reg-ui').classList.remove('hidden'); };
-        window.selectRole = (role) => { selectedRole = role; document.getElementById('role-p').className = role === 'passenger' ? 'role-card active p-4 border-2 rounded-2xl text-center' : 'role-card p-4 border-2 border-white/30 rounded-2xl text-center'; document.getElementById('role-d').className = role === 'driver' ? 'role-card active p-4 border-2 rounded-2xl text-center' : 'role-card p-4 border-2 border-white/30 rounded-2xl text-center'; document.getElementById('driver-fields').classList.toggle('hidden', role !== 'driver'); };
+        window.showRegisterUI = () => { 
+            document.getElementById('login-actions').classList.add('hidden'); 
+            document.getElementById('reg-ui').classList.remove('hidden'); 
+        };
+
+        window.showLoginUI = () => {
+            document.getElementById('login-actions').classList.remove('hidden'); 
+            document.getElementById('reg-ui').classList.add('hidden');
+            // Reset selected role UI
+            selectedRole = null;
+            document.getElementById('role-p').classList.remove('active');
+            document.getElementById('role-d').classList.remove('active');
+            document.getElementById('driver-fields').classList.add('hidden');
+        };
+
+        window.selectRole = (role) => { 
+            selectedRole = role; 
+            document.getElementById('role-p').className = role === 'passenger' ? 'role-card active p-4 border-2 rounded-2xl text-center cursor-pointer' : 'role-card p-4 border-2 border-white/30 rounded-2xl text-center cursor-pointer'; 
+            document.getElementById('role-d').className = role === 'driver' ? 'role-card active p-4 border-2 rounded-2xl text-center cursor-pointer' : 'role-card p-4 border-2 border-white/30 rounded-2xl text-center cursor-pointer'; 
+            document.getElementById('driver-fields').classList.toggle('hidden', role !== 'driver'); 
+        };
 
         window.handleAuth = async (t) => {
             const e = document.getElementById('auth-email').value, p = document.getElementById('auth-pass').value;
+            if(!e || !p) return alert("Please fill in email and password.");
+            
             try {
                 if(t === 'login') await signInWithEmailAndPassword(auth, e, p);
                 else {
                     const alias = document.getElementById('reg-alias').value;
+                    if(!selectedRole) return alert("Please select a role.");
+                    if(!alias) return alert("Please enter an alias.");
+                    
                     const cred = await createUserWithEmailAndPassword(auth, e, p);
-                    await setDoc(doc(db, COLL, cred.user.uid), { name: alias, role: selectedRole, isOnline: false, lat: 6.6294, lng: 124.605, income: 0, tripCount: 0, plate: document.getElementById('reg-plate').value || "", mtop: document.getElementById('reg-mtop').value || "", lastActive: Date.now() });
+                    await setDoc(doc(db, COLL, cred.user.uid), { 
+                        name: alias, 
+                        role: selectedRole, 
+                        isOnline: false, 
+                        lat: 6.6294, 
+                        lng: 124.605, 
+                        income: 0, 
+                        tripCount: 0, 
+                        totalRating: 0,
+                        plate: document.getElementById('reg-plate').value || "", 
+                        mtop: document.getElementById('reg-mtop').value || "", 
+                        lastActive: Date.now() 
+                    });
                 }
             } catch (err) { alert(err.message); }
         };
 
         onAuthStateChanged(auth, async (u) => {
-            if (u) { userUid = u.uid; const snap = await getDoc(doc(db, COLL, userUid)); if (snap.exists()) { userData = snap.data(); initApp(); } else signOut(auth); }
-            else { document.getElementById('auth-screen').classList.remove('hidden'); document.getElementById('app-ui').classList.add('hidden'); }
+            if (u) { 
+                userUid = u.uid; 
+                const snap = await getDoc(doc(db, COLL, userUid)); 
+                if (snap.exists()) { 
+                    userData = snap.data(); 
+                    initApp(); 
+                } else signOut(auth); 
+            }
+            else { 
+                document.getElementById('auth-screen').classList.remove('hidden'); 
+                document.getElementById('app-ui').classList.add('hidden'); 
+            }
         });
 
         function initApp() {
@@ -216,20 +275,22 @@
                 snap.forEach(d => {
                     const data = d.data(), id = d.id;
                     if(id === userUid) {
-                        // Driver Notification for passenger cancellation
                         if (userData.role === 'driver' && userData.activeTrip && !data.activeTrip && (lastTripState === 'requested' || lastTripState === 'accepted')) {
                              showAlert("Trip Cancelled", "error");
                         }
                         userData = data;
                         lastTripState = userData.activeTrip ? userData.activeTrip.status : null;
                         handleStatusLogic();
-                        if(userData.role === 'driver') { document.getElementById('stat-income').innerText = userData.income || 0; document.getElementById('stat-trips').innerText = userData.tripCount || 0; }
+                        if(userData.role === 'driver') { 
+                            document.getElementById('stat-income').innerText = userData.income || 0; 
+                            document.getElementById('stat-trips').innerText = userData.tripCount || 0; 
+                        }
                     }
 
                     if (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId) && id !== userUid) otherPartyData = data;
 
                     const isFresh = data.lastActive && (now - data.lastActive < 120000);
-                    if(isFresh && data.lat && data.lng && (data.isOnline || data.role === 'passenger')) {
+                    if(isFresh && data.lat && data.lng && (data.isOnline || data.role === 'passenger' || (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId)))) {
                         if(markers[id]) markers[id].setLatLng([data.lat, data.lng]);
                         else markers[id] = L.marker([data.lat, data.lng], { icon: L.divIcon({ className: '', html: data.role === 'driver' ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`, iconSize: [30, 30] }) }).addTo(map);
                     } else if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
@@ -286,7 +347,6 @@
                 await updateDoc(doc(db, COLL, t.pId), { "activeTrip.status": "declined" });
                 await updateDoc(doc(db, COLL, userUid), { activeTrip: deleteField() });
             } else if (s === 'arrived') {
-                // Show driver success notification immediately
                 showAlert("Success", "Income recorded and trip completed.", "success");
                 await updateDoc(doc(db, COLL, userUid), { "activeTrip.status": "arrived" });
                 await updateDoc(doc(db, COLL, t.pId), { "activeTrip.status": "arrived" });
@@ -316,10 +376,37 @@
             document.getElementById('rating-modal').classList.add('hidden');
         };
 
-        window.toggleDuty = () => { const s = !userData.isOnline; updateDoc(doc(db, COLL, userUid), { isOnline: s }); const btn = document.getElementById('duty-btn'); btn.innerText = s ? "Go Offline" : "Go Online"; btn.className = s ? "w-full py-12 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl uppercase tracking-tighter" : "w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl uppercase tracking-tighter"; };
-        window.toggleDashboard = (s) => { document.getElementById('driver-dashboard').classList.toggle('hidden', !s); if(s) document.getElementById('edit-name').value = userData.name; };
-        window.logout = async () => { if (userUid) await updateDoc(doc(db, COLL, userUid), { isOnline: false }); signOut(auth).then(() => location.reload()); };
-        window.setStar = (n) => { currentRating = n; const s = document.getElementById('star-box').children; for(let i=0; i<5; i++) s[i].className = i < n ? 'fa-solid fa-star text-amber-400' : 'fa-solid fa-star text-gray-200'; };
+        window.toggleDuty = () => { 
+            const s = !userData.isOnline; 
+            updateDoc(doc(db, COLL, userUid), { isOnline: s }); 
+            const btn = document.getElementById('duty-btn'); 
+            btn.innerText = s ? "Go Offline" : "Go Online"; 
+            btn.className = s ? "w-full py-12 bg-emerald-600 text-white rounded-[2.5rem] font-black text-3xl uppercase tracking-tighter" : "w-full py-12 bg-gray-100 text-gray-400 rounded-[2.5rem] font-black text-3xl uppercase tracking-tighter"; 
+        };
+
+        window.toggleDashboard = (s) => { 
+            document.getElementById('driver-dashboard').classList.toggle('hidden', !s); 
+            if(s) document.getElementById('edit-name').value = userData.name; 
+        };
+
+        window.updateProfile = async () => {
+            const name = document.getElementById('edit-name').value;
+            const mtop = document.getElementById('edit-mtop').value;
+            await updateDoc(doc(db, COLL, userUid), { name, mtop });
+            showAlert("Updated", "Profile information saved.", "success");
+            toggleDashboard(false);
+        };
+
+        window.logout = async () => { 
+            if (userUid) await updateDoc(doc(db, COLL, userUid), { isOnline: false }); 
+            signOut(auth).then(() => location.reload()); 
+        };
+
+        window.setStar = (n) => { 
+            currentRating = n; 
+            const s = document.getElementById('star-box').children; 
+            for(let i=0; i<5; i++) s[i].className = i < n ? 'fa-solid fa-star text-amber-400' : 'fa-solid fa-star text-gray-200'; 
+        };
     </script>
 </body>
 </html>
