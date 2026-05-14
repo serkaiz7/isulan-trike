@@ -54,7 +54,16 @@
             z-index: 1000; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 -15px 30px rgba(0,0,0,0.2);
         }
-        #status-overlay.minimized { transform: translateY(calc(100% - 80px)); }
+        #status-overlay.minimized { transform: translateY(calc(100% - 85px)); }
+        
+        /* Floating Restore Button */
+        #restore-overlay-btn {
+            position: absolute; bottom: 100px; right: 20px; z-index: 999;
+            width: 50px; height: 50px; background: #fbbf24; color: #064e3b;
+            border-radius: 15px; display: none; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: bounce 2s infinite;
+        }
+
         .history-item { border-left: 4px solid #10b981; }
     </style>
 </head>
@@ -106,15 +115,9 @@
             <div id="map"></div>
         </div>
 
-        <div id="alert-popup" class="hidden fixed inset-x-6 top-6 z-[8500] bg-white rounded-3xl p-5 shadow-2xl border-l-4 border-emerald-500">
-            <div class="flex items-center gap-4">
-                <i id="alert-icon" class="fa-solid text-2xl"></i>
-                <div class="flex-1">
-                    <h5 id="alert-title" class="font-black text-sm"></h5>
-                    <p id="alert-body" class="text-xs text-gray-500"></p>
-                </div>
-            </div>
-        </div>
+        <button id="restore-overlay-btn" onclick="toggleOverlaySize(false)">
+            <i class="fa-solid fa-chevron-up text-xl"></i>
+        </button>
 
         <div id="booking-modal" class="hidden fixed inset-0 z-[9500] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
             <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
@@ -133,7 +136,7 @@
         </div>
 
         <div id="status-overlay" class="hidden flex flex-col p-6 text-white overflow-hidden">
-            <div class="flex justify-between items-center mb-4 cursor-pointer" onclick="toggleOverlaySize()">
+            <div class="flex justify-between items-center mb-4 cursor-pointer" onclick="toggleOverlaySize(true)">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center text-emerald-900">
                         <i class="fa-solid fa-motorcycle animate-bounce"></i>
@@ -223,28 +226,33 @@
             <h2 class="text-4xl font-black tracking-tighter">Hub</h2>
             <button onclick="toggleDashboard(false)" class="w-10 h-10 bg-white rounded-full shadow-sm text-gray-400">✕</button>
         </div>
-        <div id="history-section" class="hidden space-y-4 mb-8">
-            <h4 class="font-black text-gray-800 uppercase text-xs tracking-widest">Ride History</h4>
-            <div id="ride-history-list" class="space-y-3"></div>
-        </div>
-        <div id="driver-stats" class="hidden grid grid-cols-1 gap-4 mb-8">
-            <div class="bg-emerald-600 p-8 rounded-[2.5rem] text-white shadow-xl">
-                <p class="text-xs font-bold opacity-70 uppercase tracking-widest">Total Earnings</p>
-                <p class="text-5xl font-black mt-2">₱<span id="stat-income">0</span></p>
+
+        <div id="dashboard-content">
+            <div id="driver-stats" class="hidden grid grid-cols-1 gap-4 mb-8">
+                <div class="bg-emerald-600 p-8 rounded-[2.5rem] text-white shadow-xl">
+                    <p class="text-xs font-bold opacity-70 uppercase tracking-widest">Total Earnings</p>
+                    <p class="text-5xl font-black mt-2">₱<span id="stat-income">0</span></p>
+                </div>
+                <div class="bg-white p-6 rounded-3xl flex justify-between items-center shadow-sm">
+                    <p class="text-gray-500 font-bold">Trips Completed</p>
+                    <p class="text-3xl font-black text-emerald-600" id="stat-trips">0</p>
+                </div>
             </div>
-            <div class="bg-white p-6 rounded-3xl flex justify-between items-center shadow-sm">
-                <p class="text-gray-500 font-bold">Trips Completed</p>
-                <p class="text-3xl font-black text-emerald-600" id="stat-trips">0</p>
+
+            <div id="history-section" class="hidden space-y-4 mb-8">
+                <h4 class="font-black text-gray-800 uppercase text-xs tracking-widest">Recent Activity</h4>
+                <div id="ride-history-list" class="space-y-3"></div>
             </div>
-        </div>
-        <div class="bg-white rounded-[2rem] p-6 shadow-sm space-y-4">
-            <h4 class="font-black text-gray-800 uppercase text-xs tracking-widest mb-2">Account Details</h4>
-            <input id="edit-name" type="text" placeholder="Name" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
-            <div id="driver-only-inputs" class="hidden space-y-4">
-                <input id="edit-mtop" type="text" placeholder="MTOP" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
-                <input id="edit-plate" type="text" placeholder="Plate" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
+
+            <div class="bg-white rounded-[2rem] p-6 shadow-sm space-y-4">
+                <h4 class="font-black text-gray-800 uppercase text-xs tracking-widest mb-2">Profile Settings</h4>
+                <input id="edit-name" type="text" placeholder="Name" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
+                <div id="driver-only-inputs" class="hidden space-y-4">
+                    <input id="edit-mtop" type="text" placeholder="MTOP" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
+                    <input id="edit-plate" type="text" placeholder="Plate" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
+                </div>
+                <button onclick="updateProfile()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-lg">UPDATE PROFILE</button>
             </div>
-            <button onclick="updateProfile()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-lg">SAVE CHANGES</button>
         </div>
     </div>
 
@@ -277,16 +285,33 @@
 
         let userUid, userData, map, markers = {}, routingControl = null, currentRating = 5, selectedRole = null, isOverlayMinimized = false;
 
-        // RESTORED: Open/Close Modal Functions
+        // Toggle logic with Restore Arrow support
+        window.toggleOverlaySize = (shouldMinimize) => {
+            const overlay = document.getElementById('status-overlay');
+            const icon = document.getElementById('toggle-icon');
+            const restoreBtn = document.getElementById('restore-overlay-btn');
+            const mapArea = document.getElementById('map-area');
+            
+            isOverlayMinimized = shouldMinimize;
+            
+            if (isOverlayMinimized) {
+                overlay.classList.add('minimized');
+                restoreBtn.style.display = 'flex';
+                mapArea.style.height = '85vh';
+            } else {
+                overlay.classList.remove('minimized');
+                restoreBtn.style.display = 'none';
+                mapArea.style.height = '45vh';
+            }
+            setTimeout(() => map.invalidateSize(), 300);
+        };
+
         window.openBookingModal = (dId, dName) => {
             const select = document.getElementById('dest-select');
             if (parseInt(select.value) === 0) return alert("Select destination first!");
             document.getElementById('modal-driver-name').innerText = dName;
             document.getElementById('booking-modal').classList.remove('hidden');
-            document.getElementById('confirm-booking-btn').onclick = () => {
-                confirmBooking(dId);
-                closeBookingModal();
-            };
+            document.getElementById('confirm-booking-btn').onclick = () => { confirmBooking(dId); closeBookingModal(); };
         };
 
         window.closeBookingModal = () => document.getElementById('booking-modal').classList.add('hidden');
@@ -301,16 +326,6 @@
             await updateDoc(doc(db, "users", dId), { activeTrip: trip });
             await updateDoc(doc(db, "users", userUid), { activeTrip: trip });
         }
-
-        window.toggleOverlaySize = () => {
-            const overlay = document.getElementById('status-overlay');
-            const icon = document.getElementById('toggle-icon');
-            const mapArea = document.getElementById('map-area');
-            isOverlayMinimized = !isOverlayMinimized;
-            if (isOverlayMinimized) { overlay.classList.add('minimized'); icon.classList.replace('fa-chevron-down', 'fa-chevron-up'); mapArea.style.height = '85vh'; }
-            else { overlay.classList.remove('minimized'); icon.classList.replace('fa-chevron-up', 'fa-chevron-down'); mapArea.style.height = '45vh'; }
-            setTimeout(() => map.invalidateSize(), 300);
-        };
 
         function drawBoundaries() {
             const boundaries = [{ name: 'Center Bound', pos: [6.632, 124.603], color: '#10b981', radius: 1000 }, { name: 'North Bound', pos: [6.650, 124.600], color: '#3b82f6', radius: 2500 }, { name: 'South Bound', pos: [6.600, 124.610], color: '#f59e0b', radius: 3000 }, { name: 'West Bound', pos: [6.630, 124.570], color: '#ef4444', radius: 3500 }];
@@ -350,22 +365,15 @@
             else { document.getElementById('auth-screen').classList.remove('hidden'); document.getElementById('app-ui').classList.add('hidden'); }
         });
 
-        function updateMarquee(role) {
-            const marquee = document.getElementById('dynamic-marquee');
-            marquee.innerText = role === 'driver' ? "🛠️ DRIVER MODE ACTIVE • STAY ONLINE TO RECEIVE REQUESTS • OFFICIAL RATES APPLY • 🛠️" : "👋 PASSENGER MODE • SELECT DESTINATION TO BOOK • CHECK FARE RATES • 👋";
-        }
-
         function initApp() {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-ui').classList.replace('hidden', 'flex');
             document.getElementById(userData.role + '-panel').classList.remove('hidden');
-            updateMarquee(userData.role);
             setStar(5);
             if (!map) {
                 map = L.map('map', { zoomControl: false, attributionControl: false }).setView([6.6294, 124.605], 16);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
                 drawBoundaries();
-                setTimeout(() => map.invalidateSize(), 500);
             }
             navigator.geolocation.watchPosition(p => updateDoc(doc(db, "users", userUid), { lat: p.coords.latitude, lng: p.coords.longitude, lastActive: Date.now() }), null, { enableHighAccuracy: true });
             syncData();
@@ -388,7 +396,6 @@
                     } else if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
                     if (userData.role === 'passenger' && data.role === 'driver' && data.isOnline && isFresh && !data.activeTrip) {
                         const avg = data.tripCount > 0 ? (data.totalRating / data.tripCount).toFixed(1) : "5.0";
-                        // RESTORED: Call openBookingModal instead of bookDriver
                         dList.innerHTML += `<div class="p-5 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm" onclick="openBookingModal('${id}', '${data.name}')">
                             <div><p class="font-black text-gray-800">${data.name}</p><p class="text-[10px] text-amber-500 font-bold uppercase">⭐ ${avg} • Plate: ${data.plate || 'N/A'}</p></div>
                             <button class="bg-emerald-600 text-white px-6 py-2 rounded-2xl text-xs font-black">BOOK</button></div>`;
@@ -405,9 +412,12 @@
             const pWait = document.getElementById('p-waiting-card');
             const dActions = document.getElementById('driver-actions');
             const contentPanel = document.getElementById('content-panel');
-            const mapArea = document.getElementById('map-area');
-            overlay.classList.add('hidden'); tripCard.classList.add('hidden'); pWait.classList.add('hidden'); contentPanel.classList.remove('hidden');
-            if (!userData.activeTrip) { mapArea.style.height = '45vh'; return; }
+            const restoreBtn = document.getElementById('restore-overlay-btn');
+            
+            overlay.classList.add('hidden'); tripCard.classList.add('hidden'); pWait.classList.add('hidden'); contentPanel.classList.remove('hidden'); restoreBtn.style.display = 'none';
+
+            if (!userData.activeTrip) { document.getElementById('map-area').style.height = '45vh'; return; }
+            
             const t = userData.activeTrip;
             if (userData.role === 'driver') {
                 tripCard.classList.remove('hidden'); document.getElementById('trip-p-name').innerText = t.pName; document.getElementById('trip-p-dest').innerText = "To: " + t.dest; document.getElementById('trip-p-fare').innerText = "Fare: ₱" + t.fare;
@@ -415,17 +425,22 @@
                 else if (t.status === 'accepted') dActions.innerHTML = `<button onclick="updateStatus('pickedup')" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black">PICKED UP</button>`;
                 else if (t.status === 'pickedup') dActions.innerHTML = `<button onclick="updateStatus('arrived')" class="w-full py-4 bg-orange-600 text-white rounded-2xl font-black">COMPLETE RIDE</button>`;
             } else {
-                pWait.classList.remove('hidden'); document.getElementById('active-fare-display').innerText = "₱" + t.fare; const nameEl = document.getElementById('wait-driver-name');
-                if (t.status === 'requested') nameEl.innerText = "Finding your driver..."; else if (t.status === 'accepted') nameEl.innerText = `${t.dName} is arriving!`; else if (t.status === 'pickedup') { overlay.classList.remove('hidden'); contentPanel.classList.add('hidden'); if (!isOverlayMinimized) mapArea.style.height = '45vh'; }
+                pWait.classList.remove('hidden'); document.getElementById('active-fare-display').innerText = "₱" + t.fare;
+                if (t.status === 'requested') document.getElementById('wait-driver-name').innerText = "Finding your driver..."; 
+                else if (t.status === 'accepted') document.getElementById('wait-driver-name').innerText = `${t.dName} is arriving!`; 
+                else if (t.status === 'pickedup') { 
+                    overlay.classList.remove('hidden'); contentPanel.classList.add('hidden'); 
+                    if (isOverlayMinimized) { restoreBtn.style.display = 'flex'; }
+                }
                 else if (t.status === 'arrived') { document.getElementById('rating-modal').classList.remove('hidden'); overlay.classList.add('hidden'); contentPanel.classList.remove('hidden'); }
             }
         }
 
         function updateHistoryUI() {
             const list = document.getElementById('ride-history-list');
-            if (!userData.history || userData.history.length === 0) return;
+            if (!userData.history || userData.history.length === 0) { list.innerHTML = '<p class="text-center text-gray-400 text-xs italic py-10">No rides yet.</p>'; return; }
             list.innerHTML = '';
-            userData.history.slice().reverse().forEach(h => { list.innerHTML += `<div class="history-item p-4 bg-white rounded-2xl shadow-sm"><div class="flex justify-between items-start mb-2"><p class="font-black text-gray-800 text-sm">${h.driverName}</p><p class="text-[9px] text-gray-400 font-bold uppercase">${h.date}</p></div><p class="text-[10px] text-gray-500 font-bold mb-1">📍 To: ${h.dest}</p></div>`; });
+            userData.history.slice().reverse().forEach(h => { list.innerHTML += `<div class="history-item p-4 bg-white rounded-2xl shadow-sm"><div class="flex justify-between items-start mb-2"><p class="font-black text-gray-800 text-sm">${h.driverName || 'Sakay Ride'}</p><p class="text-[9px] text-gray-400 font-bold uppercase">${h.date}</p></div><p class="text-[10px] text-gray-500 font-bold mb-1">📍 To: ${h.dest}</p></div>`; });
         }
 
         window.updateStatus = async (s) => {
@@ -446,13 +461,37 @@
             document.getElementById('rating-modal').classList.add('hidden');
         };
 
-        window.cancelTrip = async () => { if(!confirm("Are you sure?")) return; const t = userData.activeTrip; if(t) { await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField() }); await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() }); } };
-        window.toggleDashboard = (show) => document.getElementById('user-dashboard').classList.toggle('hidden', !show);
-        window.updateProfile = async () => { let data = { name: document.getElementById('edit-name').value }; if(userData.role === 'driver') { data.plate = document.getElementById('edit-plate').value; data.mtop = document.getElementById('edit-mtop').value; } await updateDoc(doc(db, "users", userUid), data); alert("Saved!"); };
+        window.toggleDashboard = (show) => {
+            const dash = document.getElementById('user-dashboard');
+            if(show) {
+                dash.classList.remove('hidden');
+                document.getElementById('driver-stats').classList.toggle('hidden', userData.role !== 'driver');
+                document.getElementById('driver-only-inputs').classList.toggle('hidden', userData.role !== 'driver');
+                document.getElementById('history-section').classList.remove('hidden');
+                document.getElementById('edit-name').value = userData.name || '';
+                document.getElementById('stat-income').innerText = userData.income || 0;
+                document.getElementById('stat-trips').innerText = userData.tripCount || 0;
+                if(userData.role === 'driver') {
+                    document.getElementById('edit-mtop').value = userData.mtop || '';
+                    document.getElementById('edit-plate').value = userData.plate || '';
+                }
+            } else { dash.classList.add('hidden'); }
+        };
+
+        window.updateProfile = async () => {
+            let data = { name: document.getElementById('edit-name').value };
+            if(userData.role === 'driver') {
+                data.mtop = document.getElementById('edit-mtop').value;
+                data.plate = document.getElementById('edit-plate').value;
+            }
+            await updateDoc(doc(db, "users", userUid), data);
+            alert("Profile Updated!");
+        };
+
+        window.cancelTrip = async () => { if(confirm("Cancel this ride?")) { const t = userData.activeTrip; if(t) { await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField() }); await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() }); } } };
+        window.logout = () => { if (userUid) updateDoc(doc(db, "users", userUid), { isOnline: false }); signOut(auth).then(() => location.reload()); };
         window.setStar = (n) => { currentRating = n; const stars = document.getElementById('star-box'); stars.innerHTML = ''; for (let i = 1; i <= 5; i++) stars.innerHTML += `<i onclick="setStar(${i})" class="fa-solid fa-star ${i <= n ? 'text-amber-400' : 'text-gray-200'}"></i>`; };
         window.toggleDuty = () => updateDoc(doc(db, "users", userUid), { isOnline: !userData.isOnline });
-        window.logout = () => { if (userUid) updateDoc(doc(db, "users", userUid), { isOnline: false }); signOut(auth).then(() => location.reload()); };
-        window.triggerSOS = () => alert("SOS Triggered!");
         function updateDutyButton() { const btn = document.getElementById('duty-btn'); if (userData.isOnline) { btn.classList.add('online'); btn.innerHTML = '✅ ONLINE'; } else { btn.classList.remove('online'); btn.innerHTML = 'GO ONLINE'; } }
         window.showRegisterUI = () => { document.getElementById('login-actions').classList.add('hidden'); document.getElementById('reg-ui').classList.remove('hidden'); };
         window.showLoginUI = () => { document.getElementById('login-actions').classList.remove('hidden'); document.getElementById('reg-ui').classList.add('hidden'); };
