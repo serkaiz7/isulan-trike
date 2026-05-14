@@ -46,6 +46,18 @@
         
         .driver-marker-icon { color: #10b981; font-size: 26px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
         .passenger-marker-icon { color: #3b82f6; font-size: 26px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+        
+        /* SOS Pulsating Signal */
+        .sos-marker-pulse {
+            width: 20px; height: 20px; background: #dc2626; border-radius: 50%;
+            box-shadow: 0 0 0 rgba(220, 38, 38, 0.4); animation: sos-pulse 1.2s infinite;
+        }
+        @keyframes sos-pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(220, 38, 38, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+
         .leaflet-routing-container { display: none !important; }
         
         #status-overlay {
@@ -56,7 +68,6 @@
         }
         #status-overlay.minimized { transform: translateY(calc(100% - 85px)); }
         
-        /* Repositioned Restore Arrow */
         #restore-overlay-btn {
             position: fixed; bottom: 35px; right: 24px; z-index: 1001;
             width: 35px; height: 35px; background: #fbbf24; color: #064e3b;
@@ -120,6 +131,26 @@
         <button id="restore-overlay-btn" onclick="toggleOverlaySize(false)">
             <i class="fa-solid fa-chevron-up text-xs"></i>
         </button>
+
+        <div id="sos-modal" class="hidden fixed inset-0 z-[10000] bg-black/80 backdrop-blur-md flex items-center justify-center p-6">
+            <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl border-4 border-red-500">
+                <div class="text-center mb-6">
+                    <i class="fa-solid fa-triangle-exclamation text-5xl text-red-600 mb-4"></i>
+                    <h3 class="text-2xl font-black text-gray-900">LEGAL WARNING</h3>
+                    <div class="bg-red-50 p-4 rounded-2xl mt-4 text-left border border-red-100">
+                        <p class="text-red-700 text-xs font-bold leading-relaxed uppercase">
+                            Misuse of the SOS signal without a serious cause or life-threatening emergency is a 
+                            <b>Serious Offense</b> and constitutes a <b>Public Nuisance</b>. Violators will face 
+                            immediate account suspension and legal prosecution.
+                        </p>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <button onclick="confirmSOSBroadcast()" class="w-full py-4 bg-red-600 text-white rounded-2xl font-black shadow-lg">I UNDERSTAND, BROADCAST SOS</button>
+                    <button onclick="closeSOSModal()" class="w-full py-4 bg-gray-100 text-gray-500 rounded-2xl font-bold">CANCEL</button>
+                </div>
+            </div>
+        </div>
 
         <div id="booking-modal" class="hidden fixed inset-0 z-[9500] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
             <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
@@ -289,39 +320,34 @@
 
         let userUid, userData, map, markers = {}, routingControl = null, currentRating = 5, selectedRole = null, isOverlayMinimized = false;
 
-        // Repositioned Restore Logic
+        // Overlay Toggle
         window.toggleOverlaySize = (shouldMinimize) => {
             const overlay = document.getElementById('status-overlay');
             const restoreBtn = document.getElementById('restore-overlay-btn');
             const mapArea = document.getElementById('map-area');
-            
             isOverlayMinimized = shouldMinimize;
-            
-            if (isOverlayMinimized) {
-                overlay.classList.add('minimized');
-                restoreBtn.style.display = 'flex';
-                mapArea.style.height = '85vh';
-            } else {
-                overlay.classList.remove('minimized');
-                restoreBtn.style.display = 'none';
-                mapArea.style.height = '45vh';
-            }
+            if (isOverlayMinimized) { overlay.classList.add('minimized'); restoreBtn.style.display = 'flex'; mapArea.style.height = '85vh'; }
+            else { overlay.classList.remove('minimized'); restoreBtn.style.display = 'none'; mapArea.style.height = '45vh'; }
             setTimeout(() => map.invalidateSize(), 300);
         };
 
-        // FIXED SOS FUNCTION
-        window.triggerSOS = () => {
-            if (confirm("🚨 SEND EMERGENCY SIGNAL?\nThis will notify authorities and provide your current location.")) {
-                const btn = document.getElementById('sos-btn');
-                btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin mr-2'></i> SENDING HELP...";
-                btn.classList.add('sos-active');
-                
-                // Simulate backend SOS broadcast
-                setTimeout(() => {
-                    alert("✅ SOS SIGNAL SENT!\nLocal authorities and Sakay dispatch have been alerted.");
-                    btn.innerHTML = "<i class='fa-solid fa-check mr-2'></i> HELP ON THE WAY";
-                }, 2000);
-            }
+        // SOS LOGIC
+        window.triggerSOS = () => { document.getElementById('sos-modal').classList.remove('hidden'); };
+        window.closeSOSModal = () => { document.getElementById('sos-modal').classList.add('hidden'); };
+        
+        window.confirmSOSBroadcast = async () => {
+            const btn = document.getElementById('sos-btn');
+            btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin mr-2'></i> BROADCASTING SOS...";
+            btn.classList.add('sos-active');
+            
+            // Broadcast globally via Firestore
+            await updateDoc(doc(db, "users", userUid), { 
+                sosActive: true,
+                sosTimestamp: Date.now()
+            });
+            
+            closeSOSModal();
+            alert("🚨 GLOBAL SOS ACTIVATED!\nAll drivers and passengers can now see your emergency location.");
         };
 
         window.openBookingModal = (dId, dName) => {
@@ -368,14 +394,27 @@
                 const now = Date.now();
                 const dList = document.getElementById('driver-list');
                 if (userData.role === 'passenger') dList.innerHTML = '';
+                
                 snap.forEach(d => {
                     const data = d.data(), id = d.id;
                     if (id === userUid) { userData = data; handleStatusLogic(); updateDutyButton(); updateHistoryUI(); }
+                    
                     const isFresh = data.lastActive && (now - data.lastActive < 180000);
-                    if (isFresh && data.lat && data.lng && (data.isOnline || (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId)))) {
-                        if (markers[id]) markers[id].setLatLng([data.lat, data.lng]);
-                        else markers[id] = L.marker([data.lat, data.lng], { icon: L.divIcon({ html: data.role === 'driver' ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`, className: '', iconSize: [40, 40] }) }).addTo(map);
+                    
+                    // Marker Logic including Pulsating SOS
+                    if (isFresh && data.lat && data.lng) {
+                        const isSos = data.sosActive;
+                        const iconHtml = isSos ? `<div class="sos-marker-pulse"></div>` : (data.role === 'driver' ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`);
+                        
+                        if (markers[id]) {
+                            markers[id].setLatLng([data.lat, data.lng]);
+                            // Update icon if SOS state changed
+                            markers[id].setIcon(L.divIcon({ html: iconHtml, className: '', iconSize: [40, 40] }));
+                        } else {
+                            markers[id] = L.marker([data.lat, data.lng], { icon: L.divIcon({ html: iconHtml, className: '', iconSize: [40, 40] }) }).addTo(map);
+                        }
                     } else if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
+
                     if (userData.role === 'passenger' && data.role === 'driver' && data.isOnline && isFresh && !data.activeTrip) {
                         dList.innerHTML += `<div class="p-5 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm" onclick="openBookingModal('${id}', '${data.name}')">
                             <div><p class="font-black text-gray-800">${data.name}</p><p class="text-[10px] text-amber-500 font-bold uppercase">Plate: ${data.plate || 'N/A'}</p></div>
@@ -456,8 +495,9 @@
             if (s === 'arrived') {
                 const now = new Date();
                 const log = { driverName: t.dName, dest: t.dest, date: now.toLocaleDateString(), fare: t.fare };
-                await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField(), income: increment(t.fare), tripCount: increment(1) });
-                await updateDoc(doc(db, "users", t.pId), { "activeTrip.status": "arrived", history: arrayUnion(log) });
+                // Reset SOS on arrival
+                await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField(), income: increment(t.fare), tripCount: increment(1), sosActive: false });
+                await updateDoc(doc(db, "users", t.pId), { "activeTrip.status": "arrived", history: arrayUnion(log), sosActive: false });
             } else {
                 const up = { "activeTrip.status": s };
                 await updateDoc(doc(db, "users", userUid), up);
@@ -466,11 +506,11 @@
         };
 
         window.finishTripPassenger = async (isSkipped) => {
-            await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
+            await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField(), sosActive: false });
             document.getElementById('rating-modal').classList.add('hidden');
         };
 
-        window.cancelTrip = async () => { if(confirm("Cancel ride?")) { const t = userData.activeTrip; await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField() }); await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() }); } };
+        window.cancelTrip = async () => { if(confirm("Cancel ride?")) { const t = userData.activeTrip; await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField(), sosActive: false }); await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField(), sosActive: false }); } };
         window.handleAuth = async (t) => {
             const e = document.getElementById('auth-email').value;
             const p = document.getElementById('auth-pass').value;
@@ -478,7 +518,7 @@
             else {
                 const alias = document.getElementById('reg-alias').value;
                 const cred = await createUserWithEmailAndPassword(auth, e, p);
-                await setDoc(doc(db, "users", cred.user.uid), { name: alias, role: selectedRole, isOnline: false, lat: 6.6, lng: 124.6, income: 0, tripCount: 0, history: [] });
+                await setDoc(doc(db, "users", cred.user.uid), { name: alias, role: selectedRole, isOnline: false, lat: 6.6, lng: 124.6, income: 0, tripCount: 0, history: [], sosActive: false });
             }
         };
         window.logout = () => signOut(auth).then(() => location.reload());
