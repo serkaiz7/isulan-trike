@@ -16,26 +16,26 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; touch-action: manipulation; background-color: #f8fafc; }
-        #map { height: 45vh; width: 100%; z-index: 1; transition: height 0.3s ease; }
-        .content-card { 
-            position: relative; height: 55vh; margin-top: -2.5rem; 
-            background: white; border-top-left-radius: 2.5rem; border-top-right-radius: 2.5rem;
-            z-index: 10; box-shadow: 0 -10px 25px -5px rgba(0, 0, 0, 0.1); transition: transform 0.3s ease;
-        }
-        .ad-banner { height: 60px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; overflow: hidden; border-bottom: 1px solid #e2e8f0; }
+        #map { height: 100vh; width: 100%; z-index: 1; position: absolute; top: 0; left: 0; }
         
-        /* Dynamic Marquee Styles */
+        /* Unified Panel Transition */
+        .content-card, #status-overlay { transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .content-card { 
+            position: fixed; bottom: 0; left: 0; right: 0; height: 55vh; 
+            background: white; border-top-left-radius: 2.5rem; border-top-right-radius: 2.5rem;
+            z-index: 10; box-shadow: 0 -10px 25px -5px rgba(0, 0, 0, 0.1); padding-bottom: 80px;
+        }
+        
+        .ad-banner { position: relative; z-index: 100; height: 60px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; overflow: hidden; border-bottom: 1px solid #e2e8f0; }
+        
         .marquee-container { 
-            background: #064e3b; color: #fbbf24; overflow: hidden; white-space: nowrap; 
+            position: relative; z-index: 100; background: #064e3b; color: #fbbf24; overflow: hidden; white-space: nowrap; 
             display: flex; align-items: center; min-height: 35px; font-size: 11px; font-weight: 800; letter-spacing: 1px; 
         }
         .marquee-content { display: inline-block; line-height: 1.5; animation: marquee 20s linear infinite; }
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
 
-        /* Role Card Styles */
-        .role-card.active { border-color: #fbbf24; background: rgba(251, 191, 36, 0.1); transform: scale(1.02); }
-        
-        /* Navigation Styles */
         .nav-bar { 
             height: 75px; position: fixed; bottom: 0; left: 0; right: 0; 
             background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px);
@@ -52,14 +52,17 @@
         .passenger-marker-icon { color: #3b82f6; font-size: 26px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
         .leaflet-routing-container { display: none !important; }
         
-        /* Modern Progress Overlay (Minimized Support) */
+        /* Modern Status Overlay */
         #status-overlay {
-            position: absolute; left: 0; right: 0; bottom: 0;
+            position: fixed; left: 0; right: 0; bottom: 0; height: 40vh;
             background: #064e3b; border-top-left-radius: 2.5rem; border-top-right-radius: 2.5rem;
-            z-index: 1000; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 -15px 30px rgba(0,0,0,0.2);
+            z-index: 1000; box-shadow: 0 -15px 30px rgba(0,0,0,0.3); padding-bottom: 20px;
         }
-        #status-overlay.minimized { transform: translateY(calc(100% - 80px)); }
+        
+        /* Toggle View Map State */
+        #status-overlay.minimized { transform: translateY(calc(100% - 60px)); }
+        .panel-hidden { transform: translateY(100%); }
+
         .history-item { border-left: 4px solid #10b981; }
     </style>
 </head>
@@ -127,9 +130,9 @@
         </div>
 
         <div id="status-overlay" class="hidden flex flex-col p-6 text-white overflow-hidden">
-            <div class="flex justify-between items-center mb-4 cursor-pointer" onclick="toggleOverlaySize()">
+            <div class="flex justify-between items-center mb-6 cursor-pointer" onclick="toggleOverlaySize()">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center text-emerald-900">
+                    <div class="w-12 h-12 bg-amber-400 rounded-full flex items-center justify-center text-emerald-900 shadow-lg">
                         <i class="fa-solid fa-motorcycle animate-bounce"></i>
                     </div>
                     <div>
@@ -137,8 +140,9 @@
                         <p id="ride-status-text" class="text-[10px] text-emerald-200 font-bold">On your way to destination</p>
                     </div>
                 </div>
-                <button class="bg-white/10 w-8 h-8 rounded-full flex items-center justify-center">
-                    <i id="toggle-icon" class="fa-solid fa-chevron-down text-xs"></i>
+                <button class="bg-white/10 px-4 py-2 rounded-full flex items-center gap-2 text-[10px] font-black uppercase">
+                    <span id="toggle-text">View Map</span>
+                    <i id="toggle-icon" class="fa-solid fa-chevron-down"></i>
                 </button>
             </div>
             
@@ -158,12 +162,11 @@
                     <button onclick="triggerSOS()" class="w-full py-4 bg-red-600 rounded-2xl font-black text-xs shadow-lg shadow-red-900/40 uppercase tracking-widest">
                         <i class="fa-solid fa-shield-heart mr-2"></i> Emergency SOS
                     </button>
-                    <p class="text-center text-[9px] opacity-40 italic">In case of emergency, the authorities and Sakay Admin will be alerted with your location.</p>
                 </div>
             </div>
         </div>
 
-        <div id="content-panel" class="content-card overflow-y-auto pb-32 px-6">
+        <div id="content-panel" class="content-card overflow-y-auto px-6">
             <div class="w-12 h-1 bg-gray-200 rounded-full mx-auto my-4"></div>
 
             <div id="driver-panel" class="hidden">
@@ -294,23 +297,22 @@
         let userUid, userData, map, markers = {}, routingControl = null, currentRating = 5, selectedRole = null;
         let isOverlayMinimized = false;
 
-        // Overlay Toggle Logic
+        // FIXED TOGGLE LOGIC
         window.toggleOverlaySize = () => {
             const overlay = document.getElementById('status-overlay');
             const icon = document.getElementById('toggle-icon');
-            const mapEl = document.getElementById('map');
+            const txt = document.getElementById('toggle-text');
             isOverlayMinimized = !isOverlayMinimized;
             
             if (isOverlayMinimized) {
                 overlay.classList.add('minimized');
                 icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
-                mapEl.style.height = '85vh';
+                txt.innerText = "Expand Info";
             } else {
                 overlay.classList.remove('minimized');
                 icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
-                mapEl.style.height = '45vh';
+                txt.innerText = "View Map";
             }
-            setTimeout(() => map.invalidateSize(), 300);
         };
 
         function drawBoundaries() {
@@ -333,17 +335,13 @@
         };
 
         window.updateRealTimeRoute = (start, end) => {
-            if (userData.activeTrip && userData.activeTrip.status === 'pickedup') {
-                if (routingControl) { map.removeControl(routingControl); routingControl = null; }
-                return;
-            }
             if (routingControl) { map.removeControl(routingControl); routingControl = null; }
             routingControl = L.Routing.control({
                 waypoints: [L.latLng(start[0], start[1]), L.latLng(end[0], end[1])],
                 routeWhileDragging: false,
                 addWaypoints: false,
                 draggableWaypoints: false,
-                fitSelectedRoutes: false,
+                fitSelectedRoutes: true,
                 show: false,
                 lineOptions: { styles: [{ color: '#10b981', opacity: 0.8, weight: 6 }] }
             }).addTo(map);
@@ -445,7 +443,7 @@
                     }
                 });
 
-                if (userData.activeTrip && driverCoords && passengerCoords && userData.activeTrip.status !== 'pickedup') {
+                if (userData.activeTrip && driverCoords && passengerCoords) {
                     updateRealTimeRoute(driverCoords, passengerCoords);
                 } else if (routingControl) {
                     map.removeControl(routingControl);
@@ -461,15 +459,13 @@
             const dActions = document.getElementById('driver-actions');
             const contentPanel = document.getElementById('content-panel');
             
+            // Default Reset
             overlay.classList.add('hidden'); 
             tripCard.classList.add('hidden'); 
             pWait.classList.add('hidden');
-            contentPanel.classList.remove('hidden');
+            contentPanel.classList.remove('panel-hidden');
 
-            if (!userData.activeTrip) {
-                document.getElementById('map').style.height = '45vh';
-                return;
-            }
+            if (!userData.activeTrip) return;
 
             const t = userData.activeTrip;
             if (userData.role === 'driver') {
@@ -489,13 +485,12 @@
                 else if (t.status === 'accepted') nameEl.innerText = `${t.dName} is arriving!`;
                 else if (t.status === 'pickedup') { 
                     overlay.classList.remove('hidden'); 
-                    contentPanel.classList.add('hidden');
-                    if (!isOverlayMinimized) document.getElementById('map').style.height = '45vh';
+                    contentPanel.classList.add('panel-hidden'); // Hide main panel
                 }
                 else if (t.status === 'arrived') { 
                     document.getElementById('rating-modal').classList.remove('hidden'); 
                     overlay.classList.add('hidden');
-                    contentPanel.classList.remove('hidden');
+                    contentPanel.classList.remove('panel-hidden');
                 }
             }
         }
