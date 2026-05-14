@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="google-adsense-account" content="ca-pub-3089886074644811">
-    <script async custom-element="amp-auto-ads"
-        src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js">
-</script>
+    <script async custom-element="amp-auto-ads" src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js"></script>
     <title>Sakay - Drive Or Ride</title>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3089886074644811" crossorigin="anonymous"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,30 +16,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; touch-action: manipulation; background-color: #f8fafc; }
-        
-        /* Map and Panel Layout */
         #map { height: 45vh; width: 100%; z-index: 1; }
         .content-card { 
             position: relative; height: 55vh; margin-top: -2.5rem; 
             background: white; border-top-left-radius: 2.5rem; border-top-right-radius: 2.5rem;
             z-index: 10; box-shadow: 0 -10px 25px -5px rgba(0, 0, 0, 0.1);
         }
-
-        /* Ad Slots */
         .ad-banner { height: 60px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; overflow: hidden; border-bottom: 1px solid #e2e8f0; }
-        
-        /* Marquee */
         .marquee-container { 
             background: #064e3b; color: #fbbf24; overflow: hidden; white-space: nowrap; 
             display: flex; align-items: center; min-height: 40px; font-size: 13px; font-weight: 800; letter-spacing: 1px; 
         }
-        .marquee-content { display: inline-block; line-height: 1.5; animation: marquee 22s linear infinite; }
+        .marquee-content { display: inline-block; line-height: 1.5; animation: marquee 25s linear infinite; }
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-
-        /* UI Buttons & Interaction */
-        .role-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border-width: 2px; }
         .role-card.active { border-color: #fbbf24; background: rgba(251, 191, 36, 0.1); transform: scale(1.02); }
-        
         .nav-bar { 
             height: 75px; position: fixed; bottom: 0; left: 0; right: 0; 
             background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px);
@@ -50,18 +38,12 @@
         }
         .nav-btn { display: flex; flex-direction: column; align-items: center; color: #94a3b8; font-size: 10px; font-weight: 800; }
         .nav-btn.active { color: #10b981; }
-
-        .driver-marker-icon { color: #10b981; font-size: 26px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
-        .passenger-marker-icon { color: #3b82f6; font-size: 26px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
-        
-        #duty-btn.online { background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3); }
+        #duty-btn.online { background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; }
     </style>
 </head>
 <body class="flex flex-col h-screen">
 
-    <amp-auto-ads type="adsense"
-        data-ad-client="ca-pub-3089886074644811">
-</amp-auto-ads>
+    <amp-auto-ads type="adsense" data-ad-client="ca-pub-3089886074644811"></amp-auto-ads>
     
     <div class="ad-banner">
         <ins class="adsbygoogle" style="display:inline-block;width:320px;height:50px" data-ad-client="ca-pub-3089886074644811" data-ad-slot="YOUR_AD_SLOT"></ins>
@@ -69,7 +51,7 @@
     </div>
 
     <div class="marquee-container">
-        <div class="marquee-content">🚀 WELCOME TO SAKAY • REAL-TIME TRACKING ACTIVE • EARN MORE BY STAYING ONLINE • PLEASE DRIVE SAFELY • </div>
+        <div id="dynamic-marquee" class="marquee-content">🚀 WELCOME TO SAKAY • OFFICIAL ISULAN TRICYCLE RATES APPLY • PLEASE DRIVE SAFELY • </div>
     </div>
 
     <div id="auth-screen" class="fixed inset-0 z-[9000] bg-emerald-600 flex flex-col p-8 overflow-y-auto justify-center text-white">
@@ -85,7 +67,7 @@
             <div id="login-actions" class="space-y-4">
                 <input id="auth-email" type="email" placeholder="Email" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none placeholder-white/50 focus:bg-white/20">
                 <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none placeholder-white/50 focus:bg-white/20">
-                <button onclick="handleAuth('login')" class="w-full py-4 bg-amber-400 text-emerald-900 rounded-2xl font-black text-lg shadow-xl active:scale-95 transition-transform">SIGN IN</button>
+                <button onclick="handleAuth('login')" class="w-full py-4 bg-amber-400 text-emerald-900 rounded-2xl font-black text-lg shadow-xl">SIGN IN</button>
                 <button onclick="showRegisterUI()" class="w-full py-4 border border-white/30 rounded-2xl font-bold text-sm">Create New Account</button>
             </div>
 
@@ -98,7 +80,7 @@
                         <i class="fa-solid fa-motorcycle text-2xl mb-1"></i><p class="text-[10px] font-black uppercase">Driver</p>
                     </div>
                 </div>
-                <input id="reg-alias" type="text" placeholder="Your Name" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none">
+                <input id="reg-alias" type="text" placeholder="Full Name" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none">
                 <div id="driver-fields" class="hidden space-y-3">
                     <input id="reg-mtop" type="text" placeholder="MTOP Number" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none">
                     <input id="reg-plate" type="text" placeholder="Plate Number" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none">
@@ -127,34 +109,56 @@
                 <i class="fa-solid fa-motorcycle text-4xl"></i>
             </div>
             <h2 class="text-3xl font-black italic">RIDE IN PROGRESS</h2>
-            <p id="ride-status-text" class="text-emerald-200 mt-2">Driver is on the way</p>
-            <p class="text-5xl font-black mt-8 tracking-tighter">₱21</p>
+            <p id="ride-status-text" class="text-emerald-200 mt-2">Your driver is heading to destination</p>
+            <p id="active-fare-display" class="text-5xl font-black mt-8 tracking-tighter">₱21</p>
             <button onclick="triggerSOS()" class="mt-12 w-full py-4 bg-red-600 rounded-2xl font-black text-sm">🚨 EMERGENCY SOS</button>
         </div>
 
         <div id="content-panel" class="content-card overflow-y-auto pb-32 px-6">
             <div class="w-12 h-1 bg-gray-200 rounded-full mx-auto my-4"></div>
 
+            <div id="fare-matrix-container" class="hidden mb-6 p-5 bg-slate-100 rounded-3xl border border-gray-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-black text-gray-800 text-sm">OFFICIAL FARE TARIFF</h3>
+                    <button onclick="toggleFareMatrix()" class="text-xs font-bold text-red-500">CLOSE</button>
+                </div>
+                <div class="grid grid-cols-2 gap-3 text-[10px] font-bold">
+                    <div class="p-2 bg-white rounded-xl">📍 Center: ₱21</div>
+                    <div class="p-2 bg-white rounded-xl">⛰️ North: ₱27 - ₱68</div>
+                    <div class="p-2 bg-white rounded-xl">🌊 South: ₱27 - ₱55</div>
+                    <div class="p-2 bg-white rounded-xl">☀️ East: ₱27 - ₱41</div>
+                </div>
+                <p class="mt-3 text-[9px] text-gray-400 italic">*20% Discount for Students/PWD/Seniors</p>
+            </div>
+
             <div id="driver-panel" class="hidden">
                 <div id="trip-card" class="hidden mb-6 p-6 bg-emerald-50 border border-emerald-100 rounded-3xl">
                     <h4 id="trip-p-name" class="text-xl font-black text-gray-800"></h4>
-                    <p id="trip-p-dest" class="text-gray-500 text-sm mb-6"></p>
+                    <p id="trip-p-dest" class="text-gray-500 text-sm mb-2"></p>
+                    <p id="trip-p-fare" class="text-emerald-700 font-black text-lg mb-4"></p>
                     <div id="driver-actions" class="flex gap-2"></div>
                 </div>
                 <div class="text-center py-4">
-                    <button id="duty-btn" onclick="toggleDuty()" 
-                            class="w-full py-16 text-3xl font-black uppercase tracking-tighter rounded-[2.5rem] bg-gray-50 text-gray-300 border-2 border-dashed border-gray-200 transition-all">
+                    <button id="duty-btn" onclick="toggleDuty()" class="w-full py-16 text-3xl font-black uppercase rounded-[2.5rem] bg-gray-50 text-gray-300 border-2 border-dashed border-gray-200 transition-all">
                         GO ONLINE
                     </button>
-                    <p class="mt-4 text-[10px] text-gray-400 font-bold uppercase tracking-widest">Toggle your duty status</p>
+                    <button onclick="toggleFareMatrix()" class="mt-4 text-xs font-bold text-emerald-600 underline">View Official Fare Matrix</button>
                 </div>
             </div>
 
             <div id="passenger-panel" class="hidden">
-                <div class="relative mb-6">
+                <div class="relative mb-4">
                     <i class="fa-solid fa-location-arrow absolute left-5 top-5 text-emerald-500"></i>
-                    <input id="dest-input" type="text" placeholder="Where to? (Min ₱21)" class="w-full pl-12 p-5 bg-gray-50 rounded-3xl border-2 border-transparent focus:border-emerald-500 outline-none font-bold text-lg">
+                    <select id="dest-select" class="w-full pl-12 p-5 bg-gray-50 rounded-3xl border-2 border-transparent focus:border-emerald-500 outline-none font-bold text-lg appearance-none">
+                        <option value="21" data-name="Poblacion (Center)">Poblacion - ₱21</option>
+                        <option value="27" data-name="Kalawag I/II/III">Kalawag I/II/III - ₱27</option>
+                        <option value="35" data-name="Bambad / Impao Boundary">Bambad / Impao - ₱35</option>
+                        <option value="41" data-name="Dansuli / Kenram">Dansuli / Kenram - ₱41</option>
+                        <option value="55" data-name="Mapantig / Kudanding">Mapantig / Kudanding - ₱55</option>
+                        <option value="68" data-name="Bual / Tayugo">Bual / Tayugo - ₱68</option>
+                    </select>
                 </div>
+                <button onclick="toggleFareMatrix()" class="w-full mb-4 py-2 text-xs font-bold text-blue-600 bg-blue-50 rounded-xl">Show Full Rate List (All Bounds)</button>
                 <div id="p-waiting-card" class="hidden mb-6 p-6 bg-blue-50 border border-blue-100 rounded-3xl text-center">
                     <p id="wait-driver-name" class="font-black text-blue-800 mb-4"></p>
                     <button onclick="cancelTrip()" class="px-6 py-2 bg-red-100 text-red-600 rounded-full text-xs font-black">CANCEL REQUEST</button>
@@ -175,37 +179,16 @@
             <h2 class="text-4xl font-black tracking-tighter">Hub</h2>
             <button onclick="toggleDashboard(false)" class="w-10 h-10 bg-white rounded-full shadow-sm text-gray-400">✕</button>
         </div>
-        
         <div class="grid grid-cols-1 gap-4 mb-8">
-            <div class="bg-emerald-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-emerald-100">
+            <div class="bg-emerald-600 p-8 rounded-[2.5rem] text-white shadow-xl">
                 <p class="text-xs font-bold opacity-70 uppercase tracking-widest">Total Earnings</p>
                 <p class="text-5xl font-black mt-2">₱<span id="stat-income">0</span></p>
             </div>
-            <div class="bg-white p-6 rounded-3xl flex justify-between items-center shadow-sm">
-                <p class="text-gray-500 font-bold">Trips Completed</p>
-                <p class="text-3xl font-black text-emerald-600" id="stat-trips">0</p>
-            </div>
         </div>
-
-        <div class="bg-white rounded-[2rem] p-6 shadow-sm space-y-4">
-            <h4 class="font-black text-gray-800 uppercase text-xs tracking-widest mb-2">Vehicle Details</h4>
-            <input id="edit-name" type="text" placeholder="Name" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
-            <input id="edit-mtop" type="text" placeholder="MTOP" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
-            <input id="edit-plate" type="text" placeholder="Plate" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
-            <button onclick="updateProfile()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-lg">SAVE CHANGES</button>
-        </div>
-    </div>
-
-    <div id="passenger-dashboard" class="hidden fixed inset-0 z-[8000] bg-slate-50 overflow-y-auto p-6 pb-32">
-        <div class="flex justify-between items-center mb-8">
-            <h2 class="text-4xl font-black tracking-tighter">History</h2>
-            <button onclick="toggleDashboard(false)" class="w-10 h-10 bg-white rounded-full shadow-sm text-gray-400">✕</button>
-        </div>
-        <div id="history-list" class="space-y-3"></div>
     </div>
 
     <div id="rating-modal" class="hidden fixed inset-0 z-[9600] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
-        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center">
             <h3 class="text-3xl font-black mb-2">Rate your Ride</h3>
             <div id="star-box" class="flex justify-center gap-3 text-4xl my-8 text-amber-400"></div>
             <button onclick="finishTripPassenger()" class="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black text-lg">SUBMIT RATING</button>
@@ -232,22 +215,19 @@
 
         let userUid, userData, map, markers = {}, routingControl = null, currentRating = 5, selectedRole = null;
 
-        function showAlert(title, body, type = 'success') {
-            const el = document.getElementById('alert-popup');
-            document.getElementById('alert-title').innerText = title;
-            document.getElementById('alert-body').innerText = body;
-            document.getElementById('alert-icon').className = `fa-solid fa-${type === 'success' ? 'check-circle text-emerald-500' : 'times-circle text-red-500'}`;
-            el.classList.remove('hidden');
-            setTimeout(() => el.classList.add('hidden'), 5000);
+        // Dynamic Marquee Logic
+        function updateMarquee(role) {
+            const marquee = document.getElementById('dynamic-marquee');
+            if (role === 'driver') {
+                marquee.innerText = "📢 DRIVER MODE: FOLLOW REVISED FARE TARIFF 2024 • REPORT OVERCHARGING COMPLAINTS • DRIVE SAFELY • STAY ONLINE FOR MORE REQUESTS • ";
+            } else {
+                marquee.innerText = "📢 PASSENGER MODE: BOOK TO POBLACION (₱21), BAMBAD (₱35), OR DANSULI (₱41) • CHECK TARIFF FOR DISCOUNTS (PWD/SENIOR/STUDENT) • ";
+            }
         }
 
-        window.showRegisterUI = () => { document.getElementById('login-actions').classList.add('hidden'); document.getElementById('reg-ui').classList.remove('hidden'); };
-        window.showLoginUI = () => { document.getElementById('login-actions').classList.remove('hidden'); document.getElementById('reg-ui').classList.add('hidden'); };
-        window.selectRole = (role) => { 
-            selectedRole = role; 
-            document.getElementById('role-p').classList.toggle('active', role==='passenger'); 
-            document.getElementById('role-d').classList.toggle('active', role==='driver'); 
-            document.getElementById('driver-fields').classList.toggle('hidden', role !== 'driver'); 
+        window.toggleFareMatrix = () => {
+            const container = document.getElementById('fare-matrix-container');
+            container.classList.toggle('hidden');
         };
 
         window.handleAuth = async (t) => {
@@ -273,7 +253,11 @@
             if (u) {
                 userUid = u.uid;
                 const snap = await getDoc(doc(db, "users", userUid));
-                if (snap.exists()) { userData = snap.data(); initApp(); }
+                if (snap.exists()) { 
+                    userData = snap.data(); 
+                    updateMarquee(userData.role);
+                    initApp(); 
+                }
             } else {
                 document.getElementById('auth-screen').classList.remove('hidden');
                 document.getElementById('app-ui').classList.add('hidden');
@@ -306,14 +290,11 @@
                         userData = data;
                         handleStatusLogic();
                         updateDutyButton();
-                        if (userData.role === 'driver') {
-                            document.getElementById('stat-income').innerText = userData.income || 0;
-                            document.getElementById('stat-trips').innerText = userData.tripCount || 0;
-                        }
+                        if (userData.role === 'driver') document.getElementById('stat-income').innerText = userData.income || 0;
                     }
                     if (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId) && id !== userUid) otherParty = data;
                     const isFresh = data.lastActive && (now - data.lastActive < 180000);
-                    if (isFresh && data.lat && data.lng && (data.isOnline || data.role === 'passenger' || (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId)))) {
+                    if (isFresh && data.lat && data.lng && (data.isOnline || (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId)))) {
                         if (markers[id]) markers[id].setLatLng([data.lat, data.lng]);
                         else markers[id] = L.marker([data.lat, data.lng], {
                             icon: L.divIcon({ html: data.role === 'driver' ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`, className: '', iconSize: [40, 40] })
@@ -322,8 +303,8 @@
                     if (userData.role === 'passenger' && data.role === 'driver' && data.isOnline && isFresh && !data.activeTrip) {
                         const avg = data.tripCount > 0 ? (data.totalRating / data.tripCount).toFixed(1) : "5.0";
                         dList.innerHTML += `<div class="p-5 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm" onclick="bookDriver('${id}')">
-                            <div><p class="font-black text-gray-800">${data.name}</p><p class="text-[10px] text-amber-500 font-bold uppercase">⭐ ${avg} • MTOP: ${data.mtop}</p></div>
-                            <button class="bg-emerald-600 text-white px-6 py-2 rounded-2xl text-xs font-black shadow-md">BOOK</button></div>`;
+                            <div><p class="font-black text-gray-800">${data.name}</p><p class="text-[10px] text-amber-500 font-bold uppercase">⭐ ${avg} • Plate: ${data.plate || 'N/A'}</p></div>
+                            <button class="bg-emerald-600 text-white px-6 py-2 rounded-2xl text-xs font-black">BOOK</button></div>`;
                     }
                 });
                 if (userData.activeTrip && otherParty) {
@@ -332,12 +313,6 @@
                     else routingControl.setWaypoints([myLoc, theirLoc]);
                 } else if (routingControl) { map.removeControl(routingControl); routingControl = null; }
             });
-        }
-
-        function updateDutyButton() {
-            const btn = document.getElementById('duty-btn');
-            if (userData.isOnline) { btn.classList.add('online'); btn.innerHTML = '✅ ONLINE'; }
-            else { btn.classList.remove('online'); btn.innerHTML = 'GO ONLINE'; }
         }
 
         function handleStatusLogic() {
@@ -349,98 +324,63 @@
                 tripCard.classList.remove('hidden');
                 document.getElementById('trip-p-name').innerText = t.pName;
                 document.getElementById('trip-p-dest').innerText = "To: " + t.dest;
+                document.getElementById('trip-p-fare').innerText = "Fare: ₱" + t.fare;
                 if (t.status === 'requested') dActions.innerHTML = `<button onclick="updateStatus('accepted')" class="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black">ACCEPT</button><button onclick="updateStatus('declined')" class="flex-1 py-4 bg-red-100 text-red-600 rounded-2xl font-black">DECLINE</button>`;
                 else if (t.status === 'accepted') dActions.innerHTML = `<button onclick="updateStatus('pickedup')" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black">PICKED UP</button>`;
-                else if (t.status === 'pickedup') dActions.innerHTML = `<button onclick="updateStatus('arrived')" class="w-full py-4 bg-orange-600 text-white rounded-2xl font-black">ARRIVED</button>`;
+                else if (t.status === 'pickedup') dActions.innerHTML = `<button onclick="updateStatus('arrived')" class="w-full py-4 bg-orange-600 text-white rounded-2xl font-black">COMPLETE RIDE</button>`;
             } else {
                 pWait.classList.remove('hidden');
+                document.getElementById('active-fare-display').innerText = "₱" + t.fare;
                 const nameEl = document.getElementById('wait-driver-name');
                 if (t.status === 'requested') nameEl.innerText = "Finding your driver...";
-                else if (t.status === 'accepted') nameEl.innerText = `${t.dName} is on the way!`;
+                else if (t.status === 'accepted') nameEl.innerText = `${t.dName} is arriving!`;
                 else if (t.status === 'pickedup') overlay.classList.remove('hidden');
                 else if (t.status === 'arrived') document.getElementById('rating-modal').classList.remove('hidden');
             }
         }
 
-        window.toggleDuty = () => {
-            const s = !userData.isOnline;
-            updateDoc(doc(db, "users", userUid), { isOnline: s });
-            showAlert(s ? "ONLINE" : "OFFLINE", s ? "Ready for requests" : "Duty finished");
-        };
-
-        window.cancelTrip = async () => {
-            const t = userData.activeTrip; if (!t) return;
-            if (t.dId) await updateDoc(doc(db, "users", t.dId), { notification: `Cancelled by Passenger`, activeTrip: deleteField() });
-            await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
+        window.bookDriver = async (dId) => {
+            const select = document.getElementById('dest-select');
+            const fare = parseInt(select.value);
+            const dest = select.options[select.selectedIndex].getAttribute('data-name');
+            const snap = await getDoc(doc(db, "users", dId));
+            const trip = { status: 'requested', pId: userUid, pName: userData.name, dId, dName: snap.data().name, dest, fare, timestamp: Date.now() };
+            await updateDoc(doc(db, "users", dId), { activeTrip: trip });
+            await updateDoc(doc(db, "users", userUid), { activeTrip: trip });
         };
 
         window.updateStatus = async (s) => {
-            const t = userData.activeTrip; if (!t) return;
+            const t = userData.activeTrip;
             if (s === 'arrived') {
-                await addDoc(collection(db, "users", t.pId, "history"), { driverId: t.dId, driverName: t.dName, destination: t.dest, time: Date.now(), fare: 21 });
-                await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField(), income: increment(21), tripCount: increment(1) });
+                await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField(), income: increment(t.fare), tripCount: increment(1) });
                 await updateDoc(doc(db, "users", t.pId), { "activeTrip.status": "arrived" });
             } else if (s === 'declined') {
                 await updateDoc(doc(db, "users", t.pId), { activeTrip: deleteField() });
                 await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
             } else {
-                const up = { "activeTrip.status": s };
-                await updateDoc(doc(db, "users", userUid), up);
-                await updateDoc(doc(db, "users", t.pId), up);
+                await updateDoc(doc(db, "users", userUid), { "activeTrip.status": s });
+                await updateDoc(doc(db, "users", t.pId), { "activeTrip.status": s });
             }
         };
 
-        window.bookDriver = async (dId) => {
-            const dest = document.getElementById('dest-input').value.trim();
-            if (!dest) return showAlert("Where to?", "Destination required", "error");
-            const snap = await getDoc(doc(db, "users", dId));
-            const trip = { status: 'requested', pId: userUid, pName: userData.name, dId, dName: snap.data().name, dest, timestamp: Date.now() };
-            await updateDoc(doc(db, "users", dId), { activeTrip: trip });
-            await updateDoc(doc(db, "users", userUid), { activeTrip: trip });
+        window.toggleDuty = () => {
+            const s = !userData.isOnline;
+            updateDoc(doc(db, "users", userUid), { isOnline: s });
         };
 
-        window.toggleDashboard = (show) => {
-            if (userData.role === 'driver') {
-                document.getElementById('driver-dashboard').classList.toggle('hidden', !show);
-                if (show) { document.getElementById('edit-name').value = userData.name; document.getElementById('edit-mtop').value = userData.mtop; document.getElementById('edit-plate').value = userData.plate; }
-            } else {
-                document.getElementById('passenger-dashboard').classList.toggle('hidden', !show);
-                if (show) loadPassengerHistory();
-            }
+        window.selectRole = (role) => { 
+            selectedRole = role; 
+            document.getElementById('role-p').classList.toggle('active', role==='passenger'); 
+            document.getElementById('role-d').classList.toggle('active', role==='driver'); 
+            document.getElementById('driver-fields').classList.toggle('hidden', role !== 'driver'); 
         };
 
-        window.updateProfile = async () => {
-            await updateDoc(doc(db, "users", userUid), { name: document.getElementById('edit-name').value, mtop: document.getElementById('edit-mtop').value, plate: document.getElementById('edit-plate').value });
-            showAlert("Updated", "Profile saved");
-        };
-
-        async function loadPassengerHistory() {
-            const list = document.getElementById('history-list'); list.innerHTML = '';
-            const q = query(collection(db, "users", userUid, "history"), orderBy("time", "desc"), limit(10));
-            const snap = await getDocs(q);
-            snap.forEach(d => {
-                const h = d.data();
-                list.innerHTML += `<div class="bg-white p-5 rounded-3xl shadow-sm"><p class="font-black text-gray-800">${h.driverName}</p><p class="text-xs text-gray-400">${h.destination}</p><p class="text-emerald-600 font-black text-sm mt-2">₱21</p></div>`;
-            });
+        window.logout = () => signOut(auth).then(() => location.reload());
+        function updateDutyButton() {
+            const btn = document.getElementById('duty-btn');
+            if (userData.isOnline) { btn.classList.add('online'); btn.innerHTML = '✅ ONLINE'; }
+            else { btn.classList.remove('online'); btn.innerHTML = 'GO ONLINE'; }
         }
-
-        window.finishTripPassenger = async () => {
-            const t = userData.activeTrip;
-            if (t && t.dId) await updateDoc(doc(db, "users", t.dId), { totalRating: increment(currentRating) });
-            await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
-            document.getElementById('rating-modal').classList.add('hidden');
-        };
-
-        window.setStar = (n) => {
-            currentRating = n;
-            const stars = document.getElementById('star-box'); stars.innerHTML = '';
-            for (let i = 1; i <= 5; i++) stars.innerHTML += `<i onclick="setStar(${i})" class="fa-solid fa-star cursor-pointer ${i <= n ? 'text-amber-400' : 'text-gray-200'}"></i>`;
-        };
-
-        window.logout = () => { if (userUid) updateDoc(doc(db, "users", userUid), { isOnline: false }); signOut(auth).then(() => location.reload()); };
-        window.triggerSOS = () => { if (confirm("🚨 SOS! Notify emergency services?")) showAlert("SOS SENT", "Help is coming", "error"); };
-        
-        setTimeout(() => setStar(5), 1000);
     </script>
 </body>
 </html>
