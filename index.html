@@ -41,6 +41,8 @@
         #duty-btn.online { background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; }
         .driver-marker-icon { color: #10b981; font-size: 26px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
         .passenger-marker-icon { color: #3b82f6; font-size: 26px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+        /* Hide routing instructions container */
+        .leaflet-routing-container { display: none !important; }
     </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -106,14 +108,19 @@
             </div>
         </div>
 
-        <div id="status-overlay" class="hidden fixed inset-0 bg-emerald-950/95 z-[5000] flex flex-col items-center justify-center p-10 text-white text-center">
+        <div id="status-overlay" class="hidden fixed inset-0 bg-emerald-950/98 z-[5000] flex flex-col items-center justify-center p-10 text-white text-center">
             <div class="w-24 h-24 bg-emerald-500 rounded-full flex items-center justify-center mb-6 animate-pulse">
                 <i class="fa-solid fa-motorcycle text-4xl"></i>
             </div>
-            <h2 class="text-3xl font-black italic">RIDE IN PROGRESS</h2>
-            <p id="ride-status-text" class="text-emerald-200 mt-2">Your driver is heading to destination</p>
-            <p id="active-fare-display" class="text-5xl font-black mt-8 tracking-tighter">₱21</p>
-            <button onclick="triggerSOS()" class="mt-12 w-full py-4 bg-red-600 rounded-2xl font-black text-sm">🚨 EMERGENCY SOS</button>
+            <h2 class="text-3xl font-black italic uppercase tracking-tighter">Ride in Progress</h2>
+            <p id="ride-status-text" class="text-emerald-200 mt-2 font-bold">Safe travels! Your driver is on the way.</p>
+            
+            <div class="mt-8 p-6 bg-white/10 rounded-3xl w-full border border-white/10">
+                <p class="text-[10px] uppercase font-black opacity-60">Agreed Fare</p>
+                <p id="active-fare-display" class="text-6xl font-black tracking-tighter text-amber-400">₱0</p>
+            </div>
+
+            <button onclick="triggerSOS()" class="mt-12 w-full py-5 bg-red-600 rounded-2xl font-black text-sm shadow-lg shadow-red-900/40">🚨 EMERGENCY SOS</button>
         </div>
 
         <div id="content-panel" class="content-card overflow-y-auto pb-32 px-6">
@@ -247,7 +254,6 @@
 
         let userUid, userData, map, markers = {}, routingControl = null, currentRating = 5, selectedRole = null;
 
-        // --- MAP BOUNDARIES (Circles) ---
         function drawBoundaries() {
             const boundaries = [
                 { name: 'Center Bound', pos: [6.632, 124.603], color: '#10b981', radius: 1000 },
@@ -271,13 +277,11 @@
 
             if(destLat && destLng && map) {
                 map.flyTo([destLat, destLng], 15);
-                if(routingControl) map.removeControl(routingControl);
-                routingControl = L.Routing.control({
-                    waypoints: [L.latLng(userData.lat, userData.lng), L.latLng(destLat, destLng)],
-                    createMarker: () => null,
-                    lineOptions: { styles: [{color: '#3b82f6', weight: 4}] },
-                    show: false
-                }).addTo(map);
+                // Updated: Remove existing routing and just fly to destination without drawing the line
+                if(routingControl) {
+                    map.removeControl(routingControl);
+                    routingControl = null;
+                }
             }
         };
 
@@ -410,8 +414,17 @@
                 const nameEl = document.getElementById('wait-driver-name');
                 if (t.status === 'requested') nameEl.innerText = "Finding your driver...";
                 else if (t.status === 'accepted') nameEl.innerText = `${t.dName} is arriving!`;
-                else if (t.status === 'pickedup') overlay.classList.remove('hidden');
-                else if (t.status === 'arrived') document.getElementById('rating-modal').classList.remove('hidden');
+                else if (t.status === 'pickedup') {
+                    overlay.classList.remove('hidden');
+                    // Ensure map is barely visible/interactable in bg
+                    map.dragging.disable();
+                    map.touchZoom.disable();
+                }
+                else if (t.status === 'arrived') {
+                    document.getElementById('rating-modal').classList.remove('hidden');
+                    map.dragging.enable();
+                    map.touchZoom.enable();
+                }
             }
         }
 
