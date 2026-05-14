@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="google-adsense-account" content="ca-pub-3089886074644811">
     <title>Sakay - Drive Or Ride</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -13,14 +12,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* Base Layout Fix */
         body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; touch-action: manipulation; background-color: #f8fafc; height: 100vh; display: flex; flex-direction: column; }
         
-        /* Fixed Map Container */
         #map-area { height: 45vh; width: 100%; position: relative; z-index: 1; flex-shrink: 0; transition: height 0.3s ease; }
         #map { height: 100%; width: 100%; }
 
-        /* Content Panel restructured to occupy the bottom half properly */
         .content-card { 
             position: relative; flex-grow: 1; margin-top: -2.5rem; 
             background: white; border-top-left-radius: 2.5rem; border-top-right-radius: 2.5rem;
@@ -28,8 +24,6 @@
             overflow-y: auto; padding-bottom: 100px;
         }
 
-        .ad-banner { height: 60px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; overflow: hidden; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
-        
         .marquee-container { 
             background: #064e3b; color: #fbbf24; overflow: hidden; white-space: nowrap; 
             display: flex; align-items: center; min-height: 35px; font-size: 11px; font-weight: 800; letter-spacing: 1px; flex-shrink: 0;
@@ -64,14 +58,7 @@
         .history-item { border-left: 4px solid #10b981; }
     </style>
 </head>
-<body class="h-screen flex flex-col">
-
-    <amp-auto-ads type="adsense" data-ad-client="ca-pub-3089886074644811"></amp-auto-ads>
-    
-    <div class="ad-banner">
-        <ins class="adsbygoogle" style="display:inline-block;width:320px;height:50px" data-ad-client="ca-pub-3089886074644811" data-ad-slot="YOUR_AD_SLOT"></ins>
-        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-    </div>
+<body>
 
     <div class="marquee-container">
         <div id="dynamic-marquee" class="marquee-content">🚀 LOADING SAKAY SYSTEM... PLEASE WAIT... 🚀</div>
@@ -88,8 +75,8 @@
         
         <div class="max-w-xs mx-auto w-full space-y-4">
             <div id="login-actions" class="space-y-4">
-                <input id="auth-email" type="email" placeholder="Email" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none placeholder-white/50 focus:bg-white/20">
-                <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none placeholder-white/50 focus:bg-white/20">
+                <input id="auth-email" type="email" placeholder="Email" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none text-white">
+                <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none text-white">
                 <button onclick="handleAuth('login')" class="w-full py-4 bg-amber-400 text-emerald-900 rounded-2xl font-black text-lg shadow-xl">SIGN IN</button>
                 <button onclick="showRegisterUI()" class="w-full py-4 border border-white/30 rounded-2xl font-bold text-sm">Create New Account</button>
             </div>
@@ -103,10 +90,10 @@
                         <i class="fa-solid fa-motorcycle text-2xl mb-1"></i><p class="text-[10px] font-black uppercase">Driver</p>
                     </div>
                 </div>
-                <input id="reg-alias" type="text" placeholder="Full Name" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none">
+                <input id="reg-alias" type="text" placeholder="Full Name" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none text-white">
                 <div id="driver-fields" class="hidden space-y-3">
-                    <input id="reg-mtop" type="text" placeholder="MTOP Number" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none">
-                    <input id="reg-plate" type="text" placeholder="Plate Number" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none">
+                    <input id="reg-mtop" type="text" placeholder="MTOP Number" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none text-white">
+                    <input id="reg-plate" type="text" placeholder="Plate Number" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none text-white">
                 </div>
                 <button onclick="handleAuth('register')" class="w-full py-4 bg-white text-emerald-700 rounded-2xl font-black shadow-xl">REGISTER NOW</button>
                 <button onclick="showLoginUI()" class="w-full text-white/60 text-xs">← Back to Login</button>
@@ -129,6 +116,22 @@
             </div>
         </div>
 
+        <div id="booking-modal" class="hidden fixed inset-0 z-[9500] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
+            <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa-solid fa-motorcycle text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-black text-gray-800">Confirm Booking?</h3>
+                    <p class="text-gray-500 text-sm mt-2">Book ride with <span id="modal-driver-name" class="font-bold text-emerald-600"></span></p>
+                </div>
+                <div class="space-y-3">
+                    <button id="confirm-booking-btn" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-lg">CONFIRM RIDE</button>
+                    <button onclick="closeBookingModal()" class="w-full py-4 bg-gray-100 text-gray-500 rounded-2xl font-bold">CANCEL</button>
+                </div>
+            </div>
+        </div>
+
         <div id="status-overlay" class="hidden flex flex-col p-6 text-white overflow-hidden">
             <div class="flex justify-between items-center mb-4 cursor-pointer" onclick="toggleOverlaySize()">
                 <div class="flex items-center gap-3">
@@ -140,11 +143,8 @@
                         <p id="ride-status-text" class="text-[10px] text-emerald-200 font-bold">On your way to destination</p>
                     </div>
                 </div>
-                <button class="bg-white/10 w-8 h-8 rounded-full flex items-center justify-center">
-                    <i id="toggle-icon" class="fa-solid fa-chevron-down text-xs"></i>
-                </button>
+                <button class="bg-white/10 w-8 h-8 rounded-full flex items-center justify-center"><i id="toggle-icon" class="fa-solid fa-chevron-down text-xs"></i></button>
             </div>
-            
             <div id="overlay-body" class="space-y-6">
                 <div class="grid grid-cols-2 gap-3">
                     <div class="bg-white/10 p-4 rounded-2xl border border-white/10">
@@ -156,12 +156,9 @@
                         <p class="text-xs font-black">24/7 Monitored</p>
                     </div>
                 </div>
-
-                <div class="space-y-3">
-                    <button onclick="triggerSOS()" class="w-full py-4 bg-red-600 rounded-2xl font-black text-xs shadow-lg shadow-red-900/40 uppercase tracking-widest">
-                        <i class="fa-solid fa-shield-heart mr-2"></i> Emergency SOS
-                    </button>
-                </div>
+                <button onclick="triggerSOS()" class="w-full py-4 bg-red-600 rounded-2xl font-black text-xs shadow-lg shadow-red-900/40 uppercase tracking-widest">
+                    <i class="fa-solid fa-shield-heart mr-2"></i> Emergency SOS
+                </button>
             </div>
         </div>
 
@@ -176,28 +173,20 @@
                     <div id="driver-actions" class="flex gap-2"></div>
                 </div>
                 <div class="text-center py-4">
-                    <button id="duty-btn" onclick="toggleDuty()" class="w-full py-16 text-3xl font-black uppercase rounded-[2.5rem] bg-gray-50 text-gray-300 border-2 border-dashed border-gray-200 transition-all">
-                        GO ONLINE
-                    </button>
+                    <button id="duty-btn" onclick="toggleDuty()" class="w-full py-16 text-3xl font-black uppercase rounded-[2.5rem] bg-gray-50 text-gray-300 border-2 border-dashed border-gray-200 transition-all">GO ONLINE</button>
                 </div>
             </div>
 
             <div id="passenger-panel" class="hidden">
                 <div class="bg-blue-600 p-4 rounded-2xl mb-4 flex justify-between items-center text-white shadow-lg">
-                    <div>
-                        <p class="text-[10px] font-bold opacity-80 uppercase">Est. Fare</p>
-                        <p id="display-fare" class="text-3xl font-black">₱0.00</p>
-                    </div>
+                    <div><p class="text-[10px] font-bold opacity-80 uppercase">Est. Fare</p><p id="display-fare" class="text-3xl font-black">₱0.00</p></div>
                     <i class="fa-solid fa-coins text-2xl opacity-50"></i>
                 </div>
-
                 <div class="relative mb-4">
                     <i class="fa-solid fa-location-arrow absolute left-5 top-5 text-emerald-500"></i>
                     <select id="dest-select" onchange="calculateFare()" class="w-full pl-12 p-5 bg-gray-50 rounded-3xl border-2 border-transparent focus:border-emerald-500 outline-none font-bold text-lg appearance-none">
                         <option value="0" disabled selected>Select Destination</option>
-                        <optgroup label="CENTER BOUND">
-                            <option value="21" data-name="Poblacion" data-lat="6.632" data-lng="124.603">Poblacion - ₱21</option>
-                        </optgroup>
+                        <optgroup label="CENTER BOUND"><option value="21" data-name="Poblacion" data-lat="6.632" data-lng="124.603">Poblacion - ₱21</option></optgroup>
                         <optgroup label="NORTH BOUND">
                             <option value="27" data-name="Dansuli (Purok 10)" data-lat="6.645" data-lng="124.600">Dansuli (P10) - ₱27</option>
                             <option value="35" data-name="Impao Boundary" data-lat="6.655" data-lng="124.595">Impao Boundary - ₱35</option>
@@ -234,14 +223,10 @@
             <h2 class="text-4xl font-black tracking-tighter">Hub</h2>
             <button onclick="toggleDashboard(false)" class="w-10 h-10 bg-white rounded-full shadow-sm text-gray-400">✕</button>
         </div>
-
         <div id="history-section" class="hidden space-y-4 mb-8">
             <h4 class="font-black text-gray-800 uppercase text-xs tracking-widest">Ride History</h4>
-            <div id="ride-history-list" class="space-y-3">
-                <p class="text-center text-gray-400 text-xs italic py-10">No rides recorded yet.</p>
-            </div>
+            <div id="ride-history-list" class="space-y-3"></div>
         </div>
-
         <div id="driver-stats" class="hidden grid grid-cols-1 gap-4 mb-8">
             <div class="bg-emerald-600 p-8 rounded-[2.5rem] text-white shadow-xl">
                 <p class="text-xs font-bold opacity-70 uppercase tracking-widest">Total Earnings</p>
@@ -252,7 +237,6 @@
                 <p class="text-3xl font-black text-emerald-600" id="stat-trips">0</p>
             </div>
         </div>
-
         <div class="bg-white rounded-[2rem] p-6 shadow-sm space-y-4">
             <h4 class="font-black text-gray-800 uppercase text-xs tracking-widest mb-2">Account Details</h4>
             <input id="edit-name" type="text" placeholder="Name" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
@@ -265,10 +249,8 @@
     </div>
 
     <div id="rating-modal" class="hidden fixed inset-0 z-[9600] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
-        <div class="bg-white w-full max-sm rounded-[2.5rem] p-8 text-center relative">
-            <button onclick="finishTripPassenger(true)" class="absolute top-6 right-6 text-gray-400 hover:text-gray-600">
-                <i class="fa-solid fa-circle-xmark text-2xl"></i>
-            </button>
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center relative">
+            <button onclick="finishTripPassenger(true)" class="absolute top-6 right-6 text-gray-400"><i class="fa-solid fa-circle-xmark text-2xl"></i></button>
             <h3 class="text-3xl font-black mb-2">Rate your Ride</h3>
             <div id="star-box" class="flex justify-center gap-3 text-4xl my-8 text-amber-400"></div>
             <button onclick="finishTripPassenger(false)" class="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black text-lg">SUBMIT RATING</button>
@@ -293,38 +275,46 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let userUid, userData, map, markers = {}, routingControl = null, currentRating = 5, selectedRole = null;
-        let isOverlayMinimized = false;
+        let userUid, userData, map, markers = {}, routingControl = null, currentRating = 5, selectedRole = null, isOverlayMinimized = false;
 
-        // Overlay Toggle Logic
+        // RESTORED: Open/Close Modal Functions
+        window.openBookingModal = (dId, dName) => {
+            const select = document.getElementById('dest-select');
+            if (parseInt(select.value) === 0) return alert("Select destination first!");
+            document.getElementById('modal-driver-name').innerText = dName;
+            document.getElementById('booking-modal').classList.remove('hidden');
+            document.getElementById('confirm-booking-btn').onclick = () => {
+                confirmBooking(dId);
+                closeBookingModal();
+            };
+        };
+
+        window.closeBookingModal = () => document.getElementById('booking-modal').classList.add('hidden');
+
+        async function confirmBooking(dId) {
+            const select = document.getElementById('dest-select');
+            const fare = parseInt(select.value);
+            const dest = select.options[select.selectedIndex].getAttribute('data-name');
+            const snap = await getDoc(doc(db, "users", dId));
+            const d = snap.data();
+            const trip = { status: 'requested', pId: userUid, pName: userData.name, dId, dName: d.name, dPlate: d.plate, dMtop: d.mtop, dest, fare, timestamp: Date.now() };
+            await updateDoc(doc(db, "users", dId), { activeTrip: trip });
+            await updateDoc(doc(db, "users", userUid), { activeTrip: trip });
+        }
+
         window.toggleOverlaySize = () => {
             const overlay = document.getElementById('status-overlay');
             const icon = document.getElementById('toggle-icon');
             const mapArea = document.getElementById('map-area');
             isOverlayMinimized = !isOverlayMinimized;
-            
-            if (isOverlayMinimized) {
-                overlay.classList.add('minimized');
-                icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
-                mapArea.style.height = '85vh';
-            } else {
-                overlay.classList.remove('minimized');
-                icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
-                mapArea.style.height = '45vh';
-            }
+            if (isOverlayMinimized) { overlay.classList.add('minimized'); icon.classList.replace('fa-chevron-down', 'fa-chevron-up'); mapArea.style.height = '85vh'; }
+            else { overlay.classList.remove('minimized'); icon.classList.replace('fa-chevron-up', 'fa-chevron-down'); mapArea.style.height = '45vh'; }
             setTimeout(() => map.invalidateSize(), 300);
         };
 
         function drawBoundaries() {
-            const boundaries = [
-                { name: 'Center Bound', pos: [6.632, 124.603], color: '#10b981', radius: 1000 },
-                { name: 'North Bound', pos: [6.650, 124.600], color: '#3b82f6', radius: 2500 },
-                { name: 'South Bound', pos: [6.600, 124.610], color: '#f59e0b', radius: 3000 },
-                { name: 'West Bound', pos: [6.630, 124.570], color: '#ef4444', radius: 3500 }
-            ];
-            boundaries.forEach(b => {
-                L.circle(b.pos, { radius: b.radius, color: b.color, weight: 1, fillOpacity: 0.05 }).addTo(map).bindPopup(b.name);
-            });
+            const boundaries = [{ name: 'Center Bound', pos: [6.632, 124.603], color: '#10b981', radius: 1000 }, { name: 'North Bound', pos: [6.650, 124.600], color: '#3b82f6', radius: 2500 }, { name: 'South Bound', pos: [6.600, 124.610], color: '#f59e0b', radius: 3000 }, { name: 'West Bound', pos: [6.630, 124.570], color: '#ef4444', radius: 3500 }];
+            boundaries.forEach(b => L.circle(b.pos, { radius: b.radius, color: b.color, weight: 1, fillOpacity: 0.05 }).addTo(map).bindPopup(b.name));
         }
 
         window.calculateFare = () => {
@@ -335,20 +325,9 @@
         };
 
         window.updateRealTimeRoute = (start, end) => {
-            if (userData.activeTrip && userData.activeTrip.status === 'pickedup') {
-                if (routingControl) { map.removeControl(routingControl); routingControl = null; }
-                return;
-            }
+            if (userData.activeTrip && userData.activeTrip.status === 'pickedup') { if (routingControl) { map.removeControl(routingControl); routingControl = null; } return; }
             if (routingControl) { map.removeControl(routingControl); routingControl = null; }
-            routingControl = L.Routing.control({
-                waypoints: [L.latLng(start[0], start[1]), L.latLng(end[0], end[1])],
-                routeWhileDragging: false,
-                addWaypoints: false,
-                draggableWaypoints: false,
-                fitSelectedRoutes: false,
-                show: false,
-                lineOptions: { styles: [{ color: '#10b981', opacity: 0.8, weight: 6 }] }
-            }).addTo(map);
+            routingControl = L.Routing.control({ waypoints: [L.latLng(start[0], start[1]), L.latLng(end[0], end[1])], routeWhileDragging: false, addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: false, show: false, lineOptions: { styles: [{ color: '#10b981', opacity: 0.8, weight: 6 }] } }).addTo(map);
         };
 
         window.handleAuth = async (t) => {
@@ -361,33 +340,19 @@
                     if (!selectedRole) return alert("Select a role");
                     const alias = document.getElementById('reg-alias').value.trim() || "User";
                     const cred = await createUserWithEmailAndPassword(auth, e, p);
-                    await setDoc(doc(db, "users", cred.user.uid), {
-                        name: alias, role: selectedRole, isOnline: false,
-                        lat: 6.6294, lng: 124.605, income: 0, tripCount: 0,
-                        totalRating: 0, plate: "", mtop: "", lastActive: Date.now(), history: []
-                    });
+                    await setDoc(doc(db, "users", cred.user.uid), { name: alias, role: selectedRole, isOnline: false, lat: 6.6294, lng: 124.605, income: 0, tripCount: 0, totalRating: 0, plate: "", mtop: "", lastActive: Date.now(), history: [] });
                 }
             } catch (err) { alert(err.message); }
         };
 
         onAuthStateChanged(auth, async (u) => {
-            if (u) {
-                userUid = u.uid;
-                const snap = await getDoc(doc(db, "users", userUid));
-                if (snap.exists()) { userData = snap.data(); initApp(); }
-            } else {
-                document.getElementById('auth-screen').classList.remove('hidden');
-                document.getElementById('app-ui').classList.add('hidden');
-            }
+            if (u) { userUid = u.uid; const snap = await getDoc(doc(db, "users", userUid)); if (snap.exists()) { userData = snap.data(); initApp(); } }
+            else { document.getElementById('auth-screen').classList.remove('hidden'); document.getElementById('app-ui').classList.add('hidden'); }
         });
 
         function updateMarquee(role) {
             const marquee = document.getElementById('dynamic-marquee');
-            if (role === 'driver') {
-                marquee.innerText = "🛠️ DRIVER MODE ACTIVE • STAY ONLINE TO RECEIVE REQUESTS • OFFICIAL RATES APPLY • DRIVE SAFELY • 🛠️";
-            } else {
-                marquee.innerText = "👋 PASSENGER MODE • SELECT DESTINATION TO BOOK • CHECK FARE RATES • WEAR A HELMET • 👋";
-            }
+            marquee.innerText = role === 'driver' ? "🛠️ DRIVER MODE ACTIVE • STAY ONLINE TO RECEIVE REQUESTS • OFFICIAL RATES APPLY • 🛠️" : "👋 PASSENGER MODE • SELECT DESTINATION TO BOOK • CHECK FARE RATES • 👋";
         }
 
         function initApp() {
@@ -402,9 +367,7 @@
                 drawBoundaries();
                 setTimeout(() => map.invalidateSize(), 500);
             }
-            navigator.geolocation.watchPosition(p => {
-                updateDoc(doc(db, "users", userUid), { lat: p.coords.latitude, lng: p.coords.longitude, lastActive: Date.now() });
-            }, null, { enableHighAccuracy: true });
+            navigator.geolocation.watchPosition(p => updateDoc(doc(db, "users", userUid), { lat: p.coords.latitude, lng: p.coords.longitude, lastActive: Date.now() }), null, { enableHighAccuracy: true });
             syncData();
         }
 
@@ -413,47 +376,26 @@
                 const now = Date.now();
                 const dList = document.getElementById('driver-list');
                 if (userData.role === 'passenger') dList.innerHTML = '';
-                
-                let driverCoords = null, passengerCoords = null;
-
+                let dCoords = null, pCoords = null;
                 snap.forEach(d => {
                     const data = d.data(), id = d.id;
-                    if (id === userUid) {
-                        userData = data;
-                        handleStatusLogic();
-                        updateDutyButton();
-                        updateHistoryUI();
-                        if (data.role === 'driver') driverCoords = [data.lat, data.lng];
-                        else passengerCoords = [data.lat, data.lng];
-                    }
-
-                    if (userData.activeTrip) {
-                        if (id === userData.activeTrip.dId) driverCoords = [data.lat, data.lng];
-                        if (id === userData.activeTrip.pId) passengerCoords = [data.lat, data.lng];
-                    }
-
+                    if (id === userUid) { userData = data; handleStatusLogic(); updateDutyButton(); updateHistoryUI(); if (data.role === 'driver') dCoords = [data.lat, data.lng]; else pCoords = [data.lat, data.lng]; }
+                    if (userData.activeTrip) { if (id === userData.activeTrip.dId) dCoords = [data.lat, data.lng]; if (id === userData.activeTrip.pId) pCoords = [data.lat, data.lng]; }
                     const isFresh = data.lastActive && (now - data.lastActive < 180000);
                     if (isFresh && data.lat && data.lng && (data.isOnline || (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId)))) {
                         if (markers[id]) markers[id].setLatLng([data.lat, data.lng]);
-                        else markers[id] = L.marker([data.lat, data.lng], {
-                            icon: L.divIcon({ html: data.role === 'driver' ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`, className: '', iconSize: [40, 40] })
-                        }).addTo(map);
+                        else markers[id] = L.marker([data.lat, data.lng], { icon: L.divIcon({ html: data.role === 'driver' ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`, className: '', iconSize: [40, 40] }) }).addTo(map);
                     } else if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
-
                     if (userData.role === 'passenger' && data.role === 'driver' && data.isOnline && isFresh && !data.activeTrip) {
                         const avg = data.tripCount > 0 ? (data.totalRating / data.tripCount).toFixed(1) : "5.0";
-                        dList.innerHTML += `<div class="p-5 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm" onclick="bookDriver('${id}')">
+                        // RESTORED: Call openBookingModal instead of bookDriver
+                        dList.innerHTML += `<div class="p-5 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm" onclick="openBookingModal('${id}', '${data.name}')">
                             <div><p class="font-black text-gray-800">${data.name}</p><p class="text-[10px] text-amber-500 font-bold uppercase">⭐ ${avg} • Plate: ${data.plate || 'N/A'}</p></div>
                             <button class="bg-emerald-600 text-white px-6 py-2 rounded-2xl text-xs font-black">BOOK</button></div>`;
                     }
                 });
-
-                if (userData.activeTrip && driverCoords && passengerCoords && userData.activeTrip.status !== 'pickedup') {
-                    updateRealTimeRoute(driverCoords, passengerCoords);
-                } else if (routingControl) {
-                    map.removeControl(routingControl);
-                    routingControl = null;
-                }
+                if (userData.activeTrip && dCoords && pCoords && userData.activeTrip.status !== 'pickedup') updateRealTimeRoute(dCoords, pCoords);
+                else if (routingControl) { map.removeControl(routingControl); routingControl = null; }
             });
         }
 
@@ -464,43 +406,18 @@
             const dActions = document.getElementById('driver-actions');
             const contentPanel = document.getElementById('content-panel');
             const mapArea = document.getElementById('map-area');
-            
-            overlay.classList.add('hidden'); 
-            tripCard.classList.add('hidden'); 
-            pWait.classList.add('hidden');
-            contentPanel.classList.remove('hidden');
-
-            if (!userData.activeTrip) {
-                mapArea.style.height = '45vh';
-                return;
-            }
-
+            overlay.classList.add('hidden'); tripCard.classList.add('hidden'); pWait.classList.add('hidden'); contentPanel.classList.remove('hidden');
+            if (!userData.activeTrip) { mapArea.style.height = '45vh'; return; }
             const t = userData.activeTrip;
             if (userData.role === 'driver') {
-                tripCard.classList.remove('hidden');
-                document.getElementById('trip-p-name').innerText = t.pName;
-                document.getElementById('trip-p-dest').innerText = "To: " + t.dest;
-                document.getElementById('trip-p-fare').innerText = "Fare: ₱" + t.fare;
+                tripCard.classList.remove('hidden'); document.getElementById('trip-p-name').innerText = t.pName; document.getElementById('trip-p-dest').innerText = "To: " + t.dest; document.getElementById('trip-p-fare').innerText = "Fare: ₱" + t.fare;
                 if (t.status === 'requested') dActions.innerHTML = `<button onclick="updateStatus('accepted')" class="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black">ACCEPT</button><button onclick="updateStatus('declined')" class="flex-1 py-4 bg-red-100 text-red-600 rounded-2xl font-black">DECLINE</button>`;
                 else if (t.status === 'accepted') dActions.innerHTML = `<button onclick="updateStatus('pickedup')" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black">PICKED UP</button>`;
                 else if (t.status === 'pickedup') dActions.innerHTML = `<button onclick="updateStatus('arrived')" class="w-full py-4 bg-orange-600 text-white rounded-2xl font-black">COMPLETE RIDE</button>`;
             } else {
-                pWait.classList.remove('hidden');
-                document.getElementById('active-fare-display').innerText = "₱" + t.fare;
-                const nameEl = document.getElementById('wait-driver-name');
-                
-                if (t.status === 'requested') nameEl.innerText = "Finding your driver...";
-                else if (t.status === 'accepted') nameEl.innerText = `${t.dName} is arriving!`;
-                else if (t.status === 'pickedup') { 
-                    overlay.classList.remove('hidden'); 
-                    contentPanel.classList.add('hidden');
-                    if (!isOverlayMinimized) mapArea.style.height = '45vh';
-                }
-                else if (t.status === 'arrived') { 
-                    document.getElementById('rating-modal').classList.remove('hidden'); 
-                    overlay.classList.add('hidden');
-                    contentPanel.classList.remove('hidden');
-                }
+                pWait.classList.remove('hidden'); document.getElementById('active-fare-display').innerText = "₱" + t.fare; const nameEl = document.getElementById('wait-driver-name');
+                if (t.status === 'requested') nameEl.innerText = "Finding your driver..."; else if (t.status === 'accepted') nameEl.innerText = `${t.dName} is arriving!`; else if (t.status === 'pickedup') { overlay.classList.remove('hidden'); contentPanel.classList.add('hidden'); if (!isOverlayMinimized) mapArea.style.height = '45vh'; }
+                else if (t.status === 'arrived') { document.getElementById('rating-modal').classList.remove('hidden'); overlay.classList.add('hidden'); contentPanel.classList.remove('hidden'); }
             }
         }
 
@@ -508,29 +425,8 @@
             const list = document.getElementById('ride-history-list');
             if (!userData.history || userData.history.length === 0) return;
             list.innerHTML = '';
-            userData.history.slice().reverse().forEach(h => {
-                list.innerHTML += `<div class="history-item p-4 bg-white rounded-2xl shadow-sm">
-                    <div class="flex justify-between items-start mb-2">
-                        <p class="font-black text-gray-800 text-sm">${h.driverName}</p>
-                        <p class="text-[9px] text-gray-400 font-bold uppercase">${h.date} • ${h.time}</p>
-                    </div>
-                    <p class="text-[10px] text-gray-500 font-bold mb-1">📍 To: ${h.dest}</p>
-                    <p class="text-[10px] text-emerald-600 font-bold">Plate: ${h.plate} • MTOP: ${h.mtop}</p>
-                </div>`;
-            });
+            userData.history.slice().reverse().forEach(h => { list.innerHTML += `<div class="history-item p-4 bg-white rounded-2xl shadow-sm"><div class="flex justify-between items-start mb-2"><p class="font-black text-gray-800 text-sm">${h.driverName}</p><p class="text-[9px] text-gray-400 font-bold uppercase">${h.date}</p></div><p class="text-[10px] text-gray-500 font-bold mb-1">📍 To: ${h.dest}</p></div>`; });
         }
-
-        window.bookDriver = async (dId) => {
-            const select = document.getElementById('dest-select');
-            const fare = parseInt(select.value);
-            if(fare === 0) return alert("Select destination first!");
-            const dest = select.options[select.selectedIndex].getAttribute('data-name');
-            const snap = await getDoc(doc(db, "users", dId));
-            const d = snap.data();
-            const trip = { status: 'requested', pId: userUid, pName: userData.name, dId, dName: d.name, dPlate: d.plate, dMtop: d.mtop, dest, fare, timestamp: Date.now() };
-            await updateDoc(doc(db, "users", dId), { activeTrip: trip });
-            await updateDoc(doc(db, "users", userUid), { activeTrip: trip });
-        };
 
         window.updateStatus = async (s) => {
             const t = userData.activeTrip; if (!t) return;
@@ -539,14 +435,8 @@
                 const historyEntry = { driverName: t.dName, plate: t.dPlate || 'N/A', mtop: t.dMtop || 'N/A', dest: t.dest, date: now.toLocaleDateString(), time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
                 await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField(), income: increment(t.fare), tripCount: increment(1) });
                 await updateDoc(doc(db, "users", t.pId), { "activeTrip.status": "arrived", history: arrayUnion(historyEntry) });
-            } else if (s === 'declined') {
-                await updateDoc(doc(db, "users", t.pId), { activeTrip: deleteField() });
-                await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
-            } else {
-                const up = { "activeTrip.status": s };
-                await updateDoc(doc(db, "users", userUid), up);
-                await updateDoc(doc(db, "users", t.pId), up);
-            }
+            } else if (s === 'declined') { await updateDoc(doc(db, "users", t.pId), { activeTrip: deleteField() }); await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() }); }
+            else { const up = { "activeTrip.status": s }; await updateDoc(doc(db, "users", userUid), up); await updateDoc(doc(db, "users", t.pId), up); }
         };
 
         window.finishTripPassenger = async (isSkipped) => {
@@ -556,68 +446,14 @@
             document.getElementById('rating-modal').classList.add('hidden');
         };
 
-        window.cancelTrip = async () => {
-            if(!confirm("Are you sure you want to cancel?")) return;
-            const t = userData.activeTrip;
-            if(t) {
-                await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField() });
-                await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
-            }
-        };
-
-        window.toggleDashboard = (show) => {
-            const dash = document.getElementById('user-dashboard');
-            if (show) {
-                dash.classList.remove('hidden');
-                document.getElementById('history-section').classList.toggle('hidden', userData.role !== 'passenger');
-                document.getElementById('driver-stats').classList.toggle('hidden', userData.role !== 'driver');
-                document.getElementById('driver-only-inputs').classList.toggle('hidden', userData.role !== 'driver');
-                document.getElementById('edit-name').value = userData.name || '';
-                if(userData.role === 'driver') {
-                    document.getElementById('edit-plate').value = userData.plate || '';
-                    document.getElementById('edit-mtop').value = userData.mtop || '';
-                }
-            } else dash.classList.add('hidden');
-        };
-
-        window.updateProfile = async () => {
-            let data = { name: document.getElementById('edit-name').value };
-            if(userData.role === 'driver') {
-                data.plate = document.getElementById('edit-plate').value;
-                data.mtop = document.getElementById('edit-mtop').value;
-            }
-            await updateDoc(doc(db, "users", userUid), data);
-            showAlert("UPDATED", "Profile saved");
-        };
-
-        window.showAlert = (title, body, type = 'success') => {
-            const el = document.getElementById('alert-popup');
-            document.getElementById('alert-title').innerText = title;
-            document.getElementById('alert-body').innerText = body;
-            document.getElementById('alert-icon').className = `fa-solid fa-${type === 'success' ? 'check-circle text-emerald-500' : 'times-circle text-red-500'}`;
-            el.classList.remove('hidden');
-            setTimeout(() => el.classList.add('hidden'), 5000);
-        };
-
-        window.setStar = (n) => {
-            currentRating = n;
-            const stars = document.getElementById('star-box');
-            stars.innerHTML = '';
-            for (let i = 1; i <= 5; i++) {
-                stars.innerHTML += `<i onclick="setStar(${i})" class="fa-solid fa-star cursor-pointer ${i <= n ? 'text-amber-400' : 'text-gray-200'}"></i>`;
-            }
-        };
-
+        window.cancelTrip = async () => { if(!confirm("Are you sure?")) return; const t = userData.activeTrip; if(t) { await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField() }); await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() }); } };
+        window.toggleDashboard = (show) => document.getElementById('user-dashboard').classList.toggle('hidden', !show);
+        window.updateProfile = async () => { let data = { name: document.getElementById('edit-name').value }; if(userData.role === 'driver') { data.plate = document.getElementById('edit-plate').value; data.mtop = document.getElementById('edit-mtop').value; } await updateDoc(doc(db, "users", userUid), data); alert("Saved!"); };
+        window.setStar = (n) => { currentRating = n; const stars = document.getElementById('star-box'); stars.innerHTML = ''; for (let i = 1; i <= 5; i++) stars.innerHTML += `<i onclick="setStar(${i})" class="fa-solid fa-star ${i <= n ? 'text-amber-400' : 'text-gray-200'}"></i>`; };
         window.toggleDuty = () => updateDoc(doc(db, "users", userUid), { isOnline: !userData.isOnline });
         window.logout = () => { if (userUid) updateDoc(doc(db, "users", userUid), { isOnline: false }); signOut(auth).then(() => location.reload()); };
-        window.triggerSOS = () => { if (confirm("🚨 SOS! Notify emergency?")) showAlert("SOS SENT", "Help coming", "error"); };
-
-        function updateDutyButton() {
-            const btn = document.getElementById('duty-btn');
-            if (userData.isOnline) { btn.classList.add('online'); btn.innerHTML = '✅ ONLINE'; }
-            else { btn.classList.remove('online'); btn.innerHTML = 'GO ONLINE'; }
-        }
-
+        window.triggerSOS = () => alert("SOS Triggered!");
+        function updateDutyButton() { const btn = document.getElementById('duty-btn'); if (userData.isOnline) { btn.classList.add('online'); btn.innerHTML = '✅ ONLINE'; } else { btn.classList.remove('online'); btn.innerHTML = 'GO ONLINE'; } }
         window.showRegisterUI = () => { document.getElementById('login-actions').classList.add('hidden'); document.getElementById('reg-ui').classList.remove('hidden'); };
         window.showLoginUI = () => { document.getElementById('login-actions').classList.remove('hidden'); document.getElementById('reg-ui').classList.add('hidden'); };
         window.selectRole = (r) => { selectedRole = r; document.getElementById('role-p').classList.toggle('active', r==='passenger'); document.getElementById('role-d').classList.toggle('active', r==='driver'); document.getElementById('driver-fields').classList.toggle('hidden', r!=='driver'); };
