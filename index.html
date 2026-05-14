@@ -42,6 +42,7 @@
         .driver-marker-icon { color: #10b981; font-size: 26px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
         .passenger-marker-icon { color: #3b82f6; font-size: 26px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
         .leaflet-routing-container { display: none !important; }
+        .history-item { border-left: 4px solid #10b981; }
     </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -125,19 +126,6 @@
         <div id="content-panel" class="content-card overflow-y-auto pb-32 px-6">
             <div class="w-12 h-1 bg-gray-200 rounded-full mx-auto my-4"></div>
 
-            <div id="fare-matrix-container" class="hidden mb-6 p-5 bg-slate-100 rounded-3xl border border-gray-200">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-black text-gray-800 text-sm">OFFICIAL FARE TARIFF</h3>
-                    <button onclick="toggleFareMatrix()" class="text-xs font-bold text-red-500">CLOSE</button>
-                </div>
-                <div class="grid grid-cols-2 gap-3 text-[10px] font-bold">
-                    <div class="p-2 bg-white rounded-xl">📍 Center: ₱21</div>
-                    <div class="p-2 bg-white rounded-xl">⛰️ North: ₱27 - ₱68</div>
-                    <div class="p-2 bg-white rounded-xl">🌊 South: ₱27 - ₱55</div>
-                    <div class="p-2 bg-white rounded-xl">☀️ East: ₱27 - ₱41</div>
-                </div>
-            </div>
-
             <div id="driver-panel" class="hidden">
                 <div id="trip-card" class="hidden mb-6 p-6 bg-emerald-50 border border-emerald-100 rounded-3xl">
                     <h4 id="trip-p-name" class="text-xl font-black text-gray-800"></h4>
@@ -171,20 +159,14 @@
                         <optgroup label="NORTH BOUND">
                             <option value="27" data-name="Dansuli (Purok 10)" data-lat="6.645" data-lng="124.600">Dansuli (P10) - ₱27</option>
                             <option value="35" data-name="Impao Boundary" data-lat="6.655" data-lng="124.595">Impao Boundary - ₱35</option>
-                            <option value="55" data-name="Mapantig" data-lat="6.662" data-lng="124.588">Mapantig - ₱55</option>
                         </optgroup>
                         <optgroup label="SOUTH BOUND">
                             <option value="27" data-name="Kalawag 1" data-lat="6.618" data-lng="124.608">Kalawag 1 - ₱27</option>
-                            <option value="35" data-name="Bambad (Highway)" data-lat="6.605" data-lng="124.612">Bambad Highway - ₱35</option>
                             <option value="68" data-name="Kolambog Proper" data-lat="6.585" data-lng="124.615">Kolambog - ₱68</option>
-                        </optgroup>
-                        <optgroup label="WEST BOUND">
-                            <option value="27" data-name="Kalawag III" data-lat="6.635" data-lng="124.590">Kalawag III - ₱27</option>
-                            <option value="68" data-name="Tayugo" data-lat="6.630" data-lng="124.560">Tayugo - ₱68</option>
                         </optgroup>
                     </select>
                 </div>
-                <button onclick="toggleFareMatrix()" class="w-full mb-4 py-2 text-xs font-bold text-blue-600 bg-blue-50 rounded-xl">Show Full Rate List</button>
+                
                 <div id="p-waiting-card" class="hidden mb-6 p-6 bg-blue-50 border border-blue-100 rounded-3xl text-center">
                     <p id="wait-driver-name" class="font-black text-blue-800 mb-4"></p>
                     <button onclick="cancelTrip()" class="px-6 py-2 bg-red-100 text-red-600 rounded-full text-xs font-black">CANCEL REQUEST</button>
@@ -200,12 +182,13 @@
         </div>
     </div>
 
-    <div id="driver-dashboard" class="hidden fixed inset-0 z-[8000] bg-slate-50 overflow-y-auto p-6 pb-32">
+    <div id="dashboard-screen" class="hidden fixed inset-0 z-[8000] bg-slate-50 overflow-y-auto p-6 pb-32">
         <div class="flex justify-between items-center mb-8">
             <h2 class="text-4xl font-black tracking-tighter">Hub</h2>
             <button onclick="toggleDashboard(false)" class="w-10 h-10 bg-white rounded-full shadow-sm text-gray-400">✕</button>
         </div>
-        <div class="grid grid-cols-1 gap-4 mb-8">
+
+        <div id="driver-stats" class="hidden space-y-4 mb-8">
             <div class="bg-emerald-600 p-8 rounded-[2.5rem] text-white shadow-xl">
                 <p class="text-xs font-bold opacity-70 uppercase tracking-widest">Total Earnings</p>
                 <p class="text-5xl font-black mt-2">₱<span id="stat-income">0</span></p>
@@ -215,11 +198,20 @@
                 <p class="text-3xl font-black text-emerald-600" id="stat-trips">0</p>
             </div>
         </div>
+
+        <div id="passenger-history-container" class="hidden space-y-4 mb-8">
+            <h4 class="font-black text-gray-800 uppercase text-xs tracking-widest mb-4">Ride History</h4>
+            <div id="history-list" class="space-y-3">
+                </div>
+        </div>
+
         <div class="bg-white rounded-[2rem] p-6 shadow-sm space-y-4">
-            <h4 class="font-black text-gray-800 uppercase text-xs tracking-widest mb-2">Vehicle Details</h4>
+            <h4 class="font-black text-gray-800 uppercase text-xs tracking-widest mb-2">Account Details</h4>
             <input id="edit-name" type="text" placeholder="Name" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
-            <input id="edit-mtop" type="text" placeholder="MTOP" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
-            <input id="edit-plate" type="text" placeholder="Plate" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
+            <div id="driver-edit-fields" class="hidden space-y-4">
+                <input id="edit-mtop" type="text" placeholder="MTOP" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
+                <input id="edit-plate" type="text" placeholder="Plate" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
+            </div>
             <button onclick="updateProfile()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-lg">SAVE CHANGES</button>
         </div>
     </div>
@@ -238,7 +230,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField, increment, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
@@ -255,18 +247,6 @@
 
         let userUid, userData, map, markers = {}, routingControl = null, currentRating = 5, selectedRole = null;
 
-        function drawBoundaries() {
-            const boundaries = [
-                { name: 'Center Bound', pos: [6.632, 124.603], color: '#10b981', radius: 1000 },
-                { name: 'North Bound', pos: [6.650, 124.600], color: '#3b82f6', radius: 2500 },
-                { name: 'South Bound', pos: [6.600, 124.610], color: '#f59e0b', radius: 3000 },
-                { name: 'West Bound', pos: [6.630, 124.570], color: '#ef4444', radius: 3500 }
-            ];
-            boundaries.forEach(b => {
-                L.circle(b.pos, { radius: b.radius, color: b.color, weight: 1, fillOpacity: 0.05 }).addTo(map).bindPopup(b.name);
-            });
-        }
-
         window.calculateFare = () => {
             const select = document.getElementById('dest-select');
             const opt = select.options[select.selectedIndex];
@@ -275,48 +255,13 @@
         };
 
         window.updateRealTimeRoute = (start, end) => {
-            if (routingControl) {
-                map.removeControl(routingControl);
-                routingControl = null;
-            }
+            if (routingControl) { map.removeControl(routingControl); routingControl = null; }
             routingControl = L.Routing.control({
                 waypoints: [L.latLng(start[0], start[1]), L.latLng(end[0], end[1])],
-                routeWhileDragging: false,
-                addWaypoints: false,
-                draggableWaypoints: false,
-                fitSelectedRoutes: false,
-                show: false,
+                routeWhileDragging: false, addWaypoints: false, draggableWaypoints: false,
+                fitSelectedRoutes: false, show: false,
                 lineOptions: { styles: [{ color: '#10b981', opacity: 0.8, weight: 6 }] }
             }).addTo(map);
-        };
-
-        window.showAlert = (title, body, type = 'success') => {
-            const el = document.getElementById('alert-popup');
-            document.getElementById('alert-title').innerText = title;
-            document.getElementById('alert-body').innerText = body;
-            document.getElementById('alert-icon').className = `fa-solid fa-${type === 'success' ? 'check-circle text-emerald-500' : 'times-circle text-red-500'}`;
-            el.classList.remove('hidden');
-            setTimeout(() => el.classList.add('hidden'), 5000);
-        };
-
-        window.setStar = (n) => {
-            currentRating = n;
-            const stars = document.getElementById('star-box');
-            stars.innerHTML = '';
-            for (let i = 1; i <= 5; i++) {
-                stars.innerHTML += `<i onclick="setStar(${i})" class="fa-solid fa-star cursor-pointer ${i <= n ? 'text-amber-400' : 'text-gray-200'}"></i>`;
-            }
-        };
-
-        window.toggleFareMatrix = () => document.getElementById('fare-matrix-container').classList.toggle('hidden');
-        window.showRegisterUI = () => { document.getElementById('login-actions').classList.add('hidden'); document.getElementById('reg-ui').classList.remove('hidden'); };
-        window.showLoginUI = () => { document.getElementById('login-actions').classList.remove('hidden'); document.getElementById('reg-ui').classList.add('hidden'); };
-        
-        window.selectRole = (role) => { 
-            selectedRole = role; 
-            document.getElementById('role-p').classList.toggle('active', role==='passenger'); 
-            document.getElementById('role-d').classList.toggle('active', role==='driver'); 
-            document.getElementById('driver-fields').classList.toggle('hidden', role !== 'driver'); 
         };
 
         window.handleAuth = async (t) => {
@@ -353,11 +298,11 @@
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-ui').classList.replace('hidden', 'flex');
             document.getElementById(userData.role + '-panel').classList.remove('hidden');
-            setStar(5);
+            if (userData.role === 'driver') document.getElementById('driver-edit-fields').classList.remove('hidden');
+            
             if (!map) {
                 map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 16);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-                drawBoundaries();
             }
             navigator.geolocation.watchPosition(p => {
                 updateDoc(doc(db, "users", userUid), { lat: p.coords.latitude, lng: p.coords.longitude, lastActive: Date.now() });
@@ -383,7 +328,6 @@
                         else passengerCoords = [data.lat, data.lng];
                     }
 
-                    // Track coordinates for the route line
                     if (userData.activeTrip) {
                         if (id === userData.activeTrip.dId) driverCoords = [data.lat, data.lng];
                         if (id === userData.activeTrip.pId) passengerCoords = [data.lat, data.lng];
@@ -405,8 +349,8 @@
                     }
                 });
 
-                // Update Route Line if active trip exists and coordinates are found
-                if (userData.activeTrip && driverCoords && passengerCoords) {
+                // Line only shows during "Accepted" status (Driver heading to passenger)
+                if (userData.activeTrip && userData.activeTrip.status === 'accepted' && driverCoords && passengerCoords) {
                     updateRealTimeRoute(driverCoords, passengerCoords);
                 } else if (routingControl) {
                     map.removeControl(routingControl);
@@ -425,23 +369,17 @@
                 document.getElementById('trip-p-name').innerText = t.pName;
                 document.getElementById('trip-p-dest').innerText = "To: " + t.dest;
                 document.getElementById('trip-p-fare').innerText = "Fare: ₱" + t.fare;
-                if (t.status === 'requested') dActions.innerHTML = `<button onclick="updateStatus('accepted')" class="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black">ACCEPT</button><button onclick="updateStatus('declined')" class="flex-1 py-4 bg-red-100 text-red-600 rounded-2xl font-black">DECLINE</button>`;
-                else if (t.status === 'accepted') dActions.innerHTML = `<button onclick="updateStatus('pickedup')" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black">PICKED UP</button>`;
-                else if (t.status === 'pickedup') dActions.innerHTML = `<button onclick="updateStatus('arrived')" class="w-full py-4 bg-orange-600 text-white rounded-2xl font-black">COMPLETE RIDE</button>`;
+                if (t.status === 'requested') dActions.innerHTML = `<button onclick="updateStatus('accepted')" class="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black text-sm">ACCEPT</button><button onclick="updateStatus('declined')" class="flex-1 py-4 bg-red-100 text-red-600 rounded-2xl font-black text-sm">DECLINE</button>`;
+                else if (t.status === 'accepted') dActions.innerHTML = `<button onclick="updateStatus('pickedup')" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-sm">PICKED UP</button>`;
+                else if (t.status === 'pickedup') dActions.innerHTML = `<button onclick="updateStatus('arrived')" class="w-full py-4 bg-orange-600 text-white rounded-2xl font-black text-sm">COMPLETE RIDE</button>`;
             } else {
                 pWait.classList.remove('hidden');
                 document.getElementById('active-fare-display').innerText = "₱" + t.fare;
                 const nameEl = document.getElementById('wait-driver-name');
                 if (t.status === 'requested') nameEl.innerText = "Finding your driver...";
                 else if (t.status === 'accepted') nameEl.innerText = `${t.dName} is arriving!`;
-                else if (t.status === 'pickedup') {
-                    overlay.classList.remove('hidden');
-                    map.dragging.disable(); map.touchZoom.disable();
-                }
-                else if (t.status === 'arrived') {
-                    document.getElementById('rating-modal').classList.remove('hidden');
-                    map.dragging.enable(); map.touchZoom.enable();
-                }
+                else if (t.status === 'pickedup') { overlay.classList.remove('hidden'); map.dragging.disable(); map.touchZoom.disable(); }
+                else if (t.status === 'arrived') { document.getElementById('rating-modal').classList.remove('hidden'); map.dragging.enable(); map.touchZoom.enable(); }
             }
         }
 
@@ -451,16 +389,10 @@
             if(fare === 0) return alert("Select destination first!");
             const dest = select.options[select.selectedIndex].getAttribute('data-name');
             const snap = await getDoc(doc(db, "users", dId));
-            const trip = { status: 'requested', pId: userUid, pName: userData.name, dId, dName: snap.data().name, dest, fare, timestamp: Date.now() };
+            const dData = snap.data();
+            const trip = { status: 'requested', pId: userUid, pName: userData.name, dId, dName: dData.name, dPlate: dData.plate || 'N/A', dMtop: dData.mtop || 'N/A', dest, fare, timestamp: Date.now() };
             await updateDoc(doc(db, "users", dId), { activeTrip: trip });
             await updateDoc(doc(db, "users", userUid), { activeTrip: trip });
-        };
-
-        window.cancelTrip = async () => {
-            const t = userData.activeTrip; if (!t) return;
-            if (t.dId) await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField(), notification: "Cancelled" });
-            await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
-            showAlert("CANCELLED", "Trip request removed", "error");
         };
 
         window.updateStatus = async (s) => {
@@ -468,6 +400,11 @@
             if (s === 'arrived') {
                 await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField(), income: increment(t.fare), tripCount: increment(1) });
                 await updateDoc(doc(db, "users", t.pId), { "activeTrip.status": "arrived" });
+                // Save to Passenger History
+                await addDoc(collection(db, "users", t.pId, "history"), {
+                    driverName: t.dName, plate: t.dPlate, mtop: t.dMtop, 
+                    dest: t.dest, fare: t.fare, date: new Date().toLocaleString(), timestamp: Date.now()
+                });
             } else if (s === 'declined') {
                 await updateDoc(doc(db, "users", t.pId), { activeTrip: deleteField() });
                 await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
@@ -478,12 +415,46 @@
             }
         };
 
-        window.toggleDuty = () => updateDoc(doc(db, "users", userUid), { isOnline: !userData.isOnline });
-        window.toggleDashboard = (show) => { if (userData.role === 'driver') document.getElementById('driver-dashboard').classList.toggle('hidden', !show); };
-        window.updateProfile = async () => {
-            await updateDoc(doc(db, "users", userUid), { name: document.getElementById('edit-name').value, mtop: document.getElementById('edit-mtop').value, plate: document.getElementById('edit-plate').value });
-            showAlert("UPDATED", "Profile saved");
+        window.toggleDashboard = async (show) => {
+            const screen = document.getElementById('dashboard-screen');
+            if (!show) return screen.classList.add('hidden');
+            
+            screen.classList.remove('hidden');
+            if (userData.role === 'driver') {
+                document.getElementById('driver-stats').classList.remove('hidden');
+                document.getElementById('stat-income').innerText = userData.income || 0;
+                document.getElementById('stat-trips').innerText = userData.tripCount || 0;
+            } else {
+                document.getElementById('passenger-history-container').classList.remove('hidden');
+                loadHistory();
+            }
+            document.getElementById('edit-name').value = userData.name;
+            if (userData.role === 'driver') {
+                document.getElementById('edit-mtop').value = userData.mtop || '';
+                document.getElementById('edit-plate').value = userData.plate || '';
+            }
         };
+
+        async function loadHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '<p class="text-center text-xs opacity-50">Loading history...</p>';
+            const q = query(collection(db, "users", userUid, "history"), orderBy("timestamp", "desc"), limit(10));
+            const snap = await getDocs(q);
+            list.innerHTML = '';
+            if(snap.empty) list.innerHTML = '<p class="text-center text-xs opacity-50">No rides yet.</p>';
+            snap.forEach(doc => {
+                const h = doc.data();
+                list.innerHTML += `<div class="bg-white p-4 rounded-2xl shadow-sm history-item">
+                    <div class="flex justify-between items-start mb-2">
+                        <p class="font-black text-gray-800 text-sm">${h.driverName}</p>
+                        <p class="text-emerald-600 font-black text-sm">₱${h.fare}</p>
+                    </div>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">📍 ${h.dest}</p>
+                    <p class="text-[9px] font-bold text-amber-500 mt-1">Plate: ${h.plate} • MTOP: ${h.mtop}</p>
+                    <p class="text-[8px] text-gray-400 mt-2">${h.date}</p>
+                </div>`;
+            });
+        }
 
         window.finishTripPassenger = async (isSkipped) => {
             const t = userData.activeTrip;
@@ -492,13 +463,22 @@
             document.getElementById('rating-modal').classList.add('hidden');
         };
 
+        window.updateProfile = async () => {
+            const up = { name: document.getElementById('edit-name').value };
+            if (userData.role === 'driver') {
+                up.mtop = document.getElementById('edit-mtop').value;
+                up.plate = document.getElementById('edit-plate').value;
+            }
+            await updateDoc(doc(db, "users", userUid), up);
+            alert("Profile updated!");
+        };
+
         window.logout = () => { if (userUid) updateDoc(doc(db, "users", userUid), { isOnline: false }); signOut(auth).then(() => location.reload()); };
-        window.triggerSOS = () => { if (confirm("🚨 SOS! Notify emergency?")) showAlert("SOS SENT", "Help coming", "error"); };
-        function updateDutyButton() {
-            const btn = document.getElementById('duty-btn');
-            if (userData.isOnline) { btn.classList.add('online'); btn.innerHTML = '✅ ONLINE'; }
-            else { btn.classList.remove('online'); btn.innerHTML = 'GO ONLINE'; }
-        }
+        window.selectRole = (r) => { selectedRole = r; document.getElementById('role-p').classList.toggle('active', r==='passenger'); document.getElementById('role-d').classList.toggle('active', r==='driver'); document.getElementById('driver-fields').classList.toggle('hidden', r!=='driver'); };
+        window.showRegisterUI = () => { document.getElementById('login-actions').classList.add('hidden'); document.getElementById('reg-ui').classList.remove('hidden'); };
+        window.showLoginUI = () => { document.getElementById('login-actions').classList.remove('hidden'); document.getElementById('reg-ui').classList.add('hidden'); };
+        function updateDutyButton() { const btn = document.getElementById('duty-btn'); if (userData.isOnline) { btn.classList.add('online'); btn.innerHTML = '✅ ONLINE'; } else { btn.classList.remove('online'); btn.innerHTML = 'GO ONLINE'; } }
+        window.setStar = (n) => { currentRating = n; const stars = document.getElementById('star-box'); stars.innerHTML = ''; for (let i = 1; i <= 5; i++) stars.innerHTML += `<i onclick="setStar(${i})" class="fa-solid fa-star cursor-pointer ${i <= n ? 'text-amber-400' : 'text-gray-200'}"></i>`; };
     </script>
 </body>
 </html>
