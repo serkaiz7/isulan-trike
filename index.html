@@ -15,12 +15,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
+        /* Base Layout Fix */
         body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; touch-action: manipulation; background-color: #f8fafc; height: 100vh; display: flex; flex-direction: column; }
         
-        /* Fixed Map Section */
+        /* Fixed Map Container */
         #map-area { height: 45vh; width: 100%; position: relative; z-index: 1; flex-shrink: 0; transition: height 0.3s ease; }
         #map { height: 100%; width: 100%; }
 
+        /* Content Panel restructured to occupy the bottom half properly */
         .content-card { 
             position: relative; flex-grow: 1; margin-top: -2.5rem; 
             background: white; border-top-left-radius: 2.5rem; border-top-right-radius: 2.5rem;
@@ -161,7 +163,6 @@
                     <button onclick="triggerSOS()" class="w-full py-4 bg-red-600 rounded-2xl font-black text-xs shadow-lg shadow-red-900/40 uppercase tracking-widest">
                         <i class="fa-solid fa-shield-heart mr-2"></i> Emergency SOS
                     </button>
-                    <p class="text-center text-[9px] opacity-40 italic">In case of emergency, the authorities and Sakay Admin will be alerted with your location.</p>
                 </div>
             </div>
         </div>
@@ -266,7 +267,7 @@
     </div>
 
     <div id="rating-modal" class="hidden fixed inset-0 z-[9600] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
-        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center relative">
+        <div class="bg-white w-full max-sm rounded-[2.5rem] p-8 text-center relative">
             <button onclick="finishTripPassenger(true)" class="absolute top-6 right-6 text-gray-400 hover:text-gray-600">
                 <i class="fa-solid fa-circle-xmark text-2xl"></i>
             </button>
@@ -297,6 +298,7 @@
         let userUid, userData, map, markers = {}, routingControl = null, currentRating = 5, selectedRole = null;
         let isOverlayMinimized = false;
 
+        // Overlay Toggle Logic
         window.toggleOverlaySize = () => {
             const overlay = document.getElementById('status-overlay');
             const icon = document.getElementById('toggle-icon');
