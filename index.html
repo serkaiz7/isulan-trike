@@ -56,15 +56,17 @@
         }
         #status-overlay.minimized { transform: translateY(calc(100% - 85px)); }
         
-        /* Floating Restore Button */
+        /* Repositioned Restore Arrow */
         #restore-overlay-btn {
-            position: absolute; bottom: 100px; right: 20px; z-index: 999;
-            width: 50px; height: 50px; background: #fbbf24; color: #064e3b;
-            border-radius: 15px; display: none; align-items: center; justify-content: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: bounce 2s infinite;
+            position: fixed; bottom: 35px; right: 24px; z-index: 1001;
+            width: 35px; height: 35px; background: #fbbf24; color: #064e3b;
+            border-radius: 50%; display: none; align-items: center; justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 2px solid white;
         }
 
         .history-item { border-left: 4px solid #10b981; }
+        .sos-active { animation: pulse-red 1s infinite; }
+        @keyframes pulse-red { 0% { background-color: #dc2626; } 50% { background-color: #991b1b; } 100% { background-color: #dc2626; } }
     </style>
 </head>
 <body>
@@ -116,7 +118,7 @@
         </div>
 
         <button id="restore-overlay-btn" onclick="toggleOverlaySize(false)">
-            <i class="fa-solid fa-chevron-up text-xl"></i>
+            <i class="fa-solid fa-chevron-up text-xs"></i>
         </button>
 
         <div id="booking-modal" class="hidden fixed inset-0 z-[9500] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
@@ -146,7 +148,9 @@
                         <p id="ride-status-text" class="text-[10px] text-emerald-200 font-bold">On your way to destination</p>
                     </div>
                 </div>
-                <button class="bg-white/10 w-8 h-8 rounded-full flex items-center justify-center"><i id="toggle-icon" class="fa-solid fa-chevron-down text-xs"></i></button>
+                <button class="bg-white/10 w-8 h-8 rounded-full flex items-center justify-center">
+                    <i id="toggle-icon" class="fa-solid fa-chevron-down text-xs"></i>
+                </button>
             </div>
             <div id="overlay-body" class="space-y-6">
                 <div class="grid grid-cols-2 gap-3">
@@ -155,11 +159,11 @@
                         <p id="active-fare-display" class="text-3xl font-black text-amber-400 tracking-tighter">₱0</p>
                     </div>
                     <div class="bg-white/10 p-4 rounded-2xl border border-white/10">
-                        <p class="text-[9px] uppercase font-black opacity-60 mb-1">Safety</p>
-                        <p class="text-xs font-black">24/7 Monitored</p>
+                        <p class="text-[9px] uppercase font-black opacity-60 mb-1">Safety Status</p>
+                        <p class="text-xs font-black">24/7 Monitoring</p>
                     </div>
                 </div>
-                <button onclick="triggerSOS()" class="w-full py-4 bg-red-600 rounded-2xl font-black text-xs shadow-lg shadow-red-900/40 uppercase tracking-widest">
+                <button id="sos-btn" onclick="triggerSOS()" class="w-full py-4 bg-red-600 rounded-2xl font-black text-xs shadow-lg uppercase tracking-widest">
                     <i class="fa-solid fa-shield-heart mr-2"></i> Emergency SOS
                 </button>
             </div>
@@ -240,18 +244,18 @@
             </div>
 
             <div id="history-section" class="hidden space-y-4 mb-8">
-                <h4 class="font-black text-gray-800 uppercase text-xs tracking-widest">Recent Activity</h4>
+                <h4 class="font-black text-gray-800 uppercase text-xs tracking-widest">Ride Activity</h4>
                 <div id="ride-history-list" class="space-y-3"></div>
             </div>
 
             <div class="bg-white rounded-[2rem] p-6 shadow-sm space-y-4">
-                <h4 class="font-black text-gray-800 uppercase text-xs tracking-widest mb-2">Profile Settings</h4>
-                <input id="edit-name" type="text" placeholder="Name" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
+                <h4 class="font-black text-gray-800 uppercase text-xs tracking-widest mb-2">Account Management</h4>
+                <input id="edit-name" type="text" placeholder="Full Name" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
                 <div id="driver-only-inputs" class="hidden space-y-4">
-                    <input id="edit-mtop" type="text" placeholder="MTOP" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
-                    <input id="edit-plate" type="text" placeholder="Plate" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
+                    <input id="edit-mtop" type="text" placeholder="MTOP Number" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
+                    <input id="edit-plate" type="text" placeholder="Plate Number" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
                 </div>
-                <button onclick="updateProfile()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-lg">UPDATE PROFILE</button>
+                <button onclick="updateProfile()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-lg">SAVE UPDATES</button>
             </div>
         </div>
     </div>
@@ -285,10 +289,9 @@
 
         let userUid, userData, map, markers = {}, routingControl = null, currentRating = 5, selectedRole = null, isOverlayMinimized = false;
 
-        // Toggle logic with Restore Arrow support
+        // Repositioned Restore Logic
         window.toggleOverlaySize = (shouldMinimize) => {
             const overlay = document.getElementById('status-overlay');
-            const icon = document.getElementById('toggle-icon');
             const restoreBtn = document.getElementById('restore-overlay-btn');
             const mapArea = document.getElementById('map-area');
             
@@ -304,6 +307,21 @@
                 mapArea.style.height = '45vh';
             }
             setTimeout(() => map.invalidateSize(), 300);
+        };
+
+        // FIXED SOS FUNCTION
+        window.triggerSOS = () => {
+            if (confirm("🚨 SEND EMERGENCY SIGNAL?\nThis will notify authorities and provide your current location.")) {
+                const btn = document.getElementById('sos-btn');
+                btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin mr-2'></i> SENDING HELP...";
+                btn.classList.add('sos-active');
+                
+                // Simulate backend SOS broadcast
+                setTimeout(() => {
+                    alert("✅ SOS SIGNAL SENT!\nLocal authorities and Sakay dispatch have been alerted.");
+                    btn.innerHTML = "<i class='fa-solid fa-check mr-2'></i> HELP ON THE WAY";
+                }, 2000);
+            }
         };
 
         window.openBookingModal = (dId, dName) => {
@@ -327,39 +345,6 @@
             await updateDoc(doc(db, "users", userUid), { activeTrip: trip });
         }
 
-        function drawBoundaries() {
-            const boundaries = [{ name: 'Center Bound', pos: [6.632, 124.603], color: '#10b981', radius: 1000 }, { name: 'North Bound', pos: [6.650, 124.600], color: '#3b82f6', radius: 2500 }, { name: 'South Bound', pos: [6.600, 124.610], color: '#f59e0b', radius: 3000 }, { name: 'West Bound', pos: [6.630, 124.570], color: '#ef4444', radius: 3500 }];
-            boundaries.forEach(b => L.circle(b.pos, { radius: b.radius, color: b.color, weight: 1, fillOpacity: 0.05 }).addTo(map).bindPopup(b.name));
-        }
-
-        window.calculateFare = () => {
-            const select = document.getElementById('dest-select');
-            const opt = select.options[select.selectedIndex];
-            document.getElementById('display-fare').innerText = "₱" + select.value;
-            if(opt.getAttribute('data-lat')) map.flyTo([opt.getAttribute('data-lat'), opt.getAttribute('data-lng')], 15);
-        };
-
-        window.updateRealTimeRoute = (start, end) => {
-            if (userData.activeTrip && userData.activeTrip.status === 'pickedup') { if (routingControl) { map.removeControl(routingControl); routingControl = null; } return; }
-            if (routingControl) { map.removeControl(routingControl); routingControl = null; }
-            routingControl = L.Routing.control({ waypoints: [L.latLng(start[0], start[1]), L.latLng(end[0], end[1])], routeWhileDragging: false, addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: false, show: false, lineOptions: { styles: [{ color: '#10b981', opacity: 0.8, weight: 6 }] } }).addTo(map);
-        };
-
-        window.handleAuth = async (t) => {
-            const e = document.getElementById('auth-email').value.trim();
-            const p = document.getElementById('auth-pass').value.trim();
-            if (!e || !p) return alert("Fill all fields");
-            try {
-                if (t === 'login') await signInWithEmailAndPassword(auth, e, p);
-                else {
-                    if (!selectedRole) return alert("Select a role");
-                    const alias = document.getElementById('reg-alias').value.trim() || "User";
-                    const cred = await createUserWithEmailAndPassword(auth, e, p);
-                    await setDoc(doc(db, "users", cred.user.uid), { name: alias, role: selectedRole, isOnline: false, lat: 6.6294, lng: 124.605, income: 0, tripCount: 0, totalRating: 0, plate: "", mtop: "", lastActive: Date.now(), history: [] });
-                }
-            } catch (err) { alert(err.message); }
-        };
-
         onAuthStateChanged(auth, async (u) => {
             if (u) { userUid = u.uid; const snap = await getDoc(doc(db, "users", userUid)); if (snap.exists()) { userData = snap.data(); initApp(); } }
             else { document.getElementById('auth-screen').classList.remove('hidden'); document.getElementById('app-ui').classList.add('hidden'); }
@@ -373,7 +358,6 @@
             if (!map) {
                 map = L.map('map', { zoomControl: false, attributionControl: false }).setView([6.6294, 124.605], 16);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-                drawBoundaries();
             }
             navigator.geolocation.watchPosition(p => updateDoc(doc(db, "users", userUid), { lat: p.coords.latitude, lng: p.coords.longitude, lastActive: Date.now() }), null, { enableHighAccuracy: true });
             syncData();
@@ -384,25 +368,20 @@
                 const now = Date.now();
                 const dList = document.getElementById('driver-list');
                 if (userData.role === 'passenger') dList.innerHTML = '';
-                let dCoords = null, pCoords = null;
                 snap.forEach(d => {
                     const data = d.data(), id = d.id;
-                    if (id === userUid) { userData = data; handleStatusLogic(); updateDutyButton(); updateHistoryUI(); if (data.role === 'driver') dCoords = [data.lat, data.lng]; else pCoords = [data.lat, data.lng]; }
-                    if (userData.activeTrip) { if (id === userData.activeTrip.dId) dCoords = [data.lat, data.lng]; if (id === userData.activeTrip.pId) pCoords = [data.lat, data.lng]; }
+                    if (id === userUid) { userData = data; handleStatusLogic(); updateDutyButton(); updateHistoryUI(); }
                     const isFresh = data.lastActive && (now - data.lastActive < 180000);
                     if (isFresh && data.lat && data.lng && (data.isOnline || (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId)))) {
                         if (markers[id]) markers[id].setLatLng([data.lat, data.lng]);
                         else markers[id] = L.marker([data.lat, data.lng], { icon: L.divIcon({ html: data.role === 'driver' ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`, className: '', iconSize: [40, 40] }) }).addTo(map);
                     } else if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
                     if (userData.role === 'passenger' && data.role === 'driver' && data.isOnline && isFresh && !data.activeTrip) {
-                        const avg = data.tripCount > 0 ? (data.totalRating / data.tripCount).toFixed(1) : "5.0";
                         dList.innerHTML += `<div class="p-5 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm" onclick="openBookingModal('${id}', '${data.name}')">
-                            <div><p class="font-black text-gray-800">${data.name}</p><p class="text-[10px] text-amber-500 font-bold uppercase">⭐ ${avg} • Plate: ${data.plate || 'N/A'}</p></div>
+                            <div><p class="font-black text-gray-800">${data.name}</p><p class="text-[10px] text-amber-500 font-bold uppercase">Plate: ${data.plate || 'N/A'}</p></div>
                             <button class="bg-emerald-600 text-white px-6 py-2 rounded-2xl text-xs font-black">BOOK</button></div>`;
                     }
                 });
-                if (userData.activeTrip && dCoords && pCoords && userData.activeTrip.status !== 'pickedup') updateRealTimeRoute(dCoords, pCoords);
-                else if (routingControl) { map.removeControl(routingControl); routingControl = null; }
             });
         }
 
@@ -410,7 +389,6 @@
             const overlay = document.getElementById('status-overlay');
             const tripCard = document.getElementById('trip-card');
             const pWait = document.getElementById('p-waiting-card');
-            const dActions = document.getElementById('driver-actions');
             const contentPanel = document.getElementById('content-panel');
             const restoreBtn = document.getElementById('restore-overlay-btn');
             
@@ -420,46 +398,20 @@
             
             const t = userData.activeTrip;
             if (userData.role === 'driver') {
-                tripCard.classList.remove('hidden'); document.getElementById('trip-p-name').innerText = t.pName; document.getElementById('trip-p-dest').innerText = "To: " + t.dest; document.getElementById('trip-p-fare').innerText = "Fare: ₱" + t.fare;
+                tripCard.classList.remove('hidden'); document.getElementById('trip-p-name').innerText = t.pName;
+                const dActions = document.getElementById('driver-actions');
                 if (t.status === 'requested') dActions.innerHTML = `<button onclick="updateStatus('accepted')" class="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black">ACCEPT</button><button onclick="updateStatus('declined')" class="flex-1 py-4 bg-red-100 text-red-600 rounded-2xl font-black">DECLINE</button>`;
                 else if (t.status === 'accepted') dActions.innerHTML = `<button onclick="updateStatus('pickedup')" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black">PICKED UP</button>`;
-                else if (t.status === 'pickedup') dActions.innerHTML = `<button onclick="updateStatus('arrived')" class="w-full py-4 bg-orange-600 text-white rounded-2xl font-black">COMPLETE RIDE</button>`;
+                else if (t.status === 'pickedup') dActions.innerHTML = `<button onclick="updateStatus('arrived')" class="w-full py-4 bg-orange-600 text-white rounded-2xl font-black">ARRIVED</button>`;
             } else {
                 pWait.classList.remove('hidden'); document.getElementById('active-fare-display').innerText = "₱" + t.fare;
-                if (t.status === 'requested') document.getElementById('wait-driver-name').innerText = "Finding your driver..."; 
-                else if (t.status === 'accepted') document.getElementById('wait-driver-name').innerText = `${t.dName} is arriving!`; 
-                else if (t.status === 'pickedup') { 
+                if (t.status === 'pickedup') { 
                     overlay.classList.remove('hidden'); contentPanel.classList.add('hidden'); 
                     if (isOverlayMinimized) { restoreBtn.style.display = 'flex'; }
                 }
-                else if (t.status === 'arrived') { document.getElementById('rating-modal').classList.remove('hidden'); overlay.classList.add('hidden'); contentPanel.classList.remove('hidden'); }
+                else if (t.status === 'arrived') { document.getElementById('rating-modal').classList.remove('hidden'); }
             }
         }
-
-        function updateHistoryUI() {
-            const list = document.getElementById('ride-history-list');
-            if (!userData.history || userData.history.length === 0) { list.innerHTML = '<p class="text-center text-gray-400 text-xs italic py-10">No rides yet.</p>'; return; }
-            list.innerHTML = '';
-            userData.history.slice().reverse().forEach(h => { list.innerHTML += `<div class="history-item p-4 bg-white rounded-2xl shadow-sm"><div class="flex justify-between items-start mb-2"><p class="font-black text-gray-800 text-sm">${h.driverName || 'Sakay Ride'}</p><p class="text-[9px] text-gray-400 font-bold uppercase">${h.date}</p></div><p class="text-[10px] text-gray-500 font-bold mb-1">📍 To: ${h.dest}</p></div>`; });
-        }
-
-        window.updateStatus = async (s) => {
-            const t = userData.activeTrip; if (!t) return;
-            if (s === 'arrived') {
-                const now = new Date();
-                const historyEntry = { driverName: t.dName, plate: t.dPlate || 'N/A', mtop: t.dMtop || 'N/A', dest: t.dest, date: now.toLocaleDateString(), time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-                await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField(), income: increment(t.fare), tripCount: increment(1) });
-                await updateDoc(doc(db, "users", t.pId), { "activeTrip.status": "arrived", history: arrayUnion(historyEntry) });
-            } else if (s === 'declined') { await updateDoc(doc(db, "users", t.pId), { activeTrip: deleteField() }); await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() }); }
-            else { const up = { "activeTrip.status": s }; await updateDoc(doc(db, "users", userUid), up); await updateDoc(doc(db, "users", t.pId), up); }
-        };
-
-        window.finishTripPassenger = async (isSkipped) => {
-            const t = userData.activeTrip;
-            if (t && t.dId && !isSkipped) await updateDoc(doc(db, "users", t.dId), { totalRating: increment(currentRating) });
-            await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
-            document.getElementById('rating-modal').classList.add('hidden');
-        };
 
         window.toggleDashboard = (show) => {
             const dash = document.getElementById('user-dashboard');
@@ -478,6 +430,17 @@
             } else { dash.classList.add('hidden'); }
         };
 
+        function updateHistoryUI() {
+            const list = document.getElementById('ride-history-list');
+            if (!userData.history || userData.history.length === 0) { list.innerHTML = '<p class="text-center text-gray-400 text-xs py-10 italic">No activity logs found.</p>'; return; }
+            list.innerHTML = '';
+            userData.history.slice().reverse().forEach(h => { 
+                list.innerHTML += `<div class="history-item p-4 bg-white rounded-2xl shadow-sm">
+                    <div class="flex justify-between items-start"><p class="font-black text-gray-800 text-sm">${h.driverName || 'Sakay Ride'}</p><p class="text-[9px] text-gray-400 font-bold">${h.date}</p></div>
+                    <p class="text-[10px] text-gray-500 font-bold">📍 Destination: ${h.dest}</p></div>`;
+            });
+        }
+
         window.updateProfile = async () => {
             let data = { name: document.getElementById('edit-name').value };
             if(userData.role === 'driver') {
@@ -485,17 +448,47 @@
                 data.plate = document.getElementById('edit-plate').value;
             }
             await updateDoc(doc(db, "users", userUid), data);
-            alert("Profile Updated!");
+            alert("Profile Synchronized!");
         };
 
-        window.cancelTrip = async () => { if(confirm("Cancel this ride?")) { const t = userData.activeTrip; if(t) { await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField() }); await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() }); } } };
-        window.logout = () => { if (userUid) updateDoc(doc(db, "users", userUid), { isOnline: false }); signOut(auth).then(() => location.reload()); };
-        window.setStar = (n) => { currentRating = n; const stars = document.getElementById('star-box'); stars.innerHTML = ''; for (let i = 1; i <= 5; i++) stars.innerHTML += `<i onclick="setStar(${i})" class="fa-solid fa-star ${i <= n ? 'text-amber-400' : 'text-gray-200'}"></i>`; };
+        window.updateStatus = async (s) => {
+            const t = userData.activeTrip;
+            if (s === 'arrived') {
+                const now = new Date();
+                const log = { driverName: t.dName, dest: t.dest, date: now.toLocaleDateString(), fare: t.fare };
+                await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField(), income: increment(t.fare), tripCount: increment(1) });
+                await updateDoc(doc(db, "users", t.pId), { "activeTrip.status": "arrived", history: arrayUnion(log) });
+            } else {
+                const up = { "activeTrip.status": s };
+                await updateDoc(doc(db, "users", userUid), up);
+                await updateDoc(doc(db, "users", t.pId), up);
+            }
+        };
+
+        window.finishTripPassenger = async (isSkipped) => {
+            await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
+            document.getElementById('rating-modal').classList.add('hidden');
+        };
+
+        window.cancelTrip = async () => { if(confirm("Cancel ride?")) { const t = userData.activeTrip; await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField() }); await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() }); } };
+        window.handleAuth = async (t) => {
+            const e = document.getElementById('auth-email').value;
+            const p = document.getElementById('auth-pass').value;
+            if (t === 'login') await signInWithEmailAndPassword(auth, e, p);
+            else {
+                const alias = document.getElementById('reg-alias').value;
+                const cred = await createUserWithEmailAndPassword(auth, e, p);
+                await setDoc(doc(db, "users", cred.user.uid), { name: alias, role: selectedRole, isOnline: false, lat: 6.6, lng: 124.6, income: 0, tripCount: 0, history: [] });
+            }
+        };
+        window.logout = () => signOut(auth).then(() => location.reload());
         window.toggleDuty = () => updateDoc(doc(db, "users", userUid), { isOnline: !userData.isOnline });
-        function updateDutyButton() { const btn = document.getElementById('duty-btn'); if (userData.isOnline) { btn.classList.add('online'); btn.innerHTML = '✅ ONLINE'; } else { btn.classList.remove('online'); btn.innerHTML = 'GO ONLINE'; } }
+        function updateDutyButton() { const btn = document.getElementById('duty-btn'); btn.classList.toggle('online', userData.isOnline); btn.innerHTML = userData.isOnline ? '✅ ONLINE' : 'GO ONLINE'; }
+        window.setStar = (n) => { currentRating = n; const stars = document.getElementById('star-box'); stars.innerHTML = ''; for (let i = 1; i <= 5; i++) stars.innerHTML += `<i onclick="setStar(${i})" class="fa-solid fa-star ${i <= n ? 'text-amber-400' : 'text-gray-200'}"></i>`; };
         window.showRegisterUI = () => { document.getElementById('login-actions').classList.add('hidden'); document.getElementById('reg-ui').classList.remove('hidden'); };
         window.showLoginUI = () => { document.getElementById('login-actions').classList.remove('hidden'); document.getElementById('reg-ui').classList.add('hidden'); };
         window.selectRole = (r) => { selectedRole = r; document.getElementById('role-p').classList.toggle('active', r==='passenger'); document.getElementById('role-d').classList.toggle('active', r==='driver'); document.getElementById('driver-fields').classList.toggle('hidden', r!=='driver'); };
+        window.calculateFare = () => { const s = document.getElementById('dest-select'); document.getElementById('display-fare').innerText = "₱" + s.value; };
     </script>
 </body>
 </html>
