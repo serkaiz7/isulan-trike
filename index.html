@@ -94,22 +94,12 @@
     <div id="app-ui" class="hidden flex-col h-full relative">
         <div id="map"></div>
 
-        <div id="alert-popup" class="hidden fixed inset-x-6 top-6 z-[8500] bg-white rounded-3xl p-5 shadow-2xl border-l-4 border-emerald-500">
-            <div class="flex items-center gap-4">
-                <i id="alert-icon" class="fa-solid text-2xl"></i>
-                <div class="flex-1">
-                    <h5 id="alert-title" class="font-black text-sm"></h5>
-                    <p id="alert-body" class="text-xs text-gray-500"></p>
-                </div>
-            </div>
-        </div>
-
         <div id="status-overlay" class="hidden fixed inset-0 bg-emerald-950/95 z-[5000] flex flex-col items-center justify-center p-10 text-white text-center">
             <div class="w-24 h-24 bg-emerald-500 rounded-full flex items-center justify-center mb-6 animate-pulse">
                 <i class="fa-solid fa-motorcycle text-4xl"></i>
             </div>
             <h2 class="text-3xl font-black italic">RIDE IN PROGRESS</h2>
-            <p id="ride-status-text" class="text-emerald-200 mt-2">Your driver is heading to destination</p>
+            <p id="ride-status-text" class="text-emerald-200 mt-2">Heading to destination</p>
             <p id="active-fare-display" class="text-5xl font-black mt-8 tracking-tighter">₱21</p>
             <button onclick="triggerSOS()" class="mt-12 w-full py-4 bg-red-600 rounded-2xl font-black text-sm">🚨 EMERGENCY SOS</button>
         </div>
@@ -128,7 +118,6 @@
                     <div class="p-2 bg-white rounded-xl">🌊 South: ₱27 - ₱55</div>
                     <div class="p-2 bg-white rounded-xl">☀️ East: ₱27 - ₱41</div>
                 </div>
-                <p class="mt-3 text-[9px] text-gray-400 italic">*20% Discount for Students/PWD/Seniors</p>
             </div>
 
             <div id="driver-panel" class="hidden">
@@ -174,24 +163,13 @@
         </div>
     </div>
 
-    <div id="driver-dashboard" class="hidden fixed inset-0 z-[8000] bg-slate-50 overflow-y-auto p-6 pb-32">
-        <div class="flex justify-between items-center mb-8">
-            <h2 class="text-4xl font-black tracking-tighter">Hub</h2>
-            <button onclick="toggleDashboard(false)" class="w-10 h-10 bg-white rounded-full shadow-sm text-gray-400">✕</button>
-        </div>
-        <div class="grid grid-cols-1 gap-4 mb-8">
-            <div class="bg-emerald-600 p-8 rounded-[2.5rem] text-white shadow-xl">
-                <p class="text-xs font-bold opacity-70 uppercase tracking-widest">Total Earnings</p>
-                <p class="text-5xl font-black mt-2">₱<span id="stat-income">0</span></p>
-            </div>
-        </div>
-    </div>
-
     <div id="rating-modal" class="hidden fixed inset-0 z-[9600] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
         <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center">
             <h3 class="text-3xl font-black mb-2">Rate your Ride</h3>
-            <div id="star-box" class="flex justify-center gap-3 text-4xl my-8 text-amber-400"></div>
-            <button onclick="finishTripPassenger()" class="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black text-lg">SUBMIT RATING</button>
+            <p class="text-gray-400 text-xs mb-4">How was your driver?</p>
+            <div id="star-box" class="flex justify-center gap-3 text-4xl my-8 text-amber-400">
+                </div>
+            <button onclick="finishTripPassenger()" class="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform">SUBMIT RATING</button>
         </div>
     </div>
 
@@ -215,20 +193,41 @@
 
         let userUid, userData, map, markers = {}, routingControl = null, currentRating = 5, selectedRole = null;
 
-        // Dynamic Marquee Logic
+        // FIXED: Star rating logic
+        window.setStar = (n) => {
+            currentRating = n;
+            const stars = document.getElementById('star-box');
+            stars.innerHTML = '';
+            for (let i = 1; i <= 5; i++) {
+                stars.innerHTML += `<i onclick="setStar(${i})" class="fa-solid fa-star cursor-pointer ${i <= n ? 'text-amber-400' : 'text-gray-200'}"></i>`;
+            }
+        };
+
+        window.finishTripPassenger = async () => {
+            const t = userData.activeTrip;
+            if (t && t.dId) {
+                // Update driver's rating and trip count
+                await updateDoc(doc(db, "users", t.dId), { 
+                    totalRating: increment(currentRating),
+                    tripCount: increment(1)
+                });
+            }
+            // Clear trip for passenger and hide modal
+            await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
+            document.getElementById('rating-modal').classList.add('hidden');
+        };
+
+        // UI & Marquee Logic
         function updateMarquee(role) {
             const marquee = document.getElementById('dynamic-marquee');
             if (role === 'driver') {
-                marquee.innerText = "📢 DRIVER MODE: FOLLOW REVISED FARE TARIFF 2024 • REPORT OVERCHARGING COMPLAINTS • DRIVE SAFELY • STAY ONLINE FOR MORE REQUESTS • ";
+                marquee.innerText = "📢 DRIVER VIEW: STAY ONLINE TO RECEIVE TRIPS • FOLLOW MUNICIPAL TARIFF • DRIVE SAFELY • ";
             } else {
-                marquee.innerText = "📢 PASSENGER MODE: BOOK TO POBLACION (₱21), BAMBAD (₱35), OR DANSULI (₱41) • CHECK TARIFF FOR DISCOUNTS (PWD/SENIOR/STUDENT) • ";
+                marquee.innerText = "📢 PASSENGER VIEW: BOOK TO POBLACION (₱21), BAMBAD (₱35), OR DANSULI (₱41) • 20% DISCOUNT FOR PWD/STUDENTS • ";
             }
         }
 
-        window.toggleFareMatrix = () => {
-            const container = document.getElementById('fare-matrix-container');
-            container.classList.toggle('hidden');
-        };
+        window.toggleFareMatrix = () => document.getElementById('fare-matrix-container').classList.toggle('hidden');
 
         window.handleAuth = async (t) => {
             const e = document.getElementById('auth-email').value.trim();
@@ -268,6 +267,7 @@
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-ui').classList.replace('hidden', 'flex');
             document.getElementById(userData.role + '-panel').classList.remove('hidden');
+            setStar(5); // Initialize stars
             if (!map) {
                 map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 16);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
@@ -283,59 +283,43 @@
                 const now = Date.now();
                 const dList = document.getElementById('driver-list');
                 if (userData.role === 'passenger') dList.innerHTML = '';
-                let otherParty = null;
                 snap.forEach(d => {
                     const data = d.data(), id = d.id;
                     if (id === userUid) {
                         userData = data;
                         handleStatusLogic();
                         updateDutyButton();
-                        if (userData.role === 'driver') document.getElementById('stat-income').innerText = userData.income || 0;
                     }
-                    if (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId) && id !== userUid) otherParty = data;
                     const isFresh = data.lastActive && (now - data.lastActive < 180000);
                     if (isFresh && data.lat && data.lng && (data.isOnline || (userData.activeTrip && (id === userData.activeTrip.dId || id === userData.activeTrip.pId)))) {
                         if (markers[id]) markers[id].setLatLng([data.lat, data.lng]);
                         else markers[id] = L.marker([data.lat, data.lng], {
-                            icon: L.divIcon({ html: data.role === 'driver' ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`, className: '', iconSize: [40, 40] })
+                            icon: L.divIcon({ html: data.role === 'driver' ? `<i class="fa-solid fa-motorcycle text-emerald-500 text-2xl"></i>` : `<i class="fa-solid fa-person-walking text-blue-500 text-2xl"></i>`, className: '', iconSize: [30, 30] })
                         }).addTo(map);
                     } else if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
                     if (userData.role === 'passenger' && data.role === 'driver' && data.isOnline && isFresh && !data.activeTrip) {
                         const avg = data.tripCount > 0 ? (data.totalRating / data.tripCount).toFixed(1) : "5.0";
                         dList.innerHTML += `<div class="p-5 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm" onclick="bookDriver('${id}')">
-                            <div><p class="font-black text-gray-800">${data.name}</p><p class="text-[10px] text-amber-500 font-bold uppercase">⭐ ${avg} • Plate: ${data.plate || 'N/A'}</p></div>
+                            <div><p class="font-black text-gray-800">${data.name}</p><p class="text-[10px] text-amber-500 font-bold uppercase">⭐ ${avg}</p></div>
                             <button class="bg-emerald-600 text-white px-6 py-2 rounded-2xl text-xs font-black">BOOK</button></div>`;
                     }
                 });
-                if (userData.activeTrip && otherParty) {
-                    const myLoc = L.latLng(userData.lat, userData.lng), theirLoc = L.latLng(otherParty.lat, otherParty.lng);
-                    if (!routingControl) routingControl = L.Routing.control({ waypoints: [myLoc, theirLoc], createMarker: () => null, lineOptions: { styles: [{color: '#10b981', weight: 6}] }, show: false }).addTo(map);
-                    else routingControl.setWaypoints([myLoc, theirLoc]);
-                } else if (routingControl) { map.removeControl(routingControl); routingControl = null; }
             });
         }
 
         function handleStatusLogic() {
-            const overlay = document.getElementById('status-overlay'), tripCard = document.getElementById('trip-card'), pWait = document.getElementById('p-waiting-card'), dActions = document.getElementById('driver-actions');
-            overlay.classList.add('hidden'); tripCard.classList.add('hidden'); pWait.classList.add('hidden');
+            const overlay = document.getElementById('status-overlay'), pWait = document.getElementById('p-waiting-card');
+            overlay.classList.add('hidden'); pWait.classList.add('hidden');
             if (!userData.activeTrip) return;
             const t = userData.activeTrip;
-            if (userData.role === 'driver') {
-                tripCard.classList.remove('hidden');
-                document.getElementById('trip-p-name').innerText = t.pName;
-                document.getElementById('trip-p-dest').innerText = "To: " + t.dest;
-                document.getElementById('trip-p-fare').innerText = "Fare: ₱" + t.fare;
-                if (t.status === 'requested') dActions.innerHTML = `<button onclick="updateStatus('accepted')" class="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black">ACCEPT</button><button onclick="updateStatus('declined')" class="flex-1 py-4 bg-red-100 text-red-600 rounded-2xl font-black">DECLINE</button>`;
-                else if (t.status === 'accepted') dActions.innerHTML = `<button onclick="updateStatus('pickedup')" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black">PICKED UP</button>`;
-                else if (t.status === 'pickedup') dActions.innerHTML = `<button onclick="updateStatus('arrived')" class="w-full py-4 bg-orange-600 text-white rounded-2xl font-black">COMPLETE RIDE</button>`;
-            } else {
+            if (userData.role === 'passenger') {
                 pWait.classList.remove('hidden');
                 document.getElementById('active-fare-display').innerText = "₱" + t.fare;
-                const nameEl = document.getElementById('wait-driver-name');
-                if (t.status === 'requested') nameEl.innerText = "Finding your driver...";
-                else if (t.status === 'accepted') nameEl.innerText = `${t.dName} is arriving!`;
-                else if (t.status === 'pickedup') overlay.classList.remove('hidden');
-                else if (t.status === 'arrived') document.getElementById('rating-modal').classList.remove('hidden');
+                if (t.status === 'pickedup') overlay.classList.remove('hidden');
+                else if (t.status === 'arrived') {
+                    document.getElementById('rating-modal').classList.remove('hidden');
+                    setStar(5); // Ensure stars are visible when modal opens
+                }
             }
         }
 
@@ -349,32 +333,12 @@
             await updateDoc(doc(db, "users", userUid), { activeTrip: trip });
         };
 
-        window.updateStatus = async (s) => {
-            const t = userData.activeTrip;
-            if (s === 'arrived') {
-                await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField(), income: increment(t.fare), tripCount: increment(1) });
-                await updateDoc(doc(db, "users", t.pId), { "activeTrip.status": "arrived" });
-            } else if (s === 'declined') {
-                await updateDoc(doc(db, "users", t.pId), { activeTrip: deleteField() });
-                await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
-            } else {
-                await updateDoc(doc(db, "users", userUid), { "activeTrip.status": s });
-                await updateDoc(doc(db, "users", t.pId), { "activeTrip.status": s });
-            }
-        };
-
-        window.toggleDuty = () => {
-            const s = !userData.isOnline;
-            updateDoc(doc(db, "users", userUid), { isOnline: s });
-        };
-
+        window.toggleDuty = () => updateDoc(doc(db, "users", userUid), { isOnline: !userData.isOnline });
         window.selectRole = (role) => { 
             selectedRole = role; 
             document.getElementById('role-p').classList.toggle('active', role==='passenger'); 
             document.getElementById('role-d').classList.toggle('active', role==='driver'); 
-            document.getElementById('driver-fields').classList.toggle('hidden', role !== 'driver'); 
         };
-
         window.logout = () => signOut(auth).then(() => location.reload());
         function updateDutyButton() {
             const btn = document.getElementById('duty-btn');
