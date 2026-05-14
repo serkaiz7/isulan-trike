@@ -16,20 +16,26 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; touch-action: manipulation; background-color: #f8fafc; }
-        #map { height: 45vh; width: 100%; z-index: 1; }
+        #map { height: 45vh; width: 100%; z-index: 1; transition: height 0.3s ease; }
         .content-card { 
             position: relative; height: 55vh; margin-top: -2.5rem; 
             background: white; border-top-left-radius: 2.5rem; border-top-right-radius: 2.5rem;
-            z-index: 10; box-shadow: 0 -10px 25px -5px rgba(0, 0, 0, 0.1);
+            z-index: 10; box-shadow: 0 -10px 25px -5px rgba(0, 0, 0, 0.1); transition: transform 0.3s ease;
         }
         .ad-banner { height: 60px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; overflow: hidden; border-bottom: 1px solid #e2e8f0; }
+        
+        /* Dynamic Marquee Styles */
         .marquee-container { 
             background: #064e3b; color: #fbbf24; overflow: hidden; white-space: nowrap; 
-            display: flex; align-items: center; min-height: 40px; font-size: 13px; font-weight: 800; letter-spacing: 1px; 
+            display: flex; align-items: center; min-height: 35px; font-size: 11px; font-weight: 800; letter-spacing: 1px; 
         }
-        .marquee-content { display: inline-block; line-height: 1.5; animation: marquee 25s linear infinite; }
+        .marquee-content { display: inline-block; line-height: 1.5; animation: marquee 20s linear infinite; }
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+        /* Role Card Styles */
         .role-card.active { border-color: #fbbf24; background: rgba(251, 191, 36, 0.1); transform: scale(1.02); }
+        
+        /* Navigation Styles */
         .nav-bar { 
             height: 75px; position: fixed; bottom: 0; left: 0; right: 0; 
             background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px);
@@ -38,18 +44,23 @@
         }
         .nav-btn { display: flex; flex-direction: column; align-items: center; color: #94a3b8; font-size: 10px; font-weight: 800; }
         .nav-btn.active { color: #10b981; }
+        
         #duty-btn.online { background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; }
+        
+        /* Markers */
         .driver-marker-icon { color: #10b981; font-size: 26px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
         .passenger-marker-icon { color: #3b82f6; font-size: 26px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
         .leaflet-routing-container { display: none !important; }
-        .history-item { border-left: 4px solid #10b981; }
-
-        /* Floating Ride Panel */
+        
+        /* Modern Progress Overlay (Minimized Support) */
         #status-overlay {
-            position: absolute; top: 46vh; left: 1rem; right: 1rem;
-            z-index: 40; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: absolute; left: 0; right: 0; bottom: 0;
+            background: #064e3b; border-top-left-radius: 2.5rem; border-top-right-radius: 2.5rem;
+            z-index: 1000; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 -15px 30px rgba(0,0,0,0.2);
         }
-        #status-overlay.minimized { transform: translateY(calc(100% - 60px)); }
+        #status-overlay.minimized { transform: translateY(calc(100% - 80px)); }
+        .history-item { border-left: 4px solid #10b981; }
     </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -57,12 +68,12 @@
     <amp-auto-ads type="adsense" data-ad-client="ca-pub-3089886074644811"></amp-auto-ads>
     
     <div class="ad-banner">
-        <ins class="adsbygoogle" style="display:inline-block;width:320px;height:50px" data-ad-client="ca-pub-3089886074644811" data-ad-slot="GENERAL_TOP_BANNER"></ins>
+        <ins class="adsbygoogle" style="display:inline-block;width:320px;height:50px" data-ad-client="ca-pub-3089886074644811" data-ad-slot="YOUR_AD_SLOT"></ins>
         <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
     </div>
 
     <div class="marquee-container">
-        <div id="dynamic-marquee" class="marquee-content">🚀 WELCOME TO SAKAY • OFFICIAL ISULAN TRICYCLE RATES APPLY • PLEASE DRIVE SAFELY • </div>
+        <div id="dynamic-marquee" class="marquee-content">🚀 LOADING SAKAY SYSTEM... PLEASE WAIT... 🚀</div>
     </div>
 
     <div id="auth-screen" class="fixed inset-0 z-[9000] bg-emerald-600 flex flex-col p-8 overflow-y-auto justify-center text-white">
@@ -115,28 +126,40 @@
             </div>
         </div>
 
-        <div id="status-overlay" class="hidden bg-emerald-900 text-white rounded-[2rem] shadow-2xl overflow-hidden border border-emerald-700/50">
-            <div class="p-4 flex justify-between items-center bg-emerald-800/50" onclick="toggleMinStatus()">
+        <div id="status-overlay" class="hidden flex flex-col p-6 text-white overflow-hidden">
+            <div class="flex justify-between items-center mb-4 cursor-pointer" onclick="toggleOverlaySize()">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center animate-pulse">
-                        <i class="fa-solid fa-motorcycle text-xs"></i>
+                    <div class="w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center text-emerald-900">
+                        <i class="fa-solid fa-motorcycle animate-bounce"></i>
                     </div>
-                    <span class="font-black text-xs uppercase tracking-tighter">Ride in Progress</span>
+                    <div>
+                        <h2 class="text-sm font-black uppercase italic tracking-tighter">Ride in Progress</h2>
+                        <p id="ride-status-text" class="text-[10px] text-emerald-200 font-bold">On your way to destination</p>
+                    </div>
                 </div>
-                <button class="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full">
-                    <i id="min-icon" class="fa-solid fa-chevron-down text-xs"></i>
+                <button class="bg-white/10 w-8 h-8 rounded-full flex items-center justify-center">
+                    <i id="toggle-icon" class="fa-solid fa-chevron-down text-xs"></i>
                 </button>
             </div>
             
-            <div id="status-expanded-content" class="p-6 space-y-4">
-                <div class="text-center">
-                    <p id="ride-status-text" class="text-emerald-200 text-xs font-bold mb-4">Safe travels! Your driver is on the way.</p>
-                    <div class="p-4 bg-white/10 rounded-2xl border border-white/10">
-                        <p class="text-[10px] uppercase font-black opacity-60">Agreed Fare</p>
-                        <p id="active-fare-display" class="text-4xl font-black tracking-tighter text-amber-400">₱0</p>
+            <div id="overlay-body" class="space-y-6">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-white/10 p-4 rounded-2xl border border-white/10">
+                        <p class="text-[9px] uppercase font-black opacity-60 mb-1">Fixed Fare</p>
+                        <p id="active-fare-display" class="text-3xl font-black text-amber-400 tracking-tighter">₱0</p>
+                    </div>
+                    <div class="bg-white/10 p-4 rounded-2xl border border-white/10">
+                        <p class="text-[9px] uppercase font-black opacity-60 mb-1">Safety</p>
+                        <p class="text-xs font-black">24/7 Monitored</p>
                     </div>
                 </div>
-                <button onclick="triggerSOS()" class="w-full py-4 bg-red-600 rounded-2xl font-black text-xs shadow-lg">🚨 EMERGENCY SOS</button>
+
+                <div class="space-y-3">
+                    <button onclick="triggerSOS()" class="w-full py-4 bg-red-600 rounded-2xl font-black text-xs shadow-lg shadow-red-900/40 uppercase tracking-widest">
+                        <i class="fa-solid fa-shield-heart mr-2"></i> Emergency SOS
+                    </button>
+                    <p class="text-center text-[9px] opacity-40 italic">In case of emergency, the authorities and Sakay Admin will be alerted with your location.</p>
+                </div>
             </div>
         </div>
 
@@ -158,11 +181,6 @@
             </div>
 
             <div id="passenger-panel" class="hidden">
-                <div class="mb-4 rounded-2xl overflow-hidden bg-slate-100 flex items-center justify-center">
-                    <ins class="adsbygoogle" style="display:inline-block;width:300px;height:100px" data-ad-client="ca-pub-3089886074644811" data-ad-slot="PASSENGER_SPECIAL_SLOT"></ins>
-                    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-                </div>
-
                 <div class="bg-blue-600 p-4 rounded-2xl mb-4 flex justify-between items-center text-white shadow-lg">
                     <div>
                         <p class="text-[10px] font-bold opacity-80 uppercase">Est. Fare</p>
@@ -274,6 +292,26 @@
         const db = getFirestore(app);
 
         let userUid, userData, map, markers = {}, routingControl = null, currentRating = 5, selectedRole = null;
+        let isOverlayMinimized = false;
+
+        // Overlay Toggle Logic
+        window.toggleOverlaySize = () => {
+            const overlay = document.getElementById('status-overlay');
+            const icon = document.getElementById('toggle-icon');
+            const mapEl = document.getElementById('map');
+            isOverlayMinimized = !isOverlayMinimized;
+            
+            if (isOverlayMinimized) {
+                overlay.classList.add('minimized');
+                icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+                mapEl.style.height = '85vh';
+            } else {
+                overlay.classList.remove('minimized');
+                icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
+                mapEl.style.height = '45vh';
+            }
+            setTimeout(() => map.invalidateSize(), 300);
+        };
 
         function drawBoundaries() {
             const boundaries = [
@@ -292,14 +330,6 @@
             const opt = select.options[select.selectedIndex];
             document.getElementById('display-fare').innerText = "₱" + select.value;
             if(opt.getAttribute('data-lat')) map.flyTo([opt.getAttribute('data-lat'), opt.getAttribute('data-lng')], 15);
-        };
-
-        window.toggleMinStatus = () => {
-            const panel = document.getElementById('status-overlay');
-            const icon = document.getElementById('min-icon');
-            panel.classList.toggle('minimized');
-            icon.classList.toggle('fa-chevron-down');
-            icon.classList.toggle('fa-chevron-up');
         };
 
         window.updateRealTimeRoute = (start, end) => {
@@ -349,10 +379,20 @@
             }
         });
 
+        function updateMarquee(role) {
+            const marquee = document.getElementById('dynamic-marquee');
+            if (role === 'driver') {
+                marquee.innerText = "🛠️ DRIVER MODE ACTIVE • STAY ONLINE TO RECEIVE REQUESTS • OFFICIAL RATES APPLY • DRIVE SAFELY • 🛠️";
+            } else {
+                marquee.innerText = "👋 PASSENGER MODE • SELECT DESTINATION TO BOOK • CHECK FARE RATES • WEAR A HELMET • 👋";
+            }
+        }
+
         function initApp() {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-ui').classList.replace('hidden', 'flex');
             document.getElementById(userData.role + '-panel').classList.remove('hidden');
+            updateMarquee(userData.role);
             setStar(5);
             if (!map) {
                 map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 16);
@@ -415,9 +455,22 @@
         }
 
         function handleStatusLogic() {
-            const overlay = document.getElementById('status-overlay'), tripCard = document.getElementById('trip-card'), pWait = document.getElementById('p-waiting-card'), dActions = document.getElementById('driver-actions');
-            overlay.classList.add('hidden'); tripCard.classList.add('hidden'); pWait.classList.add('hidden');
-            if (!userData.activeTrip) return;
+            const overlay = document.getElementById('status-overlay');
+            const tripCard = document.getElementById('trip-card');
+            const pWait = document.getElementById('p-waiting-card');
+            const dActions = document.getElementById('driver-actions');
+            const contentPanel = document.getElementById('content-panel');
+            
+            overlay.classList.add('hidden'); 
+            tripCard.classList.add('hidden'); 
+            pWait.classList.add('hidden');
+            contentPanel.classList.remove('hidden');
+
+            if (!userData.activeTrip) {
+                document.getElementById('map').style.height = '45vh';
+                return;
+            }
+
             const t = userData.activeTrip;
             if (userData.role === 'driver') {
                 tripCard.classList.remove('hidden');
@@ -431,14 +484,18 @@
                 pWait.classList.remove('hidden');
                 document.getElementById('active-fare-display').innerText = "₱" + t.fare;
                 const nameEl = document.getElementById('wait-driver-name');
+                
                 if (t.status === 'requested') nameEl.innerText = "Finding your driver...";
                 else if (t.status === 'accepted') nameEl.innerText = `${t.dName} is arriving!`;
                 else if (t.status === 'pickedup') { 
                     overlay.classList.remove('hidden'); 
-                    document.getElementById('ride-status-text').innerText = "Riding with " + t.dName;
+                    contentPanel.classList.add('hidden');
+                    if (!isOverlayMinimized) document.getElementById('map').style.height = '45vh';
                 }
                 else if (t.status === 'arrived') { 
                     document.getElementById('rating-modal').classList.remove('hidden'); 
+                    overlay.classList.add('hidden');
+                    contentPanel.classList.remove('hidden');
                 }
             }
         }
@@ -495,6 +552,15 @@
             document.getElementById('rating-modal').classList.add('hidden');
         };
 
+        window.cancelTrip = async () => {
+            if(!confirm("Are you sure you want to cancel?")) return;
+            const t = userData.activeTrip;
+            if(t) {
+                await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField() });
+                await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
+            }
+        };
+
         window.toggleDashboard = (show) => {
             const dash = document.getElementById('user-dashboard');
             if (show) {
@@ -541,7 +607,7 @@
         window.toggleDuty = () => updateDoc(doc(db, "users", userUid), { isOnline: !userData.isOnline });
         window.logout = () => { if (userUid) updateDoc(doc(db, "users", userUid), { isOnline: false }); signOut(auth).then(() => location.reload()); };
         window.triggerSOS = () => { if (confirm("🚨 SOS! Notify emergency?")) showAlert("SOS SENT", "Help coming", "error"); };
-        
+
         function updateDutyButton() {
             const btn = document.getElementById('duty-btn');
             if (userData.isOnline) { btn.classList.add('online'); btn.innerHTML = '✅ ONLINE'; }
