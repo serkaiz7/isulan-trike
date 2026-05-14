@@ -43,6 +43,13 @@
         .passenger-marker-icon { color: #3b82f6; font-size: 26px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
         .leaflet-routing-container { display: none !important; }
         .history-item { border-left: 4px solid #10b981; }
+
+        /* Floating Ride Panel */
+        #status-overlay {
+            position: absolute; top: 46vh; left: 1rem; right: 1rem;
+            z-index: 40; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #status-overlay.minimized { transform: translateY(calc(100% - 60px)); }
     </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -50,7 +57,7 @@
     <amp-auto-ads type="adsense" data-ad-client="ca-pub-3089886074644811"></amp-auto-ads>
     
     <div class="ad-banner">
-        <ins class="adsbygoogle" style="display:inline-block;width:320px;height:50px" data-ad-client="ca-pub-3089886074644811" data-ad-slot="YOUR_AD_SLOT"></ins>
+        <ins class="adsbygoogle" style="display:inline-block;width:320px;height:50px" data-ad-client="ca-pub-3089886074644811" data-ad-slot="GENERAL_TOP_BANNER"></ins>
         <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
     </div>
 
@@ -108,19 +115,29 @@
             </div>
         </div>
 
-        <div id="status-overlay" class="hidden fixed inset-0 bg-emerald-950/98 z-[5000] flex flex-col items-center justify-center p-10 text-white text-center">
-            <div class="w-24 h-24 bg-emerald-500 rounded-full flex items-center justify-center mb-6 animate-pulse">
-                <i class="fa-solid fa-motorcycle text-4xl"></i>
+        <div id="status-overlay" class="hidden bg-emerald-900 text-white rounded-[2rem] shadow-2xl overflow-hidden border border-emerald-700/50">
+            <div class="p-4 flex justify-between items-center bg-emerald-800/50" onclick="toggleMinStatus()">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center animate-pulse">
+                        <i class="fa-solid fa-motorcycle text-xs"></i>
+                    </div>
+                    <span class="font-black text-xs uppercase tracking-tighter">Ride in Progress</span>
+                </div>
+                <button class="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full">
+                    <i id="min-icon" class="fa-solid fa-chevron-down text-xs"></i>
+                </button>
             </div>
-            <h2 class="text-3xl font-black italic uppercase tracking-tighter">Ride in Progress</h2>
-            <p id="ride-status-text" class="text-emerald-200 mt-2 font-bold">Safe travels! Your driver is on the way.</p>
             
-            <div class="mt-8 p-6 bg-white/10 rounded-3xl w-full border border-white/10">
-                <p class="text-[10px] uppercase font-black opacity-60">Agreed Fare</p>
-                <p id="active-fare-display" class="text-6xl font-black tracking-tighter text-amber-400">₱0</p>
+            <div id="status-expanded-content" class="p-6 space-y-4">
+                <div class="text-center">
+                    <p id="ride-status-text" class="text-emerald-200 text-xs font-bold mb-4">Safe travels! Your driver is on the way.</p>
+                    <div class="p-4 bg-white/10 rounded-2xl border border-white/10">
+                        <p class="text-[10px] uppercase font-black opacity-60">Agreed Fare</p>
+                        <p id="active-fare-display" class="text-4xl font-black tracking-tighter text-amber-400">₱0</p>
+                    </div>
+                </div>
+                <button onclick="triggerSOS()" class="w-full py-4 bg-red-600 rounded-2xl font-black text-xs shadow-lg">🚨 EMERGENCY SOS</button>
             </div>
-
-            <button onclick="triggerSOS()" class="mt-12 w-full py-5 bg-red-600 rounded-2xl font-black text-sm shadow-lg shadow-red-900/40">🚨 EMERGENCY SOS</button>
         </div>
 
         <div id="content-panel" class="content-card overflow-y-auto pb-32 px-6">
@@ -141,6 +158,11 @@
             </div>
 
             <div id="passenger-panel" class="hidden">
+                <div class="mb-4 rounded-2xl overflow-hidden bg-slate-100 flex items-center justify-center">
+                    <ins class="adsbygoogle" style="display:inline-block;width:300px;height:100px" data-ad-client="ca-pub-3089886074644811" data-ad-slot="PASSENGER_SPECIAL_SLOT"></ins>
+                    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+                </div>
+
                 <div class="bg-blue-600 p-4 rounded-2xl mb-4 flex justify-between items-center text-white shadow-lg">
                     <div>
                         <p class="text-[10px] font-bold opacity-80 uppercase">Est. Fare</p>
@@ -272,13 +294,19 @@
             if(opt.getAttribute('data-lat')) map.flyTo([opt.getAttribute('data-lat'), opt.getAttribute('data-lng')], 15);
         };
 
+        window.toggleMinStatus = () => {
+            const panel = document.getElementById('status-overlay');
+            const icon = document.getElementById('min-icon');
+            panel.classList.toggle('minimized');
+            icon.classList.toggle('fa-chevron-down');
+            icon.classList.toggle('fa-chevron-up');
+        };
+
         window.updateRealTimeRoute = (start, end) => {
-            // Remove line if the passenger is already picked up
             if (userData.activeTrip && userData.activeTrip.status === 'pickedup') {
                 if (routingControl) { map.removeControl(routingControl); routingControl = null; }
                 return;
             }
-
             if (routingControl) { map.removeControl(routingControl); routingControl = null; }
             routingControl = L.Routing.control({
                 waypoints: [L.latLng(start[0], start[1]), L.latLng(end[0], end[1])],
@@ -405,8 +433,13 @@
                 const nameEl = document.getElementById('wait-driver-name');
                 if (t.status === 'requested') nameEl.innerText = "Finding your driver...";
                 else if (t.status === 'accepted') nameEl.innerText = `${t.dName} is arriving!`;
-                else if (t.status === 'pickedup') { overlay.classList.remove('hidden'); map.dragging.disable(); map.touchZoom.disable(); }
-                else if (t.status === 'arrived') { document.getElementById('rating-modal').classList.remove('hidden'); map.dragging.enable(); map.touchZoom.enable(); }
+                else if (t.status === 'pickedup') { 
+                    overlay.classList.remove('hidden'); 
+                    document.getElementById('ride-status-text').innerText = "Riding with " + t.dName;
+                }
+                else if (t.status === 'arrived') { 
+                    document.getElementById('rating-modal').classList.remove('hidden'); 
+                }
             }
         }
 
@@ -414,7 +447,7 @@
             const list = document.getElementById('ride-history-list');
             if (!userData.history || userData.history.length === 0) return;
             list.innerHTML = '';
-            userData.history.reverse().forEach(h => {
+            userData.history.slice().reverse().forEach(h => {
                 list.innerHTML += `<div class="history-item p-4 bg-white rounded-2xl shadow-sm">
                     <div class="flex justify-between items-start mb-2">
                         <p class="font-black text-gray-800 text-sm">${h.driverName}</p>
@@ -487,7 +520,6 @@
             showAlert("UPDATED", "Profile saved");
         };
 
-        // Utility functions
         window.showAlert = (title, body, type = 'success') => {
             const el = document.getElementById('alert-popup');
             document.getElementById('alert-title').innerText = title;
@@ -496,6 +528,7 @@
             el.classList.remove('hidden');
             setTimeout(() => el.classList.add('hidden'), 5000);
         };
+
         window.setStar = (n) => {
             currentRating = n;
             const stars = document.getElementById('star-box');
@@ -504,14 +537,17 @@
                 stars.innerHTML += `<i onclick="setStar(${i})" class="fa-solid fa-star cursor-pointer ${i <= n ? 'text-amber-400' : 'text-gray-200'}"></i>`;
             }
         };
+
         window.toggleDuty = () => updateDoc(doc(db, "users", userUid), { isOnline: !userData.isOnline });
         window.logout = () => { if (userUid) updateDoc(doc(db, "users", userUid), { isOnline: false }); signOut(auth).then(() => location.reload()); };
         window.triggerSOS = () => { if (confirm("🚨 SOS! Notify emergency?")) showAlert("SOS SENT", "Help coming", "error"); };
+        
         function updateDutyButton() {
             const btn = document.getElementById('duty-btn');
             if (userData.isOnline) { btn.classList.add('online'); btn.innerHTML = '✅ ONLINE'; }
             else { btn.classList.remove('online'); btn.innerHTML = 'GO ONLINE'; }
         }
+
         window.showRegisterUI = () => { document.getElementById('login-actions').classList.add('hidden'); document.getElementById('reg-ui').classList.remove('hidden'); };
         window.showLoginUI = () => { document.getElementById('login-actions').classList.remove('hidden'); document.getElementById('reg-ui').classList.add('hidden'); };
         window.selectRole = (r) => { selectedRole = r; document.getElementById('role-p').classList.toggle('active', r==='passenger'); document.getElementById('role-d').classList.toggle('active', r==='driver'); document.getElementById('driver-fields').classList.toggle('hidden', r!=='driver'); };
