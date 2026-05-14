@@ -148,15 +148,35 @@
             </div>
 
             <div id="passenger-panel" class="hidden">
+                <div class="bg-blue-600 p-4 rounded-2xl mb-4 flex justify-between items-center text-white shadow-lg">
+                    <div>
+                        <p class="text-[10px] font-bold opacity-80 uppercase">Est. Fare</p>
+                        <p id="display-fare" class="text-3xl font-black">₱0.00</p>
+                    </div>
+                    <i class="fa-solid fa-coins text-2xl opacity-50"></i>
+                </div>
+
                 <div class="relative mb-4">
                     <i class="fa-solid fa-location-arrow absolute left-5 top-5 text-emerald-500"></i>
-                    <select id="dest-select" class="w-full pl-12 p-5 bg-gray-50 rounded-3xl border-2 border-transparent focus:border-emerald-500 outline-none font-bold text-lg appearance-none">
-                        <option value="21" data-name="Poblacion (Center)">Poblacion - ₱21</option>
-                        <option value="27" data-name="Kalawag I/II/III">Kalawag I/II/III - ₱27</option>
-                        <option value="35" data-name="Bambad / Impao Boundary">Bambad / Impao - ₱35</option>
-                        <option value="41" data-name="Dansuli / Kenram">Dansuli / Kenram - ₱41</option>
-                        <option value="55" data-name="Mapantig / Kudanding">Mapantig / Kudanding - ₱55</option>
-                        <option value="68" data-name="Bual / Tayugo">Bual / Tayugo - ₱68</option>
+                    <select id="dest-select" onchange="calculateFare()" class="w-full pl-12 p-5 bg-gray-50 rounded-3xl border-2 border-transparent focus:border-emerald-500 outline-none font-bold text-lg appearance-none">
+                        <option value="0" disabled selected>Select Destination</option>
+                        <optgroup label="CENTER BOUND">
+                            <option value="21" data-name="Poblacion" data-lat="6.632" data-lng="124.603">Poblacion - ₱21</option>
+                        </optgroup>
+                        <optgroup label="NORTH BOUND">
+                            <option value="27" data-name="Dansuli (Purok 10)" data-lat="6.645" data-lng="124.600">Dansuli (P10) - ₱27</option>
+                            <option value="35" data-name="Impao Boundary" data-lat="6.655" data-lng="124.595">Impao Boundary - ₱35</option>
+                            <option value="55" data-name="Mapantig" data-lat="6.662" data-lng="124.588">Mapantig - ₱55</option>
+                        </optgroup>
+                        <optgroup label="SOUTH BOUND">
+                            <option value="27" data-name="Kalawag 1" data-lat="6.618" data-lng="124.608">Kalawag 1 - ₱27</option>
+                            <option value="35" data-name="Bambad (Highway)" data-lat="6.605" data-lng="124.612">Bambad Highway - ₱35</option>
+                            <option value="68" data-name="Kolambog Proper" data-lat="6.585" data-lng="124.615">Kolambog - ₱68</option>
+                        </optgroup>
+                        <optgroup label="WEST BOUND">
+                            <option value="27" data-name="Kalawag III" data-lat="6.635" data-lng="124.590">Kalawag III - ₱27</option>
+                            <option value="68" data-name="Tayugo" data-lat="6.630" data-lng="124.560">Tayugo - ₱68</option>
+                        </optgroup>
                     </select>
                 </div>
                 <button onclick="toggleFareMatrix()" class="w-full mb-4 py-2 text-xs font-bold text-blue-600 bg-blue-50 rounded-xl">Show Full Rate List (All Bounds)</button>
@@ -210,7 +230,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField, increment, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteField, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyBbHxg48BTT8IN0_RJuGyy6-FQCwq5jcF4",
@@ -227,14 +247,48 @@
 
         let userUid, userData, map, markers = {}, routingControl = null, currentRating = 5, selectedRole = null;
 
-        function showAlert(title, body, type = 'success') {
+        // --- MAP BOUNDARIES (Circles) ---
+        function drawBoundaries() {
+            const boundaries = [
+                { name: 'Center Bound', pos: [6.632, 124.603], color: '#10b981', radius: 1000 },
+                { name: 'North Bound', pos: [6.650, 124.600], color: '#3b82f6', radius: 2500 },
+                { name: 'South Bound', pos: [6.600, 124.610], color: '#f59e0b', radius: 3000 },
+                { name: 'West Bound', pos: [6.630, 124.570], color: '#ef4444', radius: 3500 }
+            ];
+            boundaries.forEach(b => {
+                L.circle(b.pos, { radius: b.radius, color: b.color, weight: 1, fillOpacity: 0.05 }).addTo(map).bindPopup(b.name);
+            });
+        }
+
+        window.calculateFare = () => {
+            const select = document.getElementById('dest-select');
+            const fare = select.value;
+            const opt = select.options[select.selectedIndex];
+            const destLat = opt.getAttribute('data-lat');
+            const destLng = opt.getAttribute('data-lng');
+
+            document.getElementById('display-fare').innerText = "₱" + fare;
+
+            if(destLat && destLng && map) {
+                map.flyTo([destLat, destLng], 15);
+                if(routingControl) map.removeControl(routingControl);
+                routingControl = L.Routing.control({
+                    waypoints: [L.latLng(userData.lat, userData.lng), L.latLng(destLat, destLng)],
+                    createMarker: () => null,
+                    lineOptions: { styles: [{color: '#3b82f6', weight: 4}] },
+                    show: false
+                }).addTo(map);
+            }
+        };
+
+        window.showAlert = (title, body, type = 'success') => {
             const el = document.getElementById('alert-popup');
             document.getElementById('alert-title').innerText = title;
             document.getElementById('alert-body').innerText = body;
             document.getElementById('alert-icon').className = `fa-solid fa-${type === 'success' ? 'check-circle text-emerald-500' : 'times-circle text-red-500'}`;
             el.classList.remove('hidden');
             setTimeout(() => el.classList.add('hidden'), 5000);
-        }
+        };
 
         window.setStar = (n) => {
             currentRating = n;
@@ -246,7 +300,6 @@
         };
 
         window.toggleFareMatrix = () => document.getElementById('fare-matrix-container').classList.toggle('hidden');
-
         window.showRegisterUI = () => { document.getElementById('login-actions').classList.add('hidden'); document.getElementById('reg-ui').classList.remove('hidden'); };
         window.showLoginUI = () => { document.getElementById('login-actions').classList.remove('hidden'); document.getElementById('reg-ui').classList.add('hidden'); };
         
@@ -280,10 +333,7 @@
             if (u) {
                 userUid = u.uid;
                 const snap = await getDoc(doc(db, "users", userUid));
-                if (snap.exists()) { 
-                    userData = snap.data(); 
-                    initApp(); 
-                }
+                if (snap.exists()) { userData = snap.data(); initApp(); }
             } else {
                 document.getElementById('auth-screen').classList.remove('hidden');
                 document.getElementById('app-ui').classList.add('hidden');
@@ -298,6 +348,7 @@
             if (!map) {
                 map = L.map('map', { zoomControl: false }).setView([6.6294, 124.605], 16);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+                drawBoundaries();
             }
             navigator.geolocation.watchPosition(p => {
                 updateDoc(doc(db, "users", userUid), { lat: p.coords.latitude, lng: p.coords.longitude, lastActive: Date.now() });
@@ -337,11 +388,6 @@
                             <button class="bg-emerald-600 text-white px-6 py-2 rounded-2xl text-xs font-black">BOOK</button></div>`;
                     }
                 });
-                if (userData.activeTrip && otherParty) {
-                    const myLoc = L.latLng(userData.lat, userData.lng), theirLoc = L.latLng(otherParty.lat, otherParty.lng);
-                    if (!routingControl) routingControl = L.Routing.control({ waypoints: [myLoc, theirLoc], createMarker: () => null, lineOptions: { styles: [{color: '#10b981', weight: 6}] }, show: false }).addTo(map);
-                    else routingControl.setWaypoints([myLoc, theirLoc]);
-                } else if (routingControl) { map.removeControl(routingControl); routingControl = null; }
             });
         }
 
@@ -365,16 +411,14 @@
                 if (t.status === 'requested') nameEl.innerText = "Finding your driver...";
                 else if (t.status === 'accepted') nameEl.innerText = `${t.dName} is arriving!`;
                 else if (t.status === 'pickedup') overlay.classList.remove('hidden');
-                else if (t.status === 'arrived') {
-                    document.getElementById('rating-modal').classList.remove('hidden');
-                    setStar(5);
-                }
+                else if (t.status === 'arrived') document.getElementById('rating-modal').classList.remove('hidden');
             }
         }
 
         window.bookDriver = async (dId) => {
             const select = document.getElementById('dest-select');
             const fare = parseInt(select.value);
+            if(fare === 0) return alert("Select destination first!");
             const dest = select.options[select.selectedIndex].getAttribute('data-name');
             const snap = await getDoc(doc(db, "users", dId));
             const trip = { status: 'requested', pId: userUid, pName: userData.name, dId, dName: snap.data().name, dest, fare, timestamp: Date.now() };
@@ -383,20 +427,14 @@
         };
 
         window.cancelTrip = async () => {
-            const t = userData.activeTrip; 
-            if (!t) return;
-            try {
-                if (t.dId) await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField(), notification: "Cancelled by Passenger" });
-                await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
-                document.getElementById('p-waiting-card').classList.add('hidden');
-                document.getElementById('status-overlay').classList.add('hidden');
-                showAlert("CANCELLED", "Trip request removed", "error");
-            } catch (err) { showAlert("ERROR", "Could not cancel", "error"); }
+            const t = userData.activeTrip; if (!t) return;
+            if (t.dId) await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField(), notification: "Cancelled" });
+            await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
+            showAlert("CANCELLED", "Trip request removed", "error");
         };
 
         window.updateStatus = async (s) => {
-            const t = userData.activeTrip;
-            if (!t) return;
+            const t = userData.activeTrip; if (!t) return;
             if (s === 'arrived') {
                 await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField(), income: increment(t.fare), tripCount: increment(1) });
                 await updateDoc(doc(db, "users", t.pId), { "activeTrip.status": "arrived" });
@@ -411,29 +449,19 @@
         };
 
         window.toggleDuty = () => updateDoc(doc(db, "users", userUid), { isOnline: !userData.isOnline });
-
-        window.toggleDashboard = (show) => {
-            if (userData.role === 'driver') {
-                document.getElementById('driver-dashboard').classList.toggle('hidden', !show);
-                if (show) { document.getElementById('edit-name').value = userData.name; document.getElementById('edit-mtop').value = userData.mtop; document.getElementById('edit-plate').value = userData.plate; }
-            }
-        };
-
+        window.toggleDashboard = (show) => { if (userData.role === 'driver') document.getElementById('driver-dashboard').classList.toggle('hidden', !show); };
         window.updateProfile = async () => {
             await updateDoc(doc(db, "users", userUid), { name: document.getElementById('edit-name').value, mtop: document.getElementById('edit-mtop').value, plate: document.getElementById('edit-plate').value });
-            showAlert("UPDATED", "Profile details saved");
+            showAlert("UPDATED", "Profile saved");
         };
-
         window.finishTripPassenger = async () => {
             const t = userData.activeTrip;
             if (t && t.dId) await updateDoc(doc(db, "users", t.dId), { totalRating: increment(currentRating) });
             await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
             document.getElementById('rating-modal').classList.add('hidden');
         };
-
         window.logout = () => { if (userUid) updateDoc(doc(db, "users", userUid), { isOnline: false }); signOut(auth).then(() => location.reload()); };
-        window.triggerSOS = () => { if (confirm("🚨 SOS! Notify emergency services?")) showAlert("SOS SENT", "Help is on the way", "error"); };
-
+        window.triggerSOS = () => { if (confirm("🚨 SOS! Notify emergency?")) showAlert("SOS SENT", "Help coming", "error"); };
         function updateDutyButton() {
             const btn = document.getElementById('duty-btn');
             if (userData.isOnline) { btn.classList.add('online'); btn.innerHTML = '✅ ONLINE'; }
