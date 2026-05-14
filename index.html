@@ -58,6 +58,7 @@
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
         }
 
+        /* Hide the default routing box */
         .leaflet-routing-container { display: none !important; }
         
         #status-overlay {
@@ -320,16 +321,19 @@
 
         let userUid, userData, map, markers = {}, routingControl = null, currentRating = 5, selectedRole = null, isOverlayMinimized = false;
 
-        // Overlay Toggle
-        window.toggleOverlaySize = (shouldMinimize) => {
-            const overlay = document.getElementById('status-overlay');
-            const restoreBtn = document.getElementById('restore-overlay-btn');
-            const mapArea = document.getElementById('map-area');
-            isOverlayMinimized = shouldMinimize;
-            if (isOverlayMinimized) { overlay.classList.add('minimized'); restoreBtn.style.display = 'flex'; mapArea.style.height = '85vh'; }
-            else { overlay.classList.remove('minimized'); restoreBtn.style.display = 'none'; mapArea.style.height = '45vh'; }
-            setTimeout(() => map.invalidateSize(), 300);
-        };
+        // NEW: Function to Draw Shortest Route
+        function drawRoute(start, end) {
+            if (routingControl) { map.removeControl(routingControl); routingControl = null; }
+            routingControl = L.Routing.control({
+                waypoints: [ L.latLng(start[0], start[1]), L.latLng(end[0], end[1]) ],
+                routeWhileDragging: false,
+                addWaypoints: false,
+                lineOptions: { styles: [{ color: '#10b981', weight: 6, opacity: 0.8 }] },
+                createMarker: function() { return null; } // Don't create extra markers
+            }).addTo(map);
+        }
+
+        function clearRoute() { if (routingControl) { map.removeControl(routingControl); routingControl = null; } }
 
         // SOS LOGIC
         window.triggerSOS = () => { document.getElementById('sos-modal').classList.remove('hidden'); };
@@ -339,15 +343,9 @@
             const btn = document.getElementById('sos-btn');
             btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin mr-2'></i> BROADCASTING SOS...";
             btn.classList.add('sos-active');
-            
-            // Broadcast globally via Firestore
-            await updateDoc(doc(db, "users", userUid), { 
-                sosActive: true,
-                sosTimestamp: Date.now()
-            });
-            
+            await updateDoc(doc(db, "users", userUid), { sosActive: true, sosTimestamp: Date.now() });
             closeSOSModal();
-            alert("🚨 GLOBAL SOS ACTIVATED!\nAll drivers and passengers can now see your emergency location.");
+            alert("🚨 GLOBAL SOS ACTIVATED!");
         };
 
         window.openBookingModal = (dId, dName) => {
@@ -393,22 +391,22 @@
             onSnapshot(collection(db, "users"), (snap) => {
                 const now = Date.now();
                 const dList = document.getElementById('driver-list');
+                const allUsers = {};
                 if (userData.role === 'passenger') dList.innerHTML = '';
                 
                 snap.forEach(d => {
                     const data = d.data(), id = d.id;
+                    allUsers[id] = data;
                     if (id === userUid) { userData = data; handleStatusLogic(); updateDutyButton(); updateHistoryUI(); }
                     
                     const isFresh = data.lastActive && (now - data.lastActive < 180000);
                     
-                    // Marker Logic including Pulsating SOS
                     if (isFresh && data.lat && data.lng) {
                         const isSos = data.sosActive;
                         const iconHtml = isSos ? `<div class="sos-marker-pulse"></div>` : (data.role === 'driver' ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`);
                         
                         if (markers[id]) {
                             markers[id].setLatLng([data.lat, data.lng]);
-                            // Update icon if SOS state changed
                             markers[id].setIcon(L.divIcon({ html: iconHtml, className: '', iconSize: [40, 40] }));
                         } else {
                             markers[id] = L.marker([data.lat, data.lng], { icon: L.divIcon({ html: iconHtml, className: '', iconSize: [40, 40] }) }).addTo(map);
@@ -421,6 +419,16 @@
                             <button class="bg-emerald-600 text-white px-6 py-2 rounded-2xl text-xs font-black">BOOK</button></div>`;
                     }
                 });
+
+                // Check for active route display
+                if (userData.activeTrip && (userData.activeTrip.status === 'accepted' || userData.activeTrip.status === 'pickedup')) {
+                    const trip = userData.activeTrip;
+                    const driver = allUsers[trip.dId];
+                    const passenger = allUsers[trip.pId];
+                    if (driver && passenger && driver.lat && passenger.lat) {
+                        drawRoute([driver.lat, driver.lng], [passenger.lat, passenger.lng]);
+                    }
+                } else { clearRoute(); }
             });
         }
 
@@ -451,6 +459,34 @@
                 else if (t.status === 'arrived') { document.getElementById('rating-modal').classList.remove('hidden'); }
             }
         }
+
+        window.updateStatus = async (s) => {
+            const t = userData.activeTrip;
+            if (s === 'arrived') {
+                const now = new Date();
+                const log = { driverName: t.dName, dest: t.dest, date: now.toLocaleDateString(), fare: t.fare };
+                await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField(), income: increment(t.fare), tripCount: increment(1), sosActive: false });
+                await updateDoc(doc(db, "users", t.pId), { "activeTrip.status": "arrived", history: arrayUnion(log), sosActive: false });
+                clearRoute();
+            } else if (s === 'declined') {
+                await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField() });
+                await updateDoc(doc(db, "users", t.pId), { activeTrip: deleteField() });
+            } else {
+                const up = { "activeTrip.status": s };
+                await updateDoc(doc(db, "users", userUid), up);
+                await updateDoc(doc(db, "users", t.pId), up);
+            }
+        };
+
+        window.toggleOverlaySize = (shouldMinimize) => {
+            const overlay = document.getElementById('status-overlay');
+            const restoreBtn = document.getElementById('restore-overlay-btn');
+            const mapArea = document.getElementById('map-area');
+            isOverlayMinimized = shouldMinimize;
+            if (isOverlayMinimized) { overlay.classList.add('minimized'); restoreBtn.style.display = 'flex'; mapArea.style.height = '85vh'; }
+            else { overlay.classList.remove('minimized'); restoreBtn.style.display = 'none'; mapArea.style.height = '45vh'; }
+            setTimeout(() => map.invalidateSize(), 300);
+        };
 
         window.toggleDashboard = (show) => {
             const dash = document.getElementById('user-dashboard');
@@ -490,27 +526,13 @@
             alert("Profile Synchronized!");
         };
 
-        window.updateStatus = async (s) => {
-            const t = userData.activeTrip;
-            if (s === 'arrived') {
-                const now = new Date();
-                const log = { driverName: t.dName, dest: t.dest, date: now.toLocaleDateString(), fare: t.fare };
-                // Reset SOS on arrival
-                await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField(), income: increment(t.fare), tripCount: increment(1), sosActive: false });
-                await updateDoc(doc(db, "users", t.pId), { "activeTrip.status": "arrived", history: arrayUnion(log), sosActive: false });
-            } else {
-                const up = { "activeTrip.status": s };
-                await updateDoc(doc(db, "users", userUid), up);
-                await updateDoc(doc(db, "users", t.pId), up);
-            }
-        };
-
         window.finishTripPassenger = async (isSkipped) => {
             await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField(), sosActive: false });
             document.getElementById('rating-modal').classList.add('hidden');
+            clearRoute();
         };
 
-        window.cancelTrip = async () => { if(confirm("Cancel ride?")) { const t = userData.activeTrip; await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField(), sosActive: false }); await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField(), sosActive: false }); } };
+        window.cancelTrip = async () => { if(confirm("Cancel ride?")) { const t = userData.activeTrip; await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField(), sosActive: false }); await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField(), sosActive: false }); clearRoute(); } };
         window.handleAuth = async (t) => {
             const e = document.getElementById('auth-email').value;
             const p = document.getElementById('auth-pass').value;
