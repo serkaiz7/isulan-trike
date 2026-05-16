@@ -139,7 +139,7 @@
         .leaflet-routing-container { display: none !important; }
         
         #status-overlay {
-            position: fixed; left: 0; right: 0; bottom: 0; height: 55vh;
+            position: fixed; left: 0; right: 0; bottom: 0; height: 58vh;
             background: linear-gradient(180deg, #022c22 0%, #064e3b 100%); 
             border-top-left-radius: 2.5rem; border-top-right-radius: 2.5rem;
             z-index: 1000; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -276,7 +276,7 @@
                 </button>
             </div>
             
-            <div class="grid grid-cols-2 gap-3 mb-6">
+            <div class="grid grid-cols-2 gap-3 mb-4">
                 <div class="bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10">
                     <p class="text-[10px] uppercase font-bold tracking-wider text-emerald-300/70">Calculated Fare</p>
                     <p id="active-fare-display" class="text-3xl font-black text-amber-400 mt-1">₱0</p>
@@ -294,6 +294,9 @@
                 <button id="cancel-sos-btn" onclick="cancelSOS()" class="hidden w-full py-4 bg-white/10 border border-white/20 hover:bg-white/20 rounded-2xl font-black text-xs uppercase transition-colors tracking-wider">
                     <i class="fa-solid fa-xmark mr-2"></i> Cancel SOS Alert
                 </button>
+                <button onclick="forceKillTrip()" class="w-full py-2.5 bg-black/30 hover:bg-black/40 border border-white/10 text-red-300 rounded-xl text-[10px] font-extrabold uppercase tracking-widest transition-colors">
+                    <i class="fa-solid fa-ban mr-1"></i> Force Reset Stuck Connection
+                </button>
             </div>
         </div>
 
@@ -305,12 +308,16 @@
 
                 <div class="scrollable-content">
                     <div id="driver-panel" class="hidden">
-                        <div id="trip-card" class="hidden mb-6 p-5 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-3xl shadow-inner">
+                        <div id="trip-card" class="hidden mb-6 p-5 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-3xl shadow-inner relative">
                             <span class="inline-block px-2.5 py-1 bg-emerald-600 text-white font-extrabold text-[9px] uppercase rounded-md tracking-wider mb-3">Incoming Dispatch Request</span>
                             <h4 id="trip-p-name" class="text-2xl font-black text-slate-800"></h4>
                             <p id="trip-p-dest" class="text-slate-500 text-sm mt-1 mb-2 font-medium"></p>
                             <p id="trip-p-fare" class="text-emerald-700 font-extrabold text-xl mb-4"></p>
-                            <div id="driver-actions" class="flex gap-2"></div>
+                            <div id="driver-actions" class="flex gap-2 mb-3"></div>
+                            
+                            <button onclick="forceKillTrip()" class="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition-colors">
+                                <i class="fa-solid fa-rectangle-xmark mr-1"></i> Force Cancel Stale Ride
+                            </button>
                         </div>
                         <div class="text-center py-4">
                             <button id="duty-btn" onclick="toggleDuty()" class="w-full py-16 text-3xl font-black uppercase rounded-[2.5rem] bg-slate-50 text-slate-300 border-2 border-dashed border-slate-200 transition-all tracking-wider hover:bg-slate-100/50">GO ONLINE</button>
@@ -430,8 +437,12 @@
             </div>
             <h3 class="text-3xl font-black text-slate-900 tracking-tight">Trip Complete</h3>
             <p class="text-slate-500 text-sm mb-6">How was your ride experience?</p>
-            <div id="star-box" class="flex justify-center gap-3 text-4xl mb-8 text-amber-400"></div>
-            <button onclick="finishTripPassenger()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-lg active:scale-95 transition-transform">COMPLETE METRICS</button>
+            <div id="star-box" class="flex justify-center gap-3 text-4xl mb-6 text-amber-400"></div>
+            
+            <div class="flex flex-col gap-2">
+                <button onclick="finishTripPassenger()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-lg active:scale-95 transition-transform shadow-md">COMPLETE METRICS</button>
+                <button onclick="skipRating()" class="w-full py-3 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 font-bold text-xs uppercase tracking-wider rounded-2xl transition-colors">Skip Rating Procedure</button>
+            </div>
         </div>
     </div>
 
@@ -454,6 +465,7 @@
         const db = getFirestore(app);
 
         let userUid, userData, map, markers = {}, routingControl = null, currentRating = 5, selectedRole = null, isOverlayMinimized = false;
+        let hasInitiallyPositionedMap = false;
 
         // --- Drag Sheet Setup Implementation ---
         const sheet = document.getElementById('content-panel');
@@ -544,6 +556,27 @@
             await updateDoc(doc(db, "users", userUid), { sosActive: false });
         };
 
+        // Complete Stale Connection Kill Switch Action
+        window.forceKillTrip = async () => {
+            if (!userData.activeTrip) return;
+            if (confirm("Execute System Break Override? This terminates the connection for both users and returns the status back to idle standby state.")) {
+                const targetTrip = userData.activeTrip;
+                try {
+                    if (targetTrip.dId) await updateDoc(doc(db, "users", targetTrip.dId), { activeTrip: deleteField() });
+                    if (targetTrip.pId) await updateDoc(doc(db, "users", targetTrip.pId), { activeTrip: deleteField() });
+                    alert("Active connection terminated. Device state returned to normal pools.");
+                } catch (err) {
+                    console.error("Kill switch error: ", err);
+                }
+            }
+        };
+
+        // Skip Rating Execution Handler
+        window.skipRating = async () => {
+            await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
+            document.getElementById('rating-modal').classList.add('hidden');
+        };
+
         window.toggleOverlaySize = (shouldMinimize) => {
             const overlay = document.getElementById('status-overlay');
             const restoreBtn = document.getElementById('restore-overlay-btn');
@@ -577,15 +610,37 @@
             document.getElementById('app-ui').classList.replace('hidden', 'flex');
             document.getElementById(userData.role + '-panel').classList.remove('hidden');
             setStar(5);
+            
+            // Map configuration supporting complete drag gestures and zoom mechanics safely
             if (!map) {
-                map = L.map('map', { zoomControl: false, attributionControl: false }).setView([6.6294, 124.605], 16);
+                map = L.map('map', { 
+                    zoomControl: false, 
+                    attributionControl: false,
+                    dragging: true,
+                    touchZoom: true,
+                    scrollWheelZoom: true,
+                    doubleClickZoom: true,
+                    boxZoom: true
+                }).setView([6.6294, 124.605], 16);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
             }
+
+            // Real-time autotracking without force-refocusing center coordinates during view exploration
             navigator.geolocation.watchPosition(p => {
-                if(auth.currentUser) updateDoc(doc(db, "users", userUid), { lat: p.coords.latitude, lng: p.coords.longitude, lastActive: Date.now() });
-            }, null, { enableHighAccuracy: true });
+                if (auth.currentUser) {
+                    const trackingLat = p.coords.latitude;
+                    const trackingLng = p.coords.longitude;
+                    
+                    updateDoc(doc(db, "users", userUid), { lat: trackingLat, lng: trackingLng, lastActive: Date.now() });
+                    
+                    if (!hasInitiallyPositionedMap) {
+                        map.setView([trackingLat, trackingLng], 16);
+                        hasInitiallyPositionedMap = true;
+                    }
+                }
+            }, null, { enableHighAccuracy: true, timeout: 10000 });
+
             syncData();
-            // Fire layout refresh safely
             setTimeout(() => { if (map) map.invalidateSize(); }, 500);
         }
 
@@ -620,7 +675,10 @@
                     }
                     
                     const isFresh = data.lastActive && (now - data.lastActive < 180000);
-                    if (isFresh && data.lat && data.lng) {
+                    // Absolute dynamic cleanup checking online conditions natively
+                    const isUserVisuallyActive = isFresh && data.lat && data.lng && (data.role !== 'driver' || data.isOnline === true);
+
+                    if (isUserVisuallyActive) {
                         let iconHtml = '';
                         if(data.sosActive) {
                             iconHtml = `<div class="sos-marker-pulse"></div>`;
@@ -634,6 +692,7 @@
                             markers[id] = L.marker([data.lat, data.lng], { icon: L.divIcon({ html: iconHtml, className: '', iconSize: [40, 40] }) }).addTo(map);
                         }
                     } else if (markers[id]) { 
+                        // Instantly unrender the marker layer node object 
                         map.removeLayer(markers[id]); 
                         delete markers[id]; 
                     }
@@ -679,7 +738,6 @@
                 if (t.status === 'requested') dActions.innerHTML = `<button onclick="updateStatus('accepted')" class="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-md">ACCEPT</button><button onclick="updateStatus('declined')" class="flex-1 py-4 bg-red-50 text-red-600 rounded-2xl font-black">DECLINE</button>`;
                 else if (t.status === 'accepted') dActions.innerHTML = `<button onclick="updateStatus('pickedup')" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-md">PICKED UP</button>`;
                 else if (t.status === 'pickedup') dActions.innerHTML = `<button onclick="updateStatus('arrived')" class="w-full py-4 bg-orange-600 text-white rounded-2xl font-black shadow-md">ARRIVED</button>`;
-                // Expand panel for driver requests automatically
                 snapSheet(window.innerHeight * 0.08);
             } else {
                 pWait.classList.remove('hidden'); 
