@@ -2,315 +2,436 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sakay - Drive Or Ride</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Sakay - Premium Drive & Ride</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
     <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; touch-action: manipulation; background-color: #f8fafc; height: 100vh; display: flex; flex-direction: column; }
-        #map-area { height: 45vh; width: 100%; position: relative; z-index: 1; flex-shrink: 0; transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            overflow: hidden; 
+            touch-action: manipulation; 
+            background-color: #f8fafc; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        #map-area { 
+            height: 100vh; 
+            width: 100%; 
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1; 
+        }
         #map { height: 100%; width: 100%; }
 
+        /* Draggable Interactive Bottom Sheet Panel styling */
         .content-card { 
-            position: relative; flex-grow: 1; margin-top: -2rem; 
-            background: white; border-top-left-radius: 2.5rem; border-top-right-radius: 2.5rem;
-            z-index: 10; box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.08); 
-            display: flex; flex-direction: column; overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: fixed; 
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 85vh;
+            background: white; 
+            border-top-left-radius: 2.5rem; 
+            border-top-right-radius: 2.5rem;
+            z-index: 10; 
+            box-shadow: 0 -15px 30px -5px rgba(15, 23, 42, 0.12); 
+            transform: translateY(50vh); /* Initial state shows top half */
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 90px;
         }
-
+        .content-card.dragging {
+            transition: none;
+        }
+        .drag-handle-container {
+            width: 100%;
+            padding: 16px 0;
+            cursor: grab;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .drag-handle-container:active {
+            cursor: grabbing;
+        }
+        .drag-handle {
+            width: 50px;
+            height: 6px;
+            background-color: #cbd5e1;
+            border-radius: 999px;
+        }
         .scrollable-content {
-            flex-grow: 1; overflow-y: auto; padding: 0 1.5rem 100px 1.5rem;
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 0 24px;
+            -webkit-overflow-scrolling: touch;
         }
 
         .marquee-container { 
-            background: #064e3b; color: #fbbf24; overflow: hidden; white-space: nowrap; 
-            display: flex; align-items: center; min-height: 35px; font-size: 11px; font-weight: 800; letter-spacing: 1px; flex-shrink: 0;
+            background: #022c22; 
+            color: #fbbf24; 
+            overflow: hidden; 
+            white-space: nowrap; 
+            display: flex; 
+            align-items: center; 
+            min-height: 38px; 
+            font-size: 11px; 
+            font-weight: 800; 
+            letter-spacing: 1.5px; 
+            position: relative;
+            z-index: 20;
+            border-bottom: 1px solid rgba(251, 191, 36, 0.2);
         }
-        .marquee-content { display: inline-block; line-height: 1.5; animation: marquee 20s linear infinite; }
+        .marquee-content { display: inline-block; line-height: 1.5; animation: marquee 25s linear infinite; }
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
 
         .nav-bar { 
-            height: 75px; position: fixed; bottom: 0; left: 0; right: 0; 
-            background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px);
-            display: flex; justify-content: space-around; align-items: center;
-            border-top: 1px solid #f1f5f9; z-index: 50; padding-bottom: env(safe-area-inset-bottom);
+            height: 80px; 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            background: rgba(255, 255, 255, 0.92); 
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center;
+            border-top: 1px solid rgba(241, 245, 249, 0.8); 
+            z-index: 50; 
+            padding-bottom: env(safe-area-inset-bottom);
+            box-shadow: 0 -8px 20px rgba(15, 23, 42, 0.04);
         }
-        .nav-btn { display: flex; flex-direction: column; align-items: center; color: #94a3b8; font-size: 10px; font-weight: 800; }
-        .nav-btn.active { color: #10b981; }
+        .nav-btn { display: flex; flex-direction: column; align-items: center; color: #94a3b8; font-size: 11px; font-weight: 700; transition: all 0.2s ease; gap: 4px; border: none; background: none; }
+        .nav-btn.active { color: #059669; }
         
-        #duty-btn.online { background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; }
+        #duty-btn.online { background: linear-gradient(135deg, #10b981, #047857); color: white; border: none; box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4); }
         
-        .driver-marker-icon { color: #10b981; font-size: 26px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
-        .passenger-marker-icon { color: #3b82f6; font-size: 26px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+        .driver-marker-icon, .passenger-marker-icon {
+            display: flex; align-items: center; justify-content: center;
+            width: 40px; height: 40px; border-radius: 50%; border: 3px solid white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); color: white; font-size: 16px;
+        }
+        .driver-marker-icon { background: #10b981; }
+        .passenger-marker-icon { background: #3b82f6; }
         
         .sos-marker-pulse {
-            width: 20px; height: 20px; background: #dc2626; border-radius: 50%;
-            box-shadow: 0 0 0 rgba(220, 38, 38, 0.4); animation: sos-pulse 1.2s infinite;
+            width: 24px; height: 24px; background: #ef4444; border-radius: 50%;
+            border: 3px solid white; box-shadow: 0 0 0 rgba(239, 68, 68, 0.5); 
+            animation: sos-pulse 1.4s infinite;
         }
         @keyframes sos-pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(220, 38, 38, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 18px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
 
         .leaflet-routing-container { display: none !important; }
         
-        #status-overlay-block {
-            background: #064e3b; border-radius: 2rem; box-shadow: 0 10px 25px rgba(6, 78, 59, 0.15);
+        #status-overlay {
+            position: fixed; left: 0; right: 0; bottom: 0; height: 55vh;
+            background: linear-gradient(180deg, #022c22 0%, #064e3b 100%); 
+            border-top-left-radius: 2.5rem; border-top-right-radius: 2.5rem;
+            z-index: 1000; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 -20px 40px rgba(2, 44, 34, 0.3);
         }
+        #status-overlay.minimized { transform: translateY(calc(100% - 96px)); }
         
-        #expand-handle-wrapper {
-            cursor: pointer; width: 100%; display: flex; justify-content: center; align-items: center; padding: 12px 0; flex-shrink: 0;
+        #restore-overlay-btn {
+            position: fixed; bottom: 105px; right: 20px; z-index: 1001;
+            width: 48px; height: 48px; background: #fbbf24; color: #022c22;
+            border-radius: 50%; display: none; align-items: center; justify-content: center;
+            box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4); border: 2px solid white;
+            transition: all 0.2s;
         }
 
-        .history-item { border-left: 4px solid #10b981; }
-        .sos-active-btn { animation: pulse-red 1s infinite; background-color: #dc2626 !important; }
-        @keyframes pulse-red { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        .history-item { border-left: 4px solid #10b981; background: #ffffff; transition: transform 0.2s; }
+        .history-item:active { transform: scale(0.98); }
+        .sos-active-btn { animation: pulse-red 1.2s infinite; background-color: #dc2626 !important; box-shadow: 0 0 20px rgba(220,38,38,0.5) !important;}
+        @keyframes pulse-red { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.85; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
+        
+        .glass-input {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+        }
+        .glass-input:focus {
+            background: rgba(255, 255, 255, 0.14);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 15px rgba(255,255,255,0.05);
+        }
     </style>
 </head>
 <body>
 
     <div class="marquee-container">
-        <div id="dynamic-marquee" class="marquee-content">🚀 CONNECTED TO SAKAY NETWORK... STAY SAFE... 🚀</div>
+        <div id="dynamic-marquee" class="marquee-content">⚡ CONNECTED TO SAKAY PREMIUM EDGE NETWORK ... DRIVE SAFE, RIDE SAFE ⚡</div>
     </div>
 
-    <div id="auth-screen" class="fixed inset-0 z-[9000] bg-emerald-600 flex flex-col p-8 overflow-y-auto justify-center text-white">
-        <div class="text-center mb-10">
-            <div class="bg-white/10 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-4">
-                <i class="fa-solid fa-motorcycle text-4xl"></i>
+    <div id="auth-screen" class="fixed inset-0 z-[9000] bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-900 flex flex-col p-8 overflow-y-auto justify-center text-white">
+        <div class="text-center mb-8">
+            <div class="bg-white/10 backdrop-blur-md w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto mb-5 border border-white/20 shadow-xl">
+                <i class="fa-solid fa-motorcycle text-5xl text-amber-400"></i>
             </div>
-            <h1 class="text-5xl font-black italic tracking-tighter">Sakay</h1>
-            <p class="text-emerald-100 font-bold opacity-70 text-xs uppercase tracking-widest mt-1">Drive Or Ride</p>
+            <h1 class="text-5xl font-extrabold italic tracking-tighter drop-shadow-md">Sakay</h1>
+            <p class="text-emerald-200 font-bold opacity-80 text-[11px] uppercase tracking-widest mt-2">Next-Gen Ride Ecosystem</p>
         </div>
-        <div class="max-w-xs mx-auto w-full space-y-4">
+
+        <div class="max-w-sm mx-auto w-full space-y-4">
             <div id="login-actions" class="space-y-4">
-                <input id="auth-email" type="email" placeholder="Email" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none text-white">
-                <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none text-white">
-                <button onclick="handleAuth('login')" class="w-full py-4 bg-amber-400 text-emerald-900 rounded-2xl font-black text-lg shadow-xl">SIGN IN</button>
-                <button onclick="showRegisterUI()" class="w-full py-4 border border-white/30 rounded-2xl font-bold text-sm">Create New Account</button>
+                <div class="space-y-2">
+                    <input id="auth-email" type="email" placeholder="Email Address" class="w-full p-4 glass-input rounded-2xl outline-none text-white placeholder-emerald-200/50 font-medium">
+                    <input id="auth-pass" type="password" placeholder="Password" class="w-full p-4 glass-input rounded-2xl outline-none text-white placeholder-emerald-200/50 font-medium">
+                </div>
+                <button onclick="handleAuth('login')" class="w-full py-4 bg-gradient-to-r from-amber-400 to-amber-500 text-emerald-950 rounded-2xl font-black text-lg shadow-xl active:scale-[0.99] transition-transform tracking-wide">SIGN IN</button>
+                <button onclick="showRegisterUI()" class="w-full py-4 bg-white/5 border border-white/10 hover:bg-white/10 rounded-2xl font-bold text-sm text-emerald-100 transition-colors">Create New Account</button>
             </div>
+
             <div id="reg-ui" class="hidden space-y-4">
                 <div class="grid grid-cols-2 gap-3">
-                    <div onclick="selectRole('passenger')" id="role-p" class="p-4 border border-white/30 rounded-2xl text-center cursor-pointer">
-                        <i class="fa-solid fa-user text-2xl mb-1"></i><p class="text-[10px] font-black uppercase">Passenger</p>
+                    <div onclick="selectRole('passenger')" id="role-p" class="p-4 border border-white/10 bg-white/5 rounded-2xl text-center cursor-pointer transition-all hover:bg-white/10">
+                        <i class="fa-solid fa-user text-2xl mb-2 text-emerald-200"></i>
+                        <p class="text-[11px] font-black uppercase tracking-wider">Passenger</p>
                     </div>
-                    <div onclick="selectRole('driver')" id="role-d" class="p-4 border border-white/30 rounded-2xl text-center cursor-pointer">
-                        <i class="fa-solid fa-motorcycle text-2xl mb-1"></i><p class="text-[10px] font-black uppercase">Driver</p>
+                    <div onclick="selectRole('driver')" id="role-d" class="p-4 border border-white/10 bg-white/5 rounded-2xl text-center cursor-pointer transition-all hover:bg-white/10">
+                        <i class="fa-solid fa-motorcycle text-2xl mb-2 text-emerald-200"></i>
+                        <p class="text-[11px] font-black uppercase tracking-wider">Driver</p>
                     </div>
                 </div>
-                <input id="reg-alias" type="text" placeholder="Full Name" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none text-white">
+                <input id="reg-alias" type="text" placeholder="Full Name" class="w-full p-4 glass-input rounded-2xl outline-none text-white placeholder-emerald-200/50 font-medium">
+                
                 <div id="driver-fields" class="hidden space-y-3">
-                    <input id="reg-mtop" type="text" placeholder="MTOP Number" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none text-white">
-                    <input id="reg-plate" type="text" placeholder="Plate Number" class="w-full p-4 bg-white/10 border border-white/20 rounded-2xl outline-none text-white">
+                    <input id="reg-mtop" type="text" placeholder="MTOP Number" class="w-full p-4 glass-input rounded-2xl outline-none text-white placeholder-emerald-200/50 font-medium">
+                    <input id="reg-plate" type="text" placeholder="Plate Number" class="w-full p-4 glass-input rounded-2xl outline-none text-white placeholder-emerald-200/50 font-medium">
                 </div>
-                <button onclick="handleAuth('register')" class="w-full py-4 bg-white text-emerald-700 rounded-2xl font-black shadow-xl">REGISTER NOW</button>
-                <button onclick="showLoginUI()" class="w-full text-white/60 text-xs">← Back to Login</button>
+                
+                <button onclick="handleAuth('register')" class="w-full py-4 bg-white text-emerald-900 rounded-2xl font-black shadow-xl">REGISTER NOW</button>
+                <button onclick="showLoginUI()" class="w-full text-emerald-200/70 text-xs font-semibold hover:text-white transition-colors block text-center mt-2">← Back to Login</button>
             </div>
         </div>
     </div>
 
-    <div id="app-ui" class="hidden flex-col h-full relative">
+    <div id="app-ui" class="hidden flex-col h-full relative animate-fade-in">
         <div id="map-area">
             <div id="map"></div>
         </div>
 
-        <div id="sos-modal" class="hidden fixed inset-0 z-[10000] bg-black/80 backdrop-blur-md flex items-center justify-center p-6">
+        <button id="restore-overlay-btn" onclick="toggleOverlaySize(false)">
+            <i class="fa-solid fa-chevron-up text-lg"></i>
+        </button>
+
+        <div id="sos-modal" class="hidden fixed inset-0 z-[10000] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-6">
             <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl border-4 border-red-500 text-center">
-                <i class="fa-solid fa-triangle-exclamation text-5xl text-red-600 mb-4"></i>
-                <h3 class="text-2xl font-black text-gray-900">LEGAL WARNING</h3>
-                <p class="text-red-700 text-xs font-bold leading-relaxed uppercase my-4 p-4 bg-red-50 rounded-2xl">
-                    Misuse of SOS is a serious offense. Only use in life-threatening emergencies.
+                <div class="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-triangle-exclamation text-3xl"></i>
+                </div>
+                <h3 class="text-2xl font-black text-slate-900 tracking-tight">LEGAL WARNING</h3>
+                <p class="text-red-700 text-xs font-bold leading-relaxed uppercase my-4 p-4 bg-red-50/70 rounded-2xl border border-red-100">
+                    Misuse of SOS is a serious offense. Only use in life-threatening emergencies. Criminal action will apply to false logs.
                 </p>
-                <div class="space-y-3">
-                    <button onclick="confirmSOSBroadcast()" class="w-full py-4 bg-red-600 text-white rounded-2xl font-black">BROADCAST SOS</button>
-                    <button onclick="closeSOSModal()" class="w-full py-4 bg-gray-100 text-gray-500 rounded-2xl font-bold">CANCEL</button>
+                <div class="space-y-2">
+                    <button onclick="confirmSOSBroadcast()" class="w-full py-4 bg-red-600 text-white rounded-2xl font-black shadow-lg shadow-red-600/20 active:scale-95 transition-transform">BROADCAST SOS</button>
+                    <button onclick="closeSOSModal()" class="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold active:scale-95 transition-transform">CANCEL</button>
                 </div>
             </div>
         </div>
 
-        <div id="booking-modal" class="hidden fixed inset-0 z-[9500] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
+        <div id="booking-modal" class="hidden fixed inset-0 z-[9500] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-6">
             <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl text-center">
-                <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-100">
                     <i class="fa-solid fa-motorcycle text-2xl"></i>
                 </div>
-                <h3 class="text-2xl font-black text-gray-800">Confirm Booking?</h3>
-                <p class="text-gray-500 text-sm mt-2">Book ride with <span id="modal-driver-name" class="font-bold text-emerald-600"></span></p>
-                <div class="space-y-3 mt-6">
-                    <button id="confirm-booking-btn" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black">CONFIRM RIDE</button>
-                    <button onclick="closeBookingModal()" class="w-full py-4 bg-gray-100 text-gray-500 rounded-2xl font-bold">CANCEL</button>
+                <h3 class="text-2xl font-black text-slate-800 tracking-tight">Confirm Ride?</h3>
+                <p class="text-slate-500 text-sm mt-1">Book dispatch request with <span id="modal-driver-name" class="font-extrabold text-emerald-600"></span></p>
+                <div class="space-y-2 mt-6">
+                    <button id="confirm-booking-btn" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-600/20 active:scale-95 transition-transform">CONFIRM RIDE</button>
+                    <button onclick="closeBookingModal()" class="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold active:scale-95 transition-transform">CANCEL</button>
                 </div>
             </div>
         </div>
 
-        <div id="content-panel" class="content-card">
-            <div id="expand-handle-wrapper" onclick="handleRetractionToggle()">
-                <div id="expand-bar-indicator" class="w-14 h-1.5 bg-gray-300 rounded-full transition-transform"></div>
+        <div id="status-overlay" class="hidden flex flex-col p-6 text-white overflow-hidden">
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-amber-400 rounded-2xl flex items-center justify-center text-emerald-950 shadow-md">
+                        <i class="fa-solid fa-motorcycle text-xl animate-bounce"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xs font-black uppercase italic tracking-wider text-amber-400">Ride Information</h2>
+                        <p id="ride-status-text" class="text-sm font-bold text-emerald-100 mt-0.5">En Route to Destination</p>
+                    </div>
+                </div>
+                <button onclick="toggleOverlaySize(true)" class="bg-white/10 hover:bg-white/20 w-10 h-10 rounded-full flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                </button>
             </div>
+            
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+                    <p class="text-[10px] uppercase font-bold tracking-wider text-emerald-300/70">Calculated Fare</p>
+                    <p id="active-fare-display" class="text-3xl font-black text-amber-400 mt-1">₱0</p>
+                </div>
+                <div class="bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+                    <p class="text-[10px] uppercase font-bold tracking-wider text-emerald-300/70">Safety Protocol</p>
+                    <p class="text-xs font-extrabold mt-3 flex items-center gap-1 text-emerald-300"><i class="fa-solid fa-shield-check text-amber-400"></i> Verified Ecosystem</p>
+                </div>
+            </div>
+            
+            <div class="space-y-3">
+                <button id="sos-btn" onclick="triggerSOS()" class="w-full py-4 bg-red-600 hover:bg-red-700 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-red-600/30 transition-colors">
+                    <i class="fa-solid fa-shield-heart mr-2"></i> EMERGENCY SOS
+                </button>
+                <button id="cancel-sos-btn" onclick="cancelSOS()" class="hidden w-full py-4 bg-white/10 border border-white/20 hover:bg-white/20 rounded-2xl font-black text-xs uppercase transition-colors tracking-wider">
+                    <i class="fa-solid fa-xmark mr-2"></i> Cancel SOS Alert
+                </button>
+            </div>
+        </div>
 
-            <div class="scrollable-content">
-                <div id="driver-panel" class="hidden">
-                    <div id="trip-card" class="hidden mb-6 p-6 bg-emerald-50 border border-emerald-100 rounded-3xl relative">
-                        <h4 id="trip-p-name" class="text-xl font-black text-gray-800"></h4>
-                        <p id="trip-p-dest" class="text-gray-500 text-sm mb-2"></p>
-                        <p id="trip-p-fare" class="text-emerald-700 font-black text-lg mb-4"></p>
-                        <div id="driver-actions" class="flex gap-2"></div>
-                        
-                        <button onclick="forceKillTrip()" class="w-full mt-4 py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl text-[11px] font-extrabold uppercase tracking-wider">
-                            <i class="fa-solid fa-ban mr-1"></i> Force Terminate Incomplete Trip
-                        </button>
-                    </div>
-                    <div class="text-center py-4">
-                        <button id="duty-btn" onclick="toggleDuty()" class="w-full py-16 text-3xl font-black uppercase rounded-[2.5rem] bg-gray-50 text-gray-300 border-2 border-dashed border-gray-200 transition-all">GO ONLINE</button>
-                    </div>
+        <div id="main-map-view" class="flex flex-col flex-grow relative z-10 pointer-events-none">
+            <div id="content-panel" class="content-card pointer-events-auto">
+                <div class="drag-handle-container" id="drag-zone">
+                    <div class="drag-handle"></div>
                 </div>
 
-                <div id="passenger-panel" class="hidden">
-                    <div id="p-sos-alert" class="hidden bg-red-600 text-white p-4 rounded-2xl mb-4 flex justify-between items-center shadow-lg animate-pulse">
-                        <p class="text-xs font-black"><i class="fa-solid fa-tower-broadcast mr-2"></i>SOS SIGNAL ACTIVE</p>
-                        <button onclick="cancelSOS()" class="bg-white/20 px-3 py-1 rounded-lg text-[10px] font-bold">CANCEL</button>
-                    </div>
-                    
-                    <div id="p-metrics-banner" class="bg-blue-600 p-5 rounded-3xl mb-4 flex justify-between items-center text-white shadow-lg">
-                        <div>
-                            <p class="text-[10px] font-bold opacity-80 uppercase tracking-wider">Estimated Fare Metrics</p>
-                            <p id="display-fare" class="text-4xl font-black">₱0.00</p>
+                <div class="scrollable-content">
+                    <div id="driver-panel" class="hidden">
+                        <div id="trip-card" class="hidden mb-6 p-5 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-3xl shadow-inner">
+                            <span class="inline-block px-2.5 py-1 bg-emerald-600 text-white font-extrabold text-[9px] uppercase rounded-md tracking-wider mb-3">Incoming Dispatch Request</span>
+                            <h4 id="trip-p-name" class="text-2xl font-black text-slate-800"></h4>
+                            <p id="trip-p-dest" class="text-slate-500 text-sm mt-1 mb-2 font-medium"></p>
+                            <p id="trip-p-fare" class="text-emerald-700 font-extrabold text-xl mb-4"></p>
+                            <div id="driver-actions" class="flex gap-2"></div>
                         </div>
-                        <div class="bg-white/20 w-12 h-12 rounded-2xl flex items-center justify-center">
-                            <i class="fa-solid fa-coins text-2xl text-amber-300"></i>
+                        <div class="text-center py-4">
+                            <button id="duty-btn" onclick="toggleDuty()" class="w-full py-16 text-3xl font-black uppercase rounded-[2.5rem] bg-slate-50 text-slate-300 border-2 border-dashed border-slate-200 transition-all tracking-wider hover:bg-slate-100/50">GO ONLINE</button>
                         </div>
                     </div>
 
-                    <div id="p-search-box" class="relative mb-4">
-                        <i class="fa-solid fa-location-arrow absolute left-5 top-5 text-emerald-500"></i>
-                        <select id="dest-select" onchange="calculateFare()" class="w-full pl-12 p-5 bg-gray-50 rounded-3xl border-2 border-transparent focus:border-emerald-500 outline-none font-bold text-lg appearance-none">
-                            <option value="0" disabled selected>Select Destination</option>
-                            <optgroup label="CENTER BOUND"><option value="21" data-name="Poblacion" data-lat="6.632" data-lng="124.603">Poblacion - ₱21</option></optgroup>
-                            <optgroup label="NORTH BOUND">
-                                <option value="27" data-name="Dansuli (Purok 10)" data-lat="6.645" data-lng="124.600">Dansuli (P10) - ₱27</option>
-                                <option value="35" data-name="Impao Boundary" data-lat="6.655" data-lng="124.595">Impao Boundary - ₱35</option>
-                                <option value="55" data-name="Mapantig" data-lat="6.662" data-lng="124.588">Mapantig - ₱55</option>
-                            </optgroup>
-                            <optgroup label="SOUTH BOUND">
-                                <option value="27" data-name="Kalawag 1" data-lat="6.618" data-lng="124.608">Kalawag 1 - ₱27</option>
-                                <option value="35" data-name="Bambad (Highway)" data-lat="6.605" data-lng="124.612">Bambad Highway - ₱35</option>
-                                <option value="68" data-name="Kolambog Proper" data-lat="6.585" data-lng="124.615">Kolambog - ₱68</option>
-                            </optgroup>
-                        </select>
-                    </div>
-
-                    <div id="p-waiting-card" class="hidden mb-6 p-6 bg-slate-50 border border-slate-200 rounded-3xl text-center">
-                        <div class="flex flex-col items-center justify-center py-2">
-                            <div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                            <p id="wait-driver-name" class="font-black text-gray-800 text-lg mb-2"></p>
-                            <button onclick="cancelTrip()" class="mt-2 px-6 py-3 bg-red-50 text-red-600 rounded-2xl text-xs font-black uppercase tracking-wider hover:bg-red-100 transition-colors">Cancel Dispatch Request</button>
+                    <div id="passenger-panel" class="hidden">
+                        <div id="p-sos-alert" class="hidden bg-red-600 text-white p-4 rounded-2xl mb-4 flex justify-between items-center shadow-lg animate-pulse">
+                            <p class="text-xs font-black"><i class="fa-solid fa-tower-broadcast mr-2"></i>SOS SIGNAL BROADCAST ACTIVE</p>
+                            <button onclick="cancelSOS()" class="bg-white/20 px-3 py-1 rounded-lg text-[10px] font-bold">CANCEL</button>
                         </div>
-                    </div>
-
-                    <div id="status-overlay-block" class="hidden p-6 text-white mb-6 flex flex-col">
-                        <div class="flex justify-between items-center mb-6">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center text-emerald-900">
-                                    <i class="fa-solid fa-motorcycle animate-bounce"></i>
-                                </div>
-                                <div>
-                                    <h2 class="text-sm font-black uppercase italic tracking-tighter">Ride Information</h2>
-                                    <p id="ride-status-text" class="text-[11px] text-emerald-200 font-bold">Driver is coming to you</p>
-                                </div>
+                        
+                        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-5 rounded-3xl mb-5 flex justify-between items-center text-white shadow-xl shadow-blue-600/10">
+                            <div>
+                                <p class="text-[10px] font-bold opacity-75 uppercase tracking-wider">Estimated Fare Metrics</p>
+                                <p id="display-fare" class="text-4xl font-black mt-1">₱0.00</p>
                             </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3 mb-4">
-                            <div class="bg-white/10 p-4 rounded-2xl border border-white/10">
-                                <p class="text-[9px] uppercase font-black opacity-60 tracking-wider">Calculated Fare</p>
-                                <p id="active-fare-display" class="text-3xl font-black text-amber-400">₱0</p>
-                            </div>
-                            <div class="bg-white/10 p-4 rounded-2xl border border-white/10">
-                                <p class="text-[9px] uppercase font-black opacity-60 tracking-wider">Safety Protocol</p>
-                                <p class="text-xs font-black mt-2">Verified Ecosystem</p>
+                            <div class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                                <i class="fa-solid fa-coins text-2xl text-amber-300"></i>
                             </div>
                         </div>
                         
-                        <div class="space-y-3">
-                            <button id="sos-btn" onclick="triggerSOS()" class="w-full py-4 bg-red-600 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg">
-                                <i class="fa-solid fa-shield-heart mr-2"></i> EMERGENCY SOS
-                            </button>
-                            <button id="cancel-sos-btn" onclick="cancelSOS()" class="hidden w-full py-4 bg-white/20 border border-white/30 rounded-2xl font-black text-xs uppercase">
-                                <i class="fa-solid fa-xmark mr-2"></i> Cancel SOS Alert
-                            </button>
-                            
-                            <button onclick="forceKillTrip()" class="w-full py-2.5 bg-black/20 hover:bg-black/30 border border-white/10 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-widest transition-colors">
-                                <i class="fa-solid fa-rectangle-xmark mr-1"></i> Force Reset Stuck Connection
-                            </button>
+                        <div class="relative mb-5">
+                            <i class="fa-solid fa-location-dot absolute left-5 top-5 text-emerald-500 text-xl"></i>
+                            <select id="dest-select" onchange="calculateFare()" class="w-full pl-14 pr-10 p-5 bg-slate-50 rounded-3xl border-2 border-slate-100 focus:border-emerald-500 focus:bg-white transition-all outline-none font-bold text-lg appearance-none text-slate-800 shadow-sm">
+                                <option value="0" disabled selected>Select Destination</option>
+                                <optgroup label="CENTER BOUND" class="font-bold text-slate-400 text-xs uppercase bg-white">
+                                    <option value="21" class="text-slate-800 font-bold" data-name="Poblacion" data-lat="6.632" data-lng="124.603">Poblacion - ₱21</option>
+                                </optgroup>
+                                <optgroup label="NORTH BOUND" class="font-bold text-slate-400 text-xs uppercase bg-white">
+                                    <option value="27" class="text-slate-800 font-bold" data-name="Dansuli (Purok 10)" data-lat="6.645" data-lng="124.600">Dansuli (P10) - ₱27</option>
+                                    <option value="35" class="text-slate-800 font-bold" data-name="Impao Boundary" data-lat="6.655" data-lng="124.595">Impao Boundary - ₱35</option>
+                                    <option value="55" class="text-slate-800 font-bold" data-name="Mapantig" data-lat="6.662" data-lng="124.588">Mapantig - ₱55</option>
+                                </optgroup>
+                                <optgroup label="SOUTH BOUND" class="font-bold text-slate-400 text-xs uppercase bg-white">
+                                    <option value="27" class="text-slate-800 font-bold" data-name="Kalawag 1" data-lat="6.618" data-lng="124.608">Kalawag 1 - ₱27</option>
+                                    <option value="35" class="text-slate-800 font-bold" data-name="Bambad (Highway)" data-lat="6.605" data-lng="124.612">Bambad Highway - ₱35</option>
+                                    <option value="68" class="text-slate-800 font-bold" data-name="Kolambog Proper" data-lat="6.585" data-lng="124.615">Kolambog - ₱68</option>
+                                </optgroup>
+                            </select>
+                            <i class="fa-solid fa-chevron-down absolute right-5 top-6 text-slate-400 pointer-events-none text-sm"></i>
                         </div>
+                        
+                        <div id="p-waiting-card" class="hidden mb-6 p-6 bg-blue-50/70 border border-blue-100 rounded-3xl text-center shadow-inner">
+                            <div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent mb-3"></div>
+                            <p id="wait-driver-name" class="font-black text-blue-900"></p>
+                            <button onclick="cancelTrip()" class="mt-4 px-6 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-full text-xs font-black transition-colors tracking-wide">CANCEL DISPATCH REQUEST</button>
+                        </div>
+                        
+                        <div class="mb-3 flex items-center justify-between">
+                            <h4 class="font-black text-slate-800 uppercase text-xs tracking-wider">Available Drivers Nearby</h4>
+                            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        </div>
+                        <div id="driver-list" class="space-y-3"></div>
                     </div>
-
-                    <div id="drivers-nearby-label-group">
-                        <p class="font-black text-gray-400 text-xs uppercase tracking-wider mb-3">Available Drivers Nearby</p>
-                    </div>
-                    <div id="driver-list" class="space-y-3"></div>
                 </div>
+            </div>
+        </div>
+
+        <div id="user-dashboard" class="hidden flex-grow bg-slate-50 overflow-y-auto p-6 pb-32 relative z-20">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-4xl font-black tracking-tighter text-slate-900">Hub</h2>
+            </div>
+            
+            <div id="driver-stats" class="hidden grid grid-cols-1 gap-4 mb-6">
+                <div class="bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 p-6 rounded-[2.5rem] text-white shadow-xl shadow-emerald-700/10">
+                    <p class="text-xs font-bold opacity-75 uppercase tracking-widest">Aggregate Net Earnings</p>
+                    <p class="text-5xl font-black mt-2 tracking-tight">₱<span id="stat-income">0</span></p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl flex justify-between items-center shadow-sm border border-slate-100">
+                    <p class="text-slate-500 font-bold text-sm">Trips Successfully Processed</p>
+                    <p class="text-3xl font-black text-emerald-600" id="stat-trips">0</p>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100 space-y-4">
+                <h4 class="font-black text-slate-800 uppercase text-xs tracking-widest flex items-center gap-1.5"><i class="fa-solid fa-user-gear text-emerald-600"></i> Profile Controls</h4>
+                <div class="space-y-2">
+                    <input id="edit-name" type="text" placeholder="Full Name" class="w-full p-4 bg-slate-50 rounded-2xl border border-transparent focus:border-slate-200 focus:bg-white outline-none font-bold text-sm text-slate-800">
+                    <input id="edit-phone" type="tel" placeholder="Mobile Number" class="w-full p-4 bg-slate-50 rounded-2xl border border-transparent focus:border-slate-200 focus:bg-white outline-none font-bold text-sm text-slate-800">
+                    <input id="edit-messenger" type="text" placeholder="Messenger Profile Link" class="w-full p-4 bg-slate-50 rounded-2xl border border-transparent focus:border-slate-200 focus:bg-white outline-none font-bold text-sm text-slate-800">
+                </div>
+                <div id="driver-only-inputs" class="hidden space-y-2">
+                    <input id="edit-mtop" type="text" placeholder="MTOP Number" class="w-full p-4 bg-slate-50 rounded-2xl border border-transparent focus:border-slate-200 focus:bg-white outline-none font-bold text-sm text-slate-800">
+                    <input id="edit-plate" type="text" placeholder="Plate Number" class="w-full p-4 bg-slate-50 rounded-2xl border border-transparent focus:border-slate-200 focus:bg-white outline-none font-bold text-sm text-slate-800">
+                </div>
+                <button onclick="updateProfile()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black shadow-lg shadow-emerald-600/10 active:scale-[0.99] transition-transform">SAVE CONFIGURATION UPDATES</button>
+                <button onclick="manualResetHistory()" class="w-full py-2 text-red-500 font-bold text-xs uppercase tracking-wider block text-center opacity-70 hover:opacity-100 transition-opacity mt-2">Wipe Sync Records</button>
+            </div>
+            
+            <div id="history-section" class="mt-6 space-y-3">
+                <h4 class="font-black text-slate-800 uppercase text-xs tracking-widest">Recent Activity Ledger</h4>
+                <div id="ride-history-list" class="space-y-2"></div>
             </div>
         </div>
 
         <div class="nav-bar">
-            <button onclick="toggleDashboard(false)" class="nav-btn active"><i class="fa-solid fa-map-location-dot text-2xl mb-1"></i>Map Canvas</button>
-            <button onclick="toggleDashboard(true)" class="nav-btn"><i class="fa-solid fa-chart-line text-2xl mb-1"></i>Hub Matrix</button>
-            <button onclick="logout()" class="nav-btn text-red-400"><i class="fa-solid fa-power-off text-2xl mb-1"></i>Term Session</button>
+            <button id="nav-btn-map" onclick="toggleDashboard(false)" class="nav-btn active">
+                <i class="fa-solid fa-map-location-dot text-2xl"></i>
+                <span>Map Canvas</span>
+            </button>
+            <button id="nav-btn-hub" onclick="toggleDashboard(true)" class="nav-btn">
+                <i class="fa-solid fa-chart-line text-2xl"></i>
+                <span>Hub Matrix</span>
+            </button>
+            <button onclick="logout()" class="nav-btn text-red-400 hover:text-red-500">
+                <i class="fa-solid fa-power-off text-2xl"></i>
+                <span>Term Session</span>
+            </button>
         </div>
     </div>
 
-    <div id="user-dashboard" class="hidden fixed inset-0 z-[8000] bg-slate-50 overflow-y-auto p-6 pb-32">
-        <div class="flex justify-between items-center mb-8">
-            <h2 class="text-4xl font-black tracking-tighter">Hub</h2>
-            <button onclick="toggleDashboard(false)" class="w-10 h-10 bg-white rounded-full shadow-sm text-gray-400">✕</button>
-        </div>
-        <div id="driver-stats" class="hidden grid grid-cols-1 gap-4 mb-8">
-            <div class="bg-emerald-600 p-8 rounded-[2.5rem] text-white shadow-xl">
-                <p class="text-xs font-bold opacity-70 uppercase tracking-widest">Total Earnings</p>
-                <p class="text-5xl font-black mt-2">₱<span id="stat-income">0</span></p>
+    <div id="rating-modal" class="hidden fixed inset-0 z-[9600] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center relative shadow-2xl">
+            <div class="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fa-solid fa-star text-2xl text-amber-400"></i>
             </div>
-            <div class="bg-white p-6 rounded-3xl flex justify-between items-center shadow-sm">
-                <p class="text-gray-500 font-bold">Trips Completed</p>
-                <p class="text-3xl font-black text-emerald-600" id="stat-trips">0</p>
-            </div>
-        </div>
-        <div class="bg-white rounded-[2rem] p-6 shadow-sm space-y-4">
-            <h4 class="font-black text-gray-800 uppercase text-xs tracking-widest">Profile Settings</h4>
-            <input id="edit-name" type="text" placeholder="Full Name" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
-            <input id="edit-phone" type="tel" placeholder="Mobile Number" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
-            <input id="edit-messenger" type="text" placeholder="Messenger Profile Link" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
-            <div id="driver-only-inputs" class="hidden space-y-4">
-                <input id="edit-mtop" type="text" placeholder="MTOP Number" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
-                <input id="edit-plate" type="text" placeholder="Plate Number" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold">
-            </div>
-            <button onclick="updateProfile()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-lg">SAVE UPDATES</button>
-            <button onclick="manualResetHistory()" class="w-full py-4 text-red-500 font-black text-xs uppercase">Reset Dashboard Records</button>
-        </div>
-        <div id="history-section" class="mt-8 space-y-4">
-            <h4 class="font-black text-gray-800 uppercase text-xs tracking-widest">Recent Activity</h4>
-            <div id="ride-history-list" class="space-y-3"></div>
-        </div>
-    </div>
-
-    <div id="rating-modal" class="hidden fixed inset-0 z-[9600] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
-        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center relative">
-            <h3 class="text-3xl font-black mb-2">Trip Complete</h3>
-            <p class="text-gray-500 mb-6">How was your ride?</p>
+            <h3 class="text-3xl font-black text-slate-900 tracking-tight">Trip Complete</h3>
+            <p class="text-slate-500 text-sm mb-6">How was your ride experience?</p>
             <div id="star-box" class="flex justify-center gap-3 text-4xl mb-8 text-amber-400"></div>
-            
-            <div class="flex flex-col gap-2">
-                <button onclick="finishTripPassenger()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-base shadow-md">
-                    SUBMIT EVALUATION
-                </button>
-                <button onclick="skipRating()" class="w-full py-3 bg-gray-50 text-gray-400 hover:text-gray-600 rounded-2xl font-bold text-xs uppercase tracking-wider transition-colors">
-                    Skip Rating Procedure
-                </button>
-            </div>
+            <button onclick="finishTripPassenger()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-lg active:scale-95 transition-transform">COMPLETE METRICS</button>
         </div>
     </div>
 
@@ -332,23 +453,87 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let userUid, userData, map, markers = {}, routingControl = null, currentRating = 5, selectedRole = null;
-        let isCardRetracted = false;
-        let hasInitiallyPositionedMap = false;
+        let userUid, userData, map, markers = {}, routingControl = null, currentRating = 5, selectedRole = null, isOverlayMinimized = false;
 
-        // Routing Engine Management Setup
+        // --- Drag Sheet Setup Implementation ---
+        const sheet = document.getElementById('content-panel');
+        const dragZone = document.getElementById('drag-zone');
+        let isDragging = false;
+        let startY = 0;
+        let currentTranslateY = window.innerHeight * 0.50; // default state position
+        let currentPanelOffset = window.innerHeight * 0.50;
+
+        const setSheetPosition = (y) => {
+            currentPanelOffset = y;
+            sheet.style.transform = `translateY(${y}px)`;
+        };
+
+        const snapSheet = (yPosition) => {
+            sheet.classList.remove('dragging');
+            const totalHeight = window.innerHeight;
+            const openSnap = totalHeight * 0.08;   // Snap point high fully showing everything
+            const partialSnap = totalHeight * 0.50;// Halfway point (looks exactly like user image view)
+            const closedSnap = totalHeight * 0.72; // Snapped lower matching screen limits
+
+            if (yPosition < (partialSnap + openSnap) / 2) {
+                setSheetPosition(openSnap);
+            } else if (yPosition < (partialSnap + closedSnap) / 2) {
+                setSheetPosition(partialSnap);
+            } else {
+                setSheetPosition(closedSnap);
+            }
+            currentTranslateY = currentPanelOffset;
+        };
+
+        // Pointer event handles supporting drag gestures across devices
+        const onDragStart = (e) => {
+            isDragging = true;
+            startY = e.touches ? e.touches[0].clientY : e.clientY;
+            sheet.classList.add('dragging');
+        };
+
+        const onDragMove = (e) => {
+            if (!isDragging) return;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const deltaY = clientY - startY;
+            let targetY = currentTranslateY + deltaY;
+
+            // Soft boundaries restriction checks
+            const minBound = window.innerHeight * 0.05;
+            const maxBound = window.innerHeight * 0.75;
+            if (targetY < minBound) targetY = minBound;
+            if (targetY > maxBound) targetY = maxBound;
+
+            setSheetPosition(targetY);
+        };
+
+        const onDragEnd = () => {
+            if (!isDragging) return;
+            isDragging = false;
+            snapSheet(currentPanelOffset);
+        };
+
+        dragZone.addEventListener('touchstart', onDragStart, { passive: true });
+        window.addEventListener('touchmove', onDragMove, { passive: false });
+        window.addEventListener('touchend', onDragEnd);
+
+        dragZone.addEventListener('mousedown', onDragStart);
+        window.addEventListener('mousemove', onDragMove);
+        window.addEventListener('mouseup', onDragEnd);
+
+        // Routing Handler
         function updateRouteLine(start, end) {
             if (routingControl) map.removeControl(routingControl);
             routingControl = L.Routing.control({
                 waypoints: [L.latLng(start[0], start[1]), L.latLng(end[0], end[1])],
                 routeWhileDragging: false,
                 addWaypoints: false,
-                lineOptions: { styles: [{ color: '#10b981', weight: 6, opacity: 0.8 }] },
+                lineOptions: { styles: [{ color: '#10b981', weight: 6, opacity: 0.9 }] },
                 createMarker: () => null
             }).addTo(map);
         }
 
-        // SOS Framework Actions
+        // Globalized System Access Triggers
         window.triggerSOS = () => document.getElementById('sos-modal').classList.remove('hidden');
         window.closeSOSModal = () => document.getElementById('sos-modal').classList.add('hidden');
         window.confirmSOSBroadcast = async () => {
@@ -359,52 +544,32 @@
             await updateDoc(doc(db, "users", userUid), { sosActive: false });
         };
 
-        // Fully Dynamic Drag Indicator/True Retraction Layout Mechanics Function 
-        window.handleRetractionToggle = () => {
-            const mapArea = document.getElementById('map-area');
-            const indicator = document.getElementById('expand-bar-indicator');
-            isCardRetracted = !isCardRetracted;
-
-            if (isCardRetracted) {
-                mapArea.style.height = '82vh';
-                indicator.style.transform = 'scaleX(0.5)';
+        window.toggleOverlaySize = (shouldMinimize) => {
+            const overlay = document.getElementById('status-overlay');
+            const restoreBtn = document.getElementById('restore-overlay-btn');
+            isOverlayMinimized = shouldMinimize;
+            
+            if (isOverlayMinimized) {
+                overlay.classList.add('minimized');
+                restoreBtn.style.display = 'flex';
             } else {
-                mapArea.style.height = '45vh';
-                indicator.style.transform = 'scaleX(1)';
+                overlay.classList.remove('minimized');
+                restoreBtn.style.display = 'none';
             }
-
-            // Let layout engine settle then invalidate canvas matrix natively to allow user dragging
-            setTimeout(() => {
-                if (map) map.invalidateSize();
-            }, 320);
-        };
-
-        // Kill Switch Logic Implementation across active sockets
-        window.forceKillTrip = async () => {
-            if (!userData.activeTrip) return;
-            if (confirm("Execute System Kill Switch? This instantly severs your connection to the other user and resets your status.")) {
-                const targetTrip = userData.activeTrip;
-                
-                // Clear state nodes for both connected parties
-                try {
-                    if (targetTrip.dId) await updateDoc(doc(db, "users", targetTrip.dId), { activeTrip: deleteField() });
-                    if (targetTrip.pId) await updateDoc(doc(db, "users", targetTrip.pId), { activeTrip: deleteField() });
-                    alert("Connection dropped. Matchmaking status returned to normal.");
-                } catch (err) {
-                    console.error("Kill switch error:", err);
-                }
-            }
-        };
-
-        // Skip Rating Procedure Interface
-        window.skipRating = async () => {
-            await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() });
-            document.getElementById('rating-modal').classList.add('hidden');
         };
 
         onAuthStateChanged(auth, async (u) => {
-            if (u) { userUid = u.uid; const snap = await getDoc(doc(db, "users", userUid)); if (snap.exists()) { userData = snap.data(); initApp(); } }
-            else { document.getElementById('auth-screen').classList.remove('hidden'); document.getElementById('app-ui').classList.add('hidden'); }
+            if (u) { 
+                userUid = u.uid; 
+                const snap = await getDoc(doc(db, "users", userUid)); 
+                if (snap.exists()) { 
+                    userData = snap.data(); 
+                    initApp(); 
+                } 
+            } else { 
+                document.getElementById('auth-screen').classList.remove('hidden'); 
+                document.getElementById('app-ui').classList.add('hidden'); 
+            }
         });
 
         function initApp() {
@@ -412,38 +577,16 @@
             document.getElementById('app-ui').classList.replace('hidden', 'flex');
             document.getElementById(userData.role + '-panel').classList.remove('hidden');
             setStar(5);
-            
-            // Map instantiation configured with full free tracking access
             if (!map) {
-                map = L.map('map', { 
-                    zoomControl: false, 
-                    attributionControl: false,
-                    dragging: true,
-                    touchZoom: true,
-                    scrollWheelZoom: true,
-                    doubleClickZoom: true,
-                    boxZoom: true
-                }).setView([6.6294, 124.605], 16);
+                map = L.map('map', { zoomControl: false, attributionControl: false }).setView([6.6294, 124.605], 16);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
             }
-
-            // High Precision GPS Streams tracking directly into the database records
             navigator.geolocation.watchPosition(p => {
-                if (auth.currentUser) {
-                    const currentLat = p.coords.latitude;
-                    const currentLng = p.coords.longitude;
-                    
-                    updateDoc(doc(db, "users", userUid), { lat: currentLat, lng: currentLng, lastActive: Date.now() });
-                    
-                    // Single-trigger initial canvas focus to give users total free dragging authority
-                    if (!hasInitiallyPositionedMap) {
-                        map.setView([currentLat, currentLng], 16);
-                        hasInitiallyPositionedMap = true;
-                    }
-                }
-            }, null, { enableHighAccuracy: true, timeout: 10000 });
-            
+                if(auth.currentUser) updateDoc(doc(db, "users", userUid), { lat: p.coords.latitude, lng: p.coords.longitude, lastActive: Date.now() });
+            }, null, { enableHighAccuracy: true });
             syncData();
+            // Fire layout refresh safely
+            setTimeout(() => { if (map) map.invalidateSize(); }, 500);
         }
 
         function syncData() {
@@ -456,7 +599,6 @@
                 snap.forEach(d => {
                     const data = d.data(), id = d.id;
                     allUsers[id] = data;
-                    
                     if (id === userUid) { 
                         userData = data; 
                         handleStatusLogic(); 
@@ -466,47 +608,53 @@
                         const sosBtn = document.getElementById('sos-btn');
                         const cancelSosBtn = document.getElementById('cancel-sos-btn');
                         const pSosAlert = document.getElementById('p-sos-alert');
-                        if (data.sosActive) {
-                            if (sosBtn) sosBtn.classList.add('sos-active-btn');
-                            if (cancelSosBtn) cancelSosBtn.classList.remove('hidden');
-                            if (pSosAlert) pSosAlert.classList.remove('hidden');
+                        if(data.sosActive) {
+                            sosBtn.classList.add('sos-active-btn');
+                            cancelSosBtn.classList.remove('hidden');
+                            if(pSosAlert) pSosAlert.classList.remove('hidden');
                         } else {
-                            if (sosBtn) sosBtn.classList.remove('sos-active-btn');
-                            if (cancelSosBtn) cancelSosBtn.classList.add('hidden');
-                            if (pSosAlert) pSosAlert.classList.add('hidden');
+                            sosBtn.classList.remove('sos-active-btn');
+                            cancelSosBtn.classList.add('hidden');
+                            if(pSosAlert) pSosAlert.classList.add('hidden');
                         }
                     }
                     
                     const isFresh = data.lastActive && (now - data.lastActive < 180000);
-                    // OFFLINE Driver & User Visual Removal Core Fix
-                    const shouldShowMarker = isFresh && data.lat && data.lng && (data.role !== 'driver' || data.isOnline === true);
+                    if (isFresh && data.lat && data.lng) {
+                        let iconHtml = '';
+                        if(data.sosActive) {
+                            iconHtml = `<div class="sos-marker-pulse"></div>`;
+                        } else {
+                            iconHtml = data.role === 'driver' ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`;
+                        }
 
-                    if (shouldShowMarker) {
-                        const iconHtml = data.sosActive ? `<div class="sos-marker-pulse"></div>` : (data.role === 'driver' ? `<div class="driver-marker-icon"><i class="fa-solid fa-motorcycle"></i></div>` : `<div class="passenger-marker-icon"><i class="fa-solid fa-person-walking"></i></div>`);
                         if (markers[id]) {
                             markers[id].setLatLng([data.lat, data.lng]).setIcon(L.divIcon({ html: iconHtml, className: '', iconSize: [40, 40] }));
                         } else {
                             markers[id] = L.marker([data.lat, data.lng], { icon: L.divIcon({ html: iconHtml, className: '', iconSize: [40, 40] }) }).addTo(map);
                         }
                     } else if (markers[id]) { 
-                        // Instantly wipe marker rendering from map layer object array context
                         map.removeLayer(markers[id]); 
                         delete markers[id]; 
                     }
 
                     if (userData.role === 'passenger' && data.role === 'driver' && data.isOnline && isFresh && !data.activeTrip) {
-                        dList.innerHTML += `<div class="p-5 bg-white border border-gray-100 rounded-3xl flex justify-between items-center shadow-sm" onclick="openBookingModal('${id}', '${data.name}')">
-                            <div><p class="font-black text-gray-800">${data.name}</p><p class="text-[10px] text-amber-500 font-bold uppercase">Plate: ${data.plate || 'N/A'}</p></div>
-                            <button class="bg-emerald-600 text-white px-6 py-2 rounded-2xl text-xs font-black">BOOK</button></div>`;
+                        dList.innerHTML += `
+                        <div class="p-4 bg-white border border-slate-100 rounded-2xl flex justify-between items-center shadow-sm hover:border-emerald-200 transition-colors cursor-pointer" onclick="openBookingModal('${id}', '${data.name}')">
+                            <div>
+                                <p class="font-extrabold text-slate-800">${data.name}</p>
+                                <p class="text-[10px] text-amber-500 font-black uppercase tracking-wider mt-0.5">Plate: ${data.plate || 'N/A'}</p>
+                            </div>
+                            <button class="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black shadow-md shadow-emerald-600/10">BOOK</button>
+                        </div>`;
                     }
                 });
 
-                // Shortest Route canvas connector management
                 const t = userData.activeTrip;
                 if (t && (t.status === 'accepted' || t.status === 'pickedup')) {
                     const driver = allUsers[t.dId];
                     const passenger = allUsers[t.pId];
-                    if (driver?.lat && passenger?.lat) updateRouteLine([driver.lat, driver.lng], [passenger.lat, passenger.lng]);
+                    if(driver?.lat && passenger?.lat) updateRouteLine([driver.lat, driver.lng], [passenger.lat, passenger.lng]);
                 } else if (routingControl) {
                     map.removeControl(routingControl);
                     routingControl = null;
@@ -515,57 +663,33 @@
         }
 
         function handleStatusLogic() {
-            const overlayBlock = document.getElementById('status-overlay-block');
+            const overlay = document.getElementById('status-overlay');
             const tripCard = document.getElementById('trip-card');
             const pWait = document.getElementById('p-waiting-card');
-            const destSelectWrapper = document.getElementById('dest-select') ? document.getElementById('dest-select').closest('.relative') : null;
-            const metricsBanner = document.getElementById('p-metrics-banner');
-            const nearbyDriversLabel = document.getElementById('drivers-nearby-label-group');
-            const driverListContainer = document.getElementById('driver-list');
             
-            // Standard state reset procedures
-            if (overlayBlock) overlayBlock.classList.add('hidden'); 
-            if (tripCard) tripCard.classList.add('hidden'); 
-            if (pWait) pWait.classList.add('hidden');
-            if (destSelectWrapper) destSelectWrapper.classList.remove('hidden');
-            if (metricsBanner) metricsBanner.classList.remove('hidden');
-            if (nearbyDriversLabel) nearbyDriversLabel.classList.remove('hidden');
-            if (driverListContainer) driverListContainer.classList.remove('hidden');
+            overlay.classList.add('hidden'); tripCard.classList.add('hidden'); pWait.classList.add('hidden');
 
             if (!userData.activeTrip) { return; }
             const t = userData.activeTrip;
-            
             if (userData.role === 'driver') {
-                if (tripCard) {
-                    tripCard.classList.remove('hidden'); 
-                    document.getElementById('trip-p-name').innerText = t.pName;
-                    document.getElementById('trip-p-dest').innerText = t.dest;
-                    document.getElementById('trip-p-fare').innerText = "₱" + t.fare;
-                    const dActions = document.getElementById('driver-actions');
-                    if (t.status === 'requested') dActions.innerHTML = `<button onclick="updateStatus('accepted')" class="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black">ACCEPT</button><button onclick="updateStatus('declined')" class="flex-1 py-4 bg-red-100 text-red-600 rounded-2xl font-black">DECLINE</button>`;
-                    else if (t.status === 'accepted') dActions.innerHTML = `<button onclick="updateStatus('pickedup')" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black">PICKED UP</button>`;
-                    else if (t.status === 'pickedup') dActions.innerHTML = `<button onclick="updateStatus('arrived')" class="w-full py-4 bg-orange-600 text-white rounded-2xl font-black">ARRIVED</button>`;
-                }
+                tripCard.classList.remove('hidden'); document.getElementById('trip-p-name').innerText = t.pName;
+                document.getElementById('trip-p-dest').innerText = "To: " + t.dest;
+                document.getElementById('trip-p-fare').innerText = "Fare amount: ₱" + t.fare;
+                const dActions = document.getElementById('driver-actions');
+                if (t.status === 'requested') dActions.innerHTML = `<button onclick="updateStatus('accepted')" class="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-md">ACCEPT</button><button onclick="updateStatus('declined')" class="flex-1 py-4 bg-red-50 text-red-600 rounded-2xl font-black">DECLINE</button>`;
+                else if (t.status === 'accepted') dActions.innerHTML = `<button onclick="updateStatus('pickedup')" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-md">PICKED UP</button>`;
+                else if (t.status === 'pickedup') dActions.innerHTML = `<button onclick="updateStatus('arrived')" class="w-full py-4 bg-orange-600 text-white rounded-2xl font-black shadow-md">ARRIVED</button>`;
+                // Expand panel for driver requests automatically
+                snapSheet(window.innerHeight * 0.08);
             } else {
-                if (t.status === 'requested') {
-                    if (pWait) pWait.classList.remove('hidden');
-                    document.getElementById('wait-driver-name').innerText = "Waiting for " + t.dName + "...";
-                    if (destSelectWrapper) destSelectWrapper.classList.add('hidden');
-                    if (metricsBanner) metricsBanner.classList.add('hidden');
-                    if (nearbyDriversLabel) nearbyDriversLabel.classList.add('hidden');
-                    if (driverListContainer) driverListContainer.classList.add('hidden');
-                } else if (t.status === 'accepted' || t.status === 'pickedup') { 
-                    if (overlayBlock) overlayBlock.classList.remove('hidden'); 
-                    if (destSelectWrapper) destSelectWrapper.classList.add('hidden');
-                    if (metricsBanner) metricsBanner.classList.add('hidden');
-                    if (nearbyDriversLabel) nearbyDriversLabel.classList.add('hidden');
-                    if (driverListContainer) driverListContainer.classList.add('hidden');
-                    
-                    document.getElementById('active-fare-display').innerText = "₱" + t.fare;
+                pWait.classList.remove('hidden'); 
+                document.getElementById('wait-driver-name').innerText = "Waiting for " + t.dName + "...";
+                document.getElementById('active-fare-display').innerText = "₱" + t.fare;
+                if (t.status === 'accepted' || t.status === 'pickedup') { 
+                    overlay.classList.remove('hidden'); 
                     document.getElementById('ride-status-text').innerText = t.status === 'accepted' ? 'Driver is coming to you' : 'On your way';
-                } else if (t.status === 'arrived') { 
-                    document.getElementById('rating-modal').classList.remove('hidden'); 
                 }
+                else if (t.status === 'arrived') { document.getElementById('rating-modal').classList.remove('hidden'); }
             }
         }
 
@@ -592,7 +716,7 @@
         };
 
         window.openBookingModal = (dId, dName) => {
-            if (parseInt(document.getElementById('dest-select').value) === 0) return alert("Select destination first!");
+            if (parseInt(document.getElementById('dest-select').value) === 0 || !document.getElementById('dest-select').value) return alert("Select destination context metric first!");
             document.getElementById('modal-driver-name').innerText = dName;
             document.getElementById('booking-modal').classList.remove('hidden');
             document.getElementById('confirm-booking-btn').onclick = async () => {
@@ -607,10 +731,15 @@
         };
 
         window.closeBookingModal = () => document.getElementById('booking-modal').classList.add('hidden');
-        window.cancelTrip = async () => { if(confirm("Cancel ride?")) { const t = userData.activeTrip; await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField() }); await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() }); } };
+        window.cancelTrip = async () => { if(confirm("Cancel ride context request?")) { const t = userData.activeTrip; await updateDoc(doc(db, "users", t.dId), { activeTrip: deleteField() }); await updateDoc(doc(db, "users", userUid), { activeTrip: deleteField() }); } };
         
         window.toggleDashboard = (show) => {
             document.getElementById('user-dashboard').classList.toggle('hidden', !show);
+            document.getElementById('main-map-view').classList.toggle('hidden', show);
+            
+            document.getElementById('nav-btn-map').classList.toggle('active', !show);
+            document.getElementById('nav-btn-hub').classList.toggle('active', show);
+            
             if(show) {
                 document.getElementById('driver-stats').classList.toggle('hidden', userData.role !== 'driver');
                 document.getElementById('driver-only-inputs').classList.toggle('hidden', userData.role !== 'driver');
@@ -623,6 +752,8 @@
                     document.getElementById('edit-mtop').value = userData.mtop || '';
                     document.getElementById('edit-plate').value = userData.plate || '';
                 }
+            } else {
+                setTimeout(() => { if (map) map.invalidateSize(); }, 200);
             }
         };
 
@@ -633,20 +764,20 @@
                 data.plate = document.getElementById('edit-plate').value;
             }
             await updateDoc(doc(db, "users", userUid), data);
-            alert("Updated!");
+            alert("Configuration Saved!");
         };
 
         window.manualResetHistory = async () => {
-            if(confirm("Clear all data?")) await updateDoc(doc(db, "users", userUid), { history: [], income: 0, tripCount: 0 });
+            if(confirm("Wipe completely all local data records?")) await updateDoc(doc(db, "users", userUid), { history: [], income: 0, tripCount: 0 });
         };
 
         function updateHistoryUI() {
             const list = document.getElementById('ride-history-list');
-            if (!userData.history || userData.history.length === 0) { list.innerHTML = '<p class="text-xs text-gray-400 italic">No activity.</p>'; return; }
+            if (!userData.history || userData.history.length === 0) { list.innerHTML = '<p class="text-xs text-slate-400 italic p-2">No past history recorded.</p>'; return; }
             const oneWeek = Date.now() - (7*24*60*60*1000);
             list.innerHTML = '';
             userData.history.filter(h => h.rawTimestamp > oneWeek).slice().reverse().forEach(h => { 
-                list.innerHTML += `<div class="history-item p-4 bg-white rounded-2xl shadow-sm"><p class="font-black text-xs">${h.driverName}</p><p class="text-[10px] text-gray-500">${h.dest} • ₱${h.fare}</p></div>`;
+                list.innerHTML += `<div class="history-item p-4 bg-white rounded-2xl shadow-sm border border-slate-100"><p class="font-extrabold text-slate-800 text-sm">${h.driverName}</p><p class="text-[11px] text-slate-500 font-semibold mt-0.5">${h.dest} • ₱${h.fare}</p></div>`;
             });
         }
 
@@ -660,13 +791,28 @@
             }
         };
 
-        window.logout = async () => { await updateDoc(doc(db, "users", userUid), { isOnline: false, lastActive: 0 }); signOut(auth).then(() => location.reload()); };
+        window.logout = async () => { if(confirm("Terminate session configuration parameters?")) { await updateDoc(doc(db, "users", userUid), { isOnline: false, lastActive: 0 }); signOut(auth).then(() => location.reload()); } };
         window.toggleDuty = () => updateDoc(doc(db, "users", userUid), { isOnline: !userData.isOnline });
-        function updateDutyButton() { const btn = document.getElementById('duty-btn'); btn.classList.toggle('online', userData.isOnline); btn.innerHTML = userData.isOnline ? '✅ ONLINE' : 'GO ONLINE'; }
-        window.setStar = (n) => { currentRating = n; const stars = document.getElementById('star-box'); stars.innerHTML = ''; for (let i = 1; i <= 5; i++) stars.innerHTML += `<i onclick="setStar(${i})" class="fa-solid fa-star ${i <= n ? 'text-amber-400' : 'text-gray-200'}"></i>`; };
+        
+        function updateDutyButton() { 
+            const btn = document.getElementById('duty-btn'); 
+            btn.classList.toggle('online', userData.isOnline); 
+            btn.innerHTML = userData.isOnline ? '✅ ONLINE ACTIVE' : 'GO ONLINE'; 
+        }
+        
+        window.setStar = (n) => { currentRating = n; const stars = document.getElementById('star-box'); stars.innerHTML = ''; for (let i = 1; i <= 5; i++) stars.innerHTML += `<i onclick="setStar(${i})" class="fa-solid fa-star cursor-pointer transition-transform active:scale-125 ${i <= n ? 'text-amber-400' : 'text-slate-200'}"></i>`; };
         window.showRegisterUI = () => { document.getElementById('login-actions').classList.add('hidden'); document.getElementById('reg-ui').classList.remove('hidden'); };
         window.showLoginUI = () => { document.getElementById('login-actions').classList.remove('hidden'); document.getElementById('reg-ui').classList.add('hidden'); };
-        window.selectRole = (r) => { selectedRole = r; document.getElementById('role-p').classList.toggle('bg-amber-400', r==='passenger'); document.getElementById('role-d').classList.toggle('bg-amber-400', r==='driver'); document.getElementById('driver-fields').classList.toggle('hidden', r!=='driver'); };
+        
+        window.selectRole = (r) => { 
+            selectedRole = r; 
+            document.getElementById('role-p').classList.toggle('bg-amber-400', r==='passenger'); 
+            document.getElementById('role-p').classList.toggle('text-emerald-950', r==='passenger');
+            document.getElementById('role-d').classList.toggle('bg-amber-400', r==='driver'); 
+            document.getElementById('role-d').classList.toggle('text-emerald-950', r==='driver');
+            document.getElementById('driver-fields').classList.toggle('hidden', r!=='driver'); 
+        };
+        
         window.calculateFare = () => { document.getElementById('display-fare').innerText = "₱" + parseFloat(document.getElementById('dest-select').value).toFixed(2); };
     </script>
 </body>
